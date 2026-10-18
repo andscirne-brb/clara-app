@@ -1,0 +1,11 @@
+node_modules/
+dist/
+target/
+src-tauri/gen/
+*.clarabak
+*.db
+*.keys
+.DS_Store
+Thumbs.db
+Clara_PRD_*.md
+*.bundle

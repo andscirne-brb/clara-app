@@ -1,0 +1,79 @@
+# Compila, testa e cria o instalador da Clara num Windows real.
+# O instalador fica no ramo "instaladores" e como artefacto da execução.
+name: Windows
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Rust estável
+        run: rustup update stable && rustup default stable
+
+      - name: Cache Rust
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: windows-cargo-${{ hashFiles('Cargo.lock') }}
+
+      - name: Dependências da interface
+        run: npm ci
+
+      - name: Verificação de rede
+        run: npm run verificar
+
+      - name: Testes (incluindo a tarefa do Agendador)
+        run: cargo test --workspace --release
+
+      - name: Compilar e criar instalador
+        run: npx tauri build
+
+      - name: Teste do instalador
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem target/release/bundle/nsis/*-setup.exe | Select-Object -First 1
+          Start-Process -FilePath $setup.FullName -ArgumentList '/S' -Wait
+          $exe = Join-Path $env:LOCALAPPDATA 'Clara\clara.exe'
+          if (-not (Test-Path $exe)) { throw "clara.exe não foi instalado em $exe" }
+          $p = Start-Process -FilePath $exe -ArgumentList '--scheduled-backup' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "modo agendado devolveu $($p.ExitCode)" }
+          Write-Host "Instalador OK: $exe"
+
+      - name: Guardar instalador como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: clara-instalador
+          path: target/release/bundle/nsis/*-setup.exe
+
+      - name: Publicar no ramo "instaladores"
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem target/release/bundle/nsis/*-setup.exe | Select-Object -First 1
+          $tmp = Join-Path $env:RUNNER_TEMP 'instaladores'
+          New-Item -ItemType Directory -Force -Path $tmp | Out-Null
+          Copy-Item $setup.FullName (Join-Path $tmp 'Clara-instalador.exe')
+          "commit $env:GITHUB_SHA`n$(Get-Date -Format o)" | Out-File -Encoding utf8 (Join-Path $tmp 'VERSAO.txt')
+          Set-Location $tmp
+          git init -q -b instaladores
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Instalador da Clara ($env:GITHUB_SHA)"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" instaladores

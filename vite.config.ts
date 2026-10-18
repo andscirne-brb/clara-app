@@ -1,0 +1,10 @@
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+
+// Tudo empacotado localmente; nenhum recurso remoto.
+export default defineConfig({
+  plugins: [react()],
+  clearScreen: false,
+  server: { port: 1420, strictPort: true, host: "localhost" },
+  build: { target: "es2022", sourcemap: false, assetsInlineLimit: 0 },
+});
