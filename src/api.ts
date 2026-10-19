@@ -3,6 +3,18 @@ import { invoke } from "@tauri-apps/api/core";
 
 export type SecretKind = "password" | "recovery";
 
+export interface PropertyInput { ego_ref: string; nature: string; municipality: string; availability: string; ego_modified: string }
+export interface Property extends PropertyInput { id: string; original_description: string | null; archived: boolean; updated_at: string }
+export interface ListingInput { property_id: string; portal_id: string; portal_ref: string; url: string; visibility: string; monitoring: boolean }
+export interface Listing extends ListingInput { id: string; portal_name: string; revision: number }
+export interface Issue { id: string; listing_id: string; field: string; title: string; status: string; change_id: string | null; qa_id: string | null; change_reason: string | null; qa_note: string | null }
+export interface Inventory { properties: Property[]; listings: Listing[]; issues: Issue[] }
+export interface AuditItem { field: string; state: string; note: string }
+export interface Audit { id: string; listing_id: string; listing_revision: number; checklist_version: string; rules_status: string; items: AuditItem[]; created_at: string }
+export interface ImportRow { row: number; input: PropertyInput; status: string; error: string | null }
+export interface ImportPreview { token: string; sheet: string; description_enabled: boolean; rows: ImportRow[]; created: number; updated: number; unchanged: number; errors: number }
+export interface ImportResult { created: number; updated: number; unchanged: number }
+
 export interface AppStatus {
   initialized: boolean;
   unlocked: boolean;
@@ -110,6 +122,20 @@ function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
 }
 
 export const api = {
+  inventory: () => call<Inventory>("inventory"),
+  propertyCreate: (input: PropertyInput) => call<Property>("property_create", { input }),
+  propertyArchive: (id: string, archived: boolean) => call<Property>("property_archive", { id, archived }),
+  listingSave: (id: string | null, input: ListingInput) => call<Listing>("listing_save", { id, input }),
+  audits: (listingId: string) => call<Audit[]>("audits_list", { listingId }),
+  auditDraft: (listingId: string) => call<AuditItem[] | null>("audit_draft_get", { listingId }),
+  auditDraftSave: (listingId: string, items: AuditItem[]) => call<void>("audit_draft_save", { listingId, items }),
+  auditRecord: (listingId: string, items: AuditItem[]) => call<string>("audit_record", { listingId, items }),
+  changeRecord: (issueId: string, editLocation: string, fields: string, reason: string) => call<string>("change_record", { issueId, editLocation, fields, reason }),
+  qaRecord: (changeId: string, result: string, observedUrl: string, note: string) => call<string>("qa_record", { changeId, result, observedUrl, note }),
+  egoPick: () => call<{ file_name: string; sheets: string[] } | null>("ego_pick_file"),
+  egoPreview: (sheet: string, includeDescription: boolean) => call<ImportPreview>("ego_preview", { sheet, includeDescription }),
+  egoApply: (token: string) => call<ImportResult>("ego_apply", { token }),
+  egoCancel: () => call<void>("ego_cancel"),
   status: () => call<AppStatus>("app_status"),
   touch: () => call<void>("touch"),
   createVault: (password: string) => call<{ groups: string[] }>("create_vault", { password }),

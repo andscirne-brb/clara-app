@@ -105,6 +105,7 @@ pub async fn unlock(state: State<'_, AppState>, secret_kind: String, secret: Str
 #[tauri::command]
 pub async fn lock(state: State<'_, AppState>) -> Res<()> {
     state.vault.lock().unwrap().lock();
+    *state.ego_import.lock().unwrap() = crate::cycle_commands::ImportSession::default();
     Ok(())
 }
 

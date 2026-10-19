@@ -1,0 +1,45 @@
+name: Validar desenvolvimento
+on:
+  push:
+    branches: ['desenvolvimento-*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Rust estável
+        run: rustup update stable && rustup default stable
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: windows-ciclo-${{ hashFiles('Cargo.lock') }}
+      - run: npm ci
+      - run: npm run verificar
+      - name: Testes do núcleo e do Windows
+        run: cargo test --workspace --release --locked
+      - name: Criar instalador de teste
+        run: npx tauri build
+      - name: Testar instalação em máquina descartável
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem target/release/bundle/nsis/*-setup.exe | Select-Object -First 1
+          Start-Process -FilePath $setup.FullName -ArgumentList '/S' -Wait
+          $exe = Join-Path $env:LOCALAPPDATA 'Clara\clara.exe'
+          if (-not (Test-Path $exe)) { throw 'A Clara não foi instalada.' }
+          $process = Start-Process -FilePath $exe -ArgumentList '--scheduled-backup' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw 'O teste de arranque falhou.' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clara-ciclo-instalador-teste
+          path: target/release/bundle/nsis/*-setup.exe
+          retention-days: 14

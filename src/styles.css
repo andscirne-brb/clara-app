@@ -247,6 +247,29 @@ code, .mono { font-family: var(--mono); font-size: 0.92em; }
 .switch-text { font-size: 13px; color: var(--muted); min-width: 64px; }
 
 /* Diálogo */
+.content { min-width: 0; }
+.field textarea { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; width: 100%; resize: vertical; }
+.field > span:first-child { font-weight: 600; font-size: 14px; }
+.listing-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 12px; }
+.listing-choice { font: inherit; text-align: left; display: flex; flex-direction: column; gap: 6px; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 16px; cursor: pointer; }
+.listing-choice.selected { outline: 2px solid var(--focus); }
+.listing-choice:hover { border-color: var(--focus); }
+.audit-item { border: 1px solid var(--line); border-radius: 8px; padding: 16px; margin: 0; display: grid; grid-template-columns: minmax(160px,1fr) minmax(200px,2fr); gap: 16px; }
+.audit-item legend { font-weight: 600; padding: 0 6px; }
+.issue-card { border-top: 1px solid var(--line); padding-top: 16px; display: flex; flex-direction: column; gap: 12px; }
+.issue-card h3 { font-size: 15px; }
+.preserve-lines { white-space: pre-wrap; overflow-wrap: anywhere; }
+.inventory-page details { padding: 12px 0; border-top: 1px solid var(--line); }
+.inventory-page summary { cursor: pointer; color: var(--focus); }
+.inventory-page .table th, .inventory-page .table td { overflow-wrap: anywhere; }
+[hidden] { display: none !important; }
+@media (max-width: 760px) {
+  .shell { grid-template-columns: 160px minmax(0,1fr); }
+  .sidebar { padding: 16px 8px; }
+  .page { padding: 24px 16px; }
+  .audit-item, .two-cols { grid-template-columns: 1fr; }
+}
+
 .overlay { position: fixed; inset: 0; background: rgb(18 25 28 / 0.45); display: grid; place-items: center; padding: 16px; z-index: 10; }
 .modal { width: min(520px, 100%); background: var(--surface); border-radius: 14px; box-shadow: 0 20px 60px rgb(0 0 0 / 0.25); }
 .dialog { padding: 24px; outline: none; }

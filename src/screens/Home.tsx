@@ -136,11 +136,11 @@ export function Home(props: { go: (p: Page) => void; refreshKey: number }) {
           </div>
         </Card>
 
-        <Card title="Próximos passos da Clara">
+        <Card title="Imóveis e auditoria">
           <p className="muted">
-            Esta é a fundação: cofre, histórico e backups. Imóveis, auditorias, pedidos de materiais e prioridades chegam nos
-            próximos passos.
+            Importa os imóveis do EGO ou adiciona o primeiro manualmente. Acompanha cada publicação desde a auditoria até à verificação pública.
           </p>
+          <div><Btn onPress={() => props.go("imoveis")}>Abrir imóveis</Btn></div>
         </Card>
       </div>
     </div>

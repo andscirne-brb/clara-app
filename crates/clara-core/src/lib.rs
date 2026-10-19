@@ -3,6 +3,8 @@
 
 pub mod backup;
 pub mod catalog;
+pub mod cycle;
+pub mod ego_import;
 pub mod clock;
 pub mod config;
 pub mod db;

@@ -6,7 +6,31 @@ Aplicação desktop **local** para Windows 11. Sem servidor, sem cloud, sem IA, 
 
 A especificação completa fica fora deste repositório.
 
-**Estado:** slice 1 (Fundação) concluído. Imóveis, auditorias, pedidos e prioridades chegam nos slices seguintes.
+**Estado do desenvolvimento:** fundação existente e ciclo operacional implementado em código: imóveis, publicações, checklist-base, auditoria, problemas, edição manual e QA. Importação EGO `.xlsm`, `.xlsx` e CSV com pré-visualização incluída. A compilação e os testes nativos desta alteração têm de passar antes de distribuir um novo instalador. Pedidos consolidados e importação de prioridades continuam para as fases seguintes.
+
+## Imóveis, auditoria e importação EGO
+
+Em **Imóveis**, adiciona um imóvel pela referência EGO ou escolhe **Importar do EGO**. A referência é texto, com preservação dos zeros iniciais. Adicionar manualmente uma referência já existente abre esse imóvel. Arquivar preserva publicações e histórico; reativar mantém a identidade.
+
+Na importação, escolhe explicitamente a folha e pré-visualiza antes de confirmar. São necessárias as colunas Referência, Natureza, Disponibilidade, Concelho e Data de alteração. Datas: DD/MM/AAAA ou AAAA-MM-DD, ou célula de data do Excel. CSV em UTF-8, separado por vírgulas ou ponto e vírgula. Limites: 20 MB de ficheiro, 128 MB descomprimidos, 10 000 linhas e 1 000 colunas Excel.
+
+Os preços e a data de criação são ignorados. Descrições só são guardadas por opção explícita em cada importação, com confirmação de autorização; desligar essa opção preserva descrições anteriormente guardadas. Macros não são executadas. Fórmulas nas colunas importadas e referências numéricas no Excel são assinaladas como erro. Converte referências em texto no ficheiro de origem para conservar os zeros. Referências repetidas e datas inválidas bloqueiam toda a importação, sem gravação parcial. Repetir a mesma importação não duplica imóveis; imóveis ausentes e o seu arquivo são preservados. Uma alteração aos imóveis depois da pré-visualização obriga a pré-visualizar novamente.
+
+Cada imóvel pode ter uma publicação por destino, com referência e URL próprias. A pesquisa encontra referências EGO e referências associadas aos destinos. URL desconhecida é permitida no registo, mas o QA exige a URL pública https guardada. A app não abre nem edita os portais.
+
+Seleciona uma publicação e inicia uma auditoria. A checklist-base v1 contém boas práticas, sem as apresentar como regras obrigatórias do portal. As regras específicas continuam por confirmar e o Health Score fica **Não configurado**. Completude indica conformes/avaliados; cobertura indica avaliados/aplicáveis e mostra os itens por verificar. Não aplicável e não conforme exigem uma observação. O rascunho da auditoria é guardado na base cifrada a cada alteração; confirma a indicação de gravação antes de fechar. Concluir guarda uma nova versão e cria problemas a partir dos itens não conformes.
+
+Em cada problema, regista apenas uma edição que já realizaste manualmente no EGO ou portal, com campos/idiomas e motivo. O problema fica com QA pendente. Depois da observação do anúncio público, regista URL, resultado e evidência: aprovação resolve, falha reabre, não verificável mantém a pendência. Uma nova edição ou alteração à publicação exige novo QA e preserva o anterior. A data registada é a da confirmação na Clara. Agendamento de reverificação após feed e preparação de textos ficam para uma evolução posterior.
+
+### Validação desta alteração
+
+- `npm run build:web`: tipos e compilação da interface.
+- `cargo test --workspace --release --locked`: inclui testes de identidade, relações, arquivo, QA, rollback sem histórico, importação, XLSM sintético e restauro cifrado do ciclo/rascunho.
+- `npm run verificar`: árvore de dependências sem bibliotecas de rede proibidas. `calamine`, `csv` e `zip` leem os ficheiros localmente; `url` valida a sintaxe e não efetua pedidos.
+- O workflow **Validar desenvolvimento** cria um instalador de teste nos ramos `desenvolvimento-*`, sem publicar no ramo de instaladores nem alterar a instalação da utilizadora.
+- Um teste de interface com comandos Tauri simulados verifica navegação, pesquisa, rascunho, ciclo de QA, erros de importação e composição em modo claro/escuro. Esse teste não prova persistência nativa nem substitui os testes Rust ou a utilização no Windows.
+
+Antes de usar dados reais mantém-se pendente a observação de rede do WebView2 (AC23). O levantamento das regras reais dos portais também continua pendente.
 
 ---
 

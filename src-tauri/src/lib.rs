@@ -2,6 +2,7 @@
 //! backup das 22h com a app aberta. Toda a lógica vive em `clara-core`.
 
 mod commands;
+mod cycle_commands;
 mod task;
 
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -19,6 +20,7 @@ use clara_core::vault::Vault;
 use tauri::{Emitter, Manager};
 
 pub struct AppState {
+    pub ego_import: Mutex<cycle_commands::ImportSession>,
     pub vault: Mutex<Vault>,
     pub last_activity: Mutex<Instant>,
     pub lock_minutes: AtomicU32,
@@ -72,6 +74,7 @@ fn background(app: tauri::AppHandle) {
             let mut v = state.vault.lock().unwrap();
             if v.is_unlocked() && idle > limit {
                 v.lock();
+                *state.ego_import.lock().unwrap() = cycle_commands::ImportSession::default();
                 let _ = app.emit("clara://bloqueada", ());
                 continue;
             }
@@ -106,6 +109,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .manage(AppState {
+            ego_import: Mutex::new(cycle_commands::ImportSession::default()),
             vault: Mutex::new(vault),
             last_activity: Mutex::new(Instant::now()),
             lock_minutes: AtomicU32::new(DEFAULT_LOCK_MINUTES),
@@ -118,6 +122,20 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            cycle_commands::inventory,
+            cycle_commands::property_create,
+            cycle_commands::property_archive,
+            cycle_commands::listing_save,
+            cycle_commands::audits_list,
+            cycle_commands::audit_draft_get,
+            cycle_commands::audit_draft_save,
+            cycle_commands::audit_record,
+            cycle_commands::change_record,
+            cycle_commands::qa_record,
+            cycle_commands::ego_pick_file,
+            cycle_commands::ego_preview,
+            cycle_commands::ego_apply,
+            cycle_commands::ego_cancel,
             commands::app_status,
             commands::touch,
             commands::create_vault,

@@ -4,6 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+calamine = { version = "0.36.1", default-features = false, features = ["dates"] }
+csv = "1.4.0"
+url = "2.5.8"
+zip = { version = "8.6", default-features = false, features = ["deflate"] }
 argon2 = "0.6.0"
 chacha20poly1305 = "0.11.0"
 chrono = { version = "0.4.45", default-features = false, features = ["clock", "std", "serde"] }
