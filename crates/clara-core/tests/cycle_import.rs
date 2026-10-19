@@ -392,6 +392,11 @@ fn encrypted_backup_restores_cycle_and_audit_draft() {
         backup::backup_from_app(v.conn().unwrap(), &dd, clock.as_ref(), output.path()).unwrap();
     assert!(run.ok);
     let file = output.path().join(run.file_name.unwrap());
+    let report = backup::verify_backup(&dd, &file, SecretKind::Recovery, &recovery).unwrap();
+    assert_eq!(
+        (report.properties, report.listings, report.issues),
+        (1, 1, 1)
+    );
     let bytes = std::fs::read(dd.db()).unwrap();
     assert_ne!(&bytes[..16], b"SQLite format 3\0");
     v.lock();
@@ -415,4 +420,67 @@ fn encrypted_backup_restores_cycle_and_audit_draft() {
             .is_some()
     );
     assert!(history::verify_chain(next.conn().unwrap()).unwrap().ok);
+}
+
+#[test]
+fn foundation_upgrade_and_old_backup_preserve_settings_and_history() {
+    use clara_core::{catalog, db, keys::KeyFile};
+    let temp = tempfile::tempdir().unwrap();
+    let output = tempfile::tempdir().unwrap();
+    let dd = DataDir::new(temp.path());
+    dd.ensure().unwrap();
+    let clock = Arc::new(clock());
+    let (keyfile, master, _) =
+        KeyFile::create("TESTE palavra-passe longa", KdfParams::TESTING).unwrap();
+    std::fs::write(dd.keys(), keyfile.to_json().unwrap()).unwrap();
+    let mut old = db::open(&dd.db(), &master).unwrap();
+    old.execute_batch("CREATE TABLE schema_migration(version INTEGER PRIMARY KEY,name TEXT NOT NULL,applied_at TEXT NOT NULL)").unwrap();
+    for migration in migrations::MIGRATIONS.iter().filter(|m| m.version <= 2) {
+        old.execute_batch(migration.sql).unwrap();
+        old.execute(
+            "INSERT INTO schema_migration VALUES(?1,?2,'2026-10-18T12:00:00Z')",
+            rusqlite::params![migration.version, migration.name],
+        )
+        .unwrap();
+    }
+    catalog::set_monitoring(&mut old, clock.as_ref(), "idealista-pt", true, None).unwrap();
+    let events = history::count(&old).unwrap();
+    let run = backup::backup_from_app(&old, &dd, clock.as_ref(), output.path()).unwrap();
+    assert!(run.ok);
+    let file = output.path().join(run.file_name.unwrap());
+    drop(old);
+    let report = backup::verify_backup(
+        &dd,
+        &file,
+        SecretKind::Password,
+        "TESTE palavra-passe longa",
+    )
+    .unwrap();
+    assert_eq!(report.schema_version, 2);
+    assert_eq!(report.properties, 0);
+    assert_eq!(report.listings, 0);
+    let mut upgraded = Vault::new(dd, clock.clone(), KdfParams::TESTING);
+    upgraded
+        .unlock(SecretKind::Password, "TESTE palavra-passe longa")
+        .unwrap();
+    assert_eq!(
+        migrations::current_version(upgraded.conn().unwrap()).unwrap(),
+        3
+    );
+    assert!(
+        catalog::get(upgraded.conn().unwrap(), "idealista-pt")
+            .unwrap()
+            .monitoring_enabled
+    );
+    assert!(history::count(upgraded.conn().unwrap()).unwrap() > events);
+    assert!(history::verify_chain(upgraded.conn().unwrap()).unwrap().ok);
+    assert_eq!(
+        cycle::properties(upgraded.conn().unwrap()).unwrap().len(),
+        0
+    );
+    assert!(
+        migrations::migrate(upgraded.conn_mut().unwrap(), clock.as_ref())
+            .unwrap()
+            .is_empty()
+    );
 }
