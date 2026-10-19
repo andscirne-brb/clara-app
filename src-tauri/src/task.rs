@@ -182,7 +182,7 @@ pub fn show_weekly_reminder() -> i32 {
             std::env::var_os("SystemRoot").unwrap_or_else(|| "C:\\Windows".into()),
         )
         .join("System32/WindowsPowerShell/v1.0/powershell.exe");
-        let ok=std::process::Command::new(shell).args(["-NoProfile","-NonInteractive","-Command","Add-Type -AssemblyName PresentationFramework; [System.Windows.MessageBox]::Show('Abre a Clara e escolhe Resumo semanal para preparar o email para a Sara e a Julia. Confirma que o ficheiro principal esta guardado e sincronizado. Nenhum email sera enviado automaticamente.','Clara - Resumo semanal') | Out-Null"]).creation_flags(0x08000000).status().map(|s|s.success()).unwrap_or(false);
+        let ok=std::process::Command::new(shell).args(["-NoProfile","-NonInteractive","-Command","Add-Type -AssemblyName PresentationFramework; [System.Windows.MessageBox]::Show('Abre a Clara e escolhe Resumo semanal para preparar o email para a Sara, com a Julia em CC. Confirma que o ficheiro principal esta guardado e sincronizado. Nenhum email sera enviado automaticamente.','Clara - Resumo semanal') | Out-Null"]).creation_flags(0x08000000).status().map(|s|s.success()).unwrap_or(false);
         return if ok { 0 } else { 1 };
     }
     #[cfg(not(windows))]

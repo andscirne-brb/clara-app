@@ -268,7 +268,7 @@ pub fn build(path: &Path, start: &str, end: &str, clock: &dyn Clock) -> Result<R
             ));
         }
         let action = get(r, "Ação necessária");
-        let who = get(r, "Aguarda análise de");
+        let who = "Sara";
         let owner = get(r, "Responsável");
         let entry = format!(
             "- {} / {} — {}. {} Estado: {}. Responsável: {}. Aguarda análise de: {}.",
@@ -292,14 +292,10 @@ pub fn build(path: &Path, start: &str, end: &str, clock: &dyn Clock) -> Result<R
                 line(who)
             }
         );
-        if ["sara", "sara e júlia"].contains(&who.to_lowercase().as_str()) {
-            sara.push(entry)
-        } else {
-            other.push(entry)
-        }
+        sara.push(entry);
     }
     let mut body = format!(
-        "Assunto: Levantamento de imóveis | {} a {}\n\nOlá Sara e Júlia,\n\nPartilho o resumo do levantamento de imóveis entre {} e {}.\n",
+        "Assunto: Levantamento de imóveis | {} a {}\n\nOlá Sara,\n\nPartilho o resumo do levantamento de imóveis entre {} e {}.\n",
         from.format("%d/%m/%Y"),
         to.format("%d/%m/%Y"),
         from.format("%d/%m/%Y"),

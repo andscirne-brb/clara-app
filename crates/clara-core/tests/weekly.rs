@@ -179,7 +179,7 @@ fn report_reads_same_workbook_filters_dates_separates_sara_and_preserves_history
         .next()
         .unwrap();
     assert!(sara.contains("Áreas TESTE"));
-    assert!(!sara.contains("Documento TESTE"));
+    assert!(sara.contains("Documento TESTE"));
     assert!(!report.warnings.is_empty());
     let mut c = rusqlite::Connection::open_in_memory().unwrap();
     migrations::migrate(&mut c, &clock).unwrap();
