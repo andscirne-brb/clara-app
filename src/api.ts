@@ -11,7 +11,7 @@ export interface Issue { id: string; listing_id: string; field: string; title: s
 export interface Inventory { properties: Property[]; listings: Listing[]; issues: Issue[] }
 export interface AuditItem { field: string; state: string; note: string }
 export interface Audit { id: string; listing_id: string; listing_revision: number; checklist_version: string; rules_status: string; items: AuditItem[]; created_at: string }
-export interface ImportRow { row: number; input: PropertyInput; status: string; error: string | null }
+export interface ImportRow { row: number; input: PropertyInput; status: string; error: string | null; changes: string[] }
 export interface ImportPreview { token: string; sheet: string; description_enabled: boolean; rows: ImportRow[]; created: number; updated: number; unchanged: number; errors: number }
 export interface ImportResult { created: number; updated: number; unchanged: number }
 

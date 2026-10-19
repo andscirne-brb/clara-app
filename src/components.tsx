@@ -111,10 +111,10 @@ export function ToggleSwitch(props: { checked: boolean; onChange: (v: boolean) =
   );
 }
 
-export function CheckLine(props: { checked: boolean; onChange: (v: boolean) => void; children: ReactNode }) {
+export function CheckLine(props: { checked: boolean; onChange: (v: boolean) => void; children: ReactNode; disabled?: boolean }) {
   return (
     <label className="checkline">
-      <input type="checkbox" checked={props.checked} onChange={(e) => props.onChange(e.target.checked)} />
+      <input type="checkbox" checked={props.checked} disabled={props.disabled} onChange={(e) => props.onChange(e.target.checked)} />
       <span>{props.children}</span>
     </label>
   );

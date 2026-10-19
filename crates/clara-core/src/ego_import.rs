@@ -77,6 +77,7 @@ pub struct ImportRow {
     pub description: Option<String>,
     pub status: String,
     pub error: Option<String>,
+    pub changes: Vec<String>,
 }
 #[derive(Clone, Debug, Serialize)]
 pub struct Preview {
@@ -323,6 +324,7 @@ pub fn preview(
             description,
             status: String::new(),
             error,
+            changes: vec![],
         });
     }
     if rows.is_empty() {
@@ -354,6 +356,30 @@ pub fn preview(
                 created += 1;
             }
             Some(p) => {
+                for (label, before, after) in [
+                    ("Natureza", &p.nature, &row.input.nature),
+                    ("Concelho", &p.municipality, &row.input.municipality),
+                    ("Disponibilidade", &p.availability, &row.input.availability),
+                    ("Data EGO", &p.ego_modified, &row.input.ego_modified),
+                ] {
+                    if before != after {
+                        row.changes.push(format!("{label}: «{before}» → «{after}»"));
+                    }
+                }
+                if row
+                    .description
+                    .as_ref()
+                    .is_some_and(|d| Some(d) != p.original_description.as_ref())
+                {
+                    row.changes
+                        .push("A descrição original será atualizada.".into());
+                }
+                if !p.ego_modified.is_empty()
+                    && !row.input.ego_modified.is_empty()
+                    && row.input.ego_modified < p.ego_modified
+                {
+                    row.changes.push("Atenção: a data EGO importada é anterior à guardada. Confirma que escolheste a exportação correta.".into());
+                }
                 let same = p.nature == row.input.nature
                     && p.municipality == row.input.municipality
                     && p.availability == row.input.availability
