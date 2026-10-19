@@ -23,6 +23,9 @@ jobs:
             ~/.cargo/git
             target
           key: windows-ciclo-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            windows-ciclo-
+            windows-cargo-
       - run: npm ci
       - run: npm run verificar
       - name: Testes do núcleo e do Windows
