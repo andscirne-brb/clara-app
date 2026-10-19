@@ -465,7 +465,7 @@ fn foundation_upgrade_and_old_backup_preserve_settings_and_history() {
         .unwrap();
     assert_eq!(
         migrations::current_version(upgraded.conn().unwrap()).unwrap(),
-        3
+        migrations::latest_version()
     );
     assert!(
         catalog::get(upgraded.conn().unwrap(), "idealista-pt")
