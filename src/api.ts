@@ -125,6 +125,10 @@ function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
 }
 
 export const api = {
+  weeklyOverview: () => call<WeeklyOverview>("weekly_overview"),
+  weeklyPick: () => call<string | null>("weekly_pick"),
+  weeklyGenerate: (start: string, end: string) => call<WeeklyReport>("weekly_generate", { start, end }),
+  weeklyReminder: (enabled: boolean) => call<TaskStatus>("weekly_reminder", { enabled }),
   collectionList: (propertyId: string) => call<CollectionSnapshot[]>("collection_list", { propertyId }),
   collectionSave: (propertyId: string, data: CollectionData) => call<CollectionSnapshot>("collection_save", { propertyId, data }),
   collectionSuggestions: (data: CollectionData) => call<CollectionSuggestion[]>("collection_suggestions", { data }),
@@ -180,3 +184,5 @@ export interface CollectionData {
 }
 export interface CollectionSnapshot { id: string; collected_at: string; data: CollectionData }
 export interface CollectionSuggestion { field: string; evidence: string; state: string }
+export interface WeeklyReport { id: string; generated_at: string; start: string; end: string; file_name: string; source_hash: string; body: string; warnings: string[] }
+export interface WeeklyOverview { file_name: string | null; start: string; end: string; reports: WeeklyReport[]; reminder: TaskStatus }

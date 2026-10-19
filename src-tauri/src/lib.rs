@@ -4,7 +4,9 @@
 mod commands;
 mod cycle_commands;
 mod collection_commands;
+mod weekly_commands;
 mod task;
+pub fn run_weekly_reminder()->i32 {task::show_weekly_reminder()}
 
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
@@ -123,6 +125,10 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            weekly_commands::weekly_overview,
+            weekly_commands::weekly_pick,
+            weekly_commands::weekly_generate,
+            weekly_commands::weekly_reminder,
             collection_commands::collection_list,
             collection_commands::collection_save,
             collection_commands::collection_suggestions,

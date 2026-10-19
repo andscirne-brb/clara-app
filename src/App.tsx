@@ -9,11 +9,12 @@ import { Backups } from "./screens/Backups";
 import { Security } from "./screens/Security";
 import { History } from "./screens/History";
 import { Properties } from "./screens/Properties";
+import { Weekly } from "./screens/Weekly";
 
-export type Page = "hoje" | "imoveis" | "destinos" | "backups" | "seguranca" | "historico";
+export type Page = "hoje" | "imoveis" | "resumo" | "destinos" | "backups" | "seguranca" | "historico";
 
 const NAV: { group: string; items: { id: Page; label: string }[] }[] = [
-  { group: "", items: [{ id: "hoje", label: "Hoje" }, { id: "imoveis", label: "Imóveis" }] },
+  { group: "", items: [{ id: "hoje", label: "Hoje" }, { id: "imoveis", label: "Imóveis" }, { id: "resumo", label: "Resumo semanal" }] },
   {
     group: "Configuração",
     items: [
@@ -173,6 +174,7 @@ export default function App() {
       <div className="content">
         {page === "hoje" && <Home go={setPage} refreshKey={refreshKey} />}
         <div hidden={page !== "imoveis"}><Properties /></div>
+        {page === "resumo" && <Weekly />}
         {page === "destinos" && <Portals />}
         {page === "backups" && <Backups onLocked={onLocked} refreshKey={refreshKey} />}
         {page === "seguranca" && <Security status={status} onChanged={refresh} />}

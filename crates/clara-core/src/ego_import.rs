@@ -21,7 +21,7 @@ const MAX_ROWS: usize = 10_000;
 fn invalid(s: &str) -> ClaraError {
     ClaraError::Invalid(s.into())
 }
-fn read_file(path: &Path) -> Result<Vec<u8>> {
+pub(crate) fn read_file(path: &Path) -> Result<Vec<u8>> {
     let mut bytes = Vec::new();
     std::fs::File::open(path)?
         .take(MAX_BYTES + 1)
@@ -33,7 +33,7 @@ fn read_file(path: &Path) -> Result<Vec<u8>> {
     }
     Ok(bytes)
 }
-fn workbook(bytes: &[u8]) -> Result<Xlsx<Cursor<&[u8]>>> {
+pub(crate) fn workbook(bytes: &[u8]) -> Result<Xlsx<Cursor<&[u8]>>> {
     let mut zip = zip::ZipArchive::new(Cursor::new(bytes))
         .map_err(|_| invalid("O ficheiro Excel está danificado ou protegido por palavra-passe."))?;
     if zip.len() > 5000 {

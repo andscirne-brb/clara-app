@@ -1,5 +1,13 @@
 # Clara
 
+## Resumo semanal (0.3.1)
+
+Em **Resumo semanal**, escolhe uma vez o mesmo levantamento principal XLSM na pasta sincronizada do Drive. Guarda e sincroniza o ficheiro antes de gerar. A Clara lê as folhas Levantamento, Pendências da equipa e Registo de alterações, sem executar macros nem alterar o ficheiro. Seleciona o período, gera e usa **Copiar email**. Os resumos gerados são preservados no cofre cifrado, com período, data, nome e hash do ficheiro consultado. Gerar de novo preserva o resumo anterior. O registo de alterações no XLSM continua a ser o histórico colaborativo detalhado; a Clara guarda a fotografia semanal desse registo e das pendências.
+
+Preenche **Aguarda análise de** nas pendências para distinguir Sara, Júlia e assuntos por definir. A Clara não presume responsáveis e não envia mensagens. Estados Concluído sem decisão, data de resolução e verificação confirmada continuam a aparecer como pendentes de validação. Registos sem data são assinalados, não contados como trabalho confirmado do período. Os registos sem hora são filtrados pela data e exigem atenção aos limites do período. As pendências são as atuais, incluindo assuntos antigos.
+
+O botão **Ativar lembrete das 20h15** cria uma tarefa local do Windows, à sexta-feira, para apresentar um lembrete. Requer o Windows com fuso de Lisboa, sessão iniciada e computador disponível. O lembrete não abre dados nem gera o relatório com o cofre bloqueado: abre a Clara, desbloqueia e gera o resumo. Não usa IA ou tokens. A tarefa é independente do backup diário e pode ser desativada no mesmo ecrã.
+
 ## Recolha manual local (0.3.0)
 
 Em **Imóveis**, as moradias e os apartamentos aparecem primeiro. Abre um imóvel e usa **Recolha manual e textos originais**:
