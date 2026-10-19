@@ -3,6 +3,7 @@
 
 mod commands;
 mod cycle_commands;
+mod collection_commands;
 mod task;
 
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -122,6 +123,10 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            collection_commands::collection_list,
+            collection_commands::collection_save,
+            collection_commands::collection_suggestions,
+            collection_commands::collection_capture,
             cycle_commands::inventory,
             cycle_commands::property_create,
             cycle_commands::property_archive,

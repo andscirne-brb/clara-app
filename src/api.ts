@@ -125,6 +125,10 @@ function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
 }
 
 export const api = {
+  collectionList: (propertyId: string) => call<CollectionSnapshot[]>("collection_list", { propertyId }),
+  collectionSave: (propertyId: string, data: CollectionData) => call<CollectionSnapshot>("collection_save", { propertyId, data }),
+  collectionSuggestions: (data: CollectionData) => call<CollectionSuggestion[]>("collection_suggestions", { data }),
+  collectionCapture: () => call<{ name: string; text: string } | null>("collection_capture"),
   inventory: () => call<Inventory>("inventory"),
   propertyCreate: (input: PropertyInput) => call<Property>("property_create", { input }),
   propertyArchive: (id: string, archived: boolean) => call<Property>("property_archive", { id, archived }),
@@ -165,3 +169,14 @@ export const api = {
   taskRunNow: () => call<void>("task_run_now"),
   taskRemove: () => call<TaskStatus>("task_remove"),
 };
+
+export interface CollectionData {
+ source: string;
+ contents: { language: string; title: string; description: string; reviewed: boolean }[];
+ captures: { name: string; text: string }[];
+ selected_features: string[];
+ feature_list_reviewed: boolean;
+ notes: string;
+}
+export interface CollectionSnapshot { id: string; collected_at: string; data: CollectionData }
+export interface CollectionSuggestion { field: string; evidence: string; state: string }

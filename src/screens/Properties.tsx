@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, type Inventory, type PropertyInput, type Listing, type ListingInput, type Portal, type Audit, type AuditItem, type Issue, type ImportPreview } from "../api";
 import { Btn, Card, CheckLine, Field, Notice } from "../components";
 import { formatDateTime } from "../format";
+import { Collection } from "./Collection";
 
 const EMPTY: PropertyInput = { ego_ref: "", nature: "", municipality: "", availability: "", ego_modified: "" };
 export const CHECKLIST = [
@@ -45,6 +46,7 @@ export function Properties() {
   const listings = data.listings.filter(l => l.property_id === selected);
   const term = q.trim().toLocaleLowerCase("pt-PT");
   const shown = data.properties.filter(p => p.archived === archived && ([p.ego_ref, p.nature, p.municipality, ...data.listings.filter(l => l.property_id === p.id).flatMap(l => [l.portal_ref, l.portal_name])].some(v => v.toLocaleLowerCase("pt-PT").includes(term))));
+  shown.sort((a, b) => Number(!/moradia|apartamento/i.test(a.nature)) - Number(!/moradia|apartamento/i.test(b.nature)) || a.ego_ref.localeCompare(b.ego_ref));
   const active = listings.find(l => l.id === activeListing);
   const openProperty = (id: string | null) => { setSelected(id); setActiveListing(null); setListingForm(null); setNewProperty(false); setError(null); setMessage(null); requestAnimationFrame(() => heading.current?.focus()); };
   return <div className="page inventory-page">
@@ -55,6 +57,7 @@ export function Properties() {
     {loading ? <p role="status">A carregar imóveis…</p> : property ? <>
       <div className="toolbar"><Btn onPress={() => openProperty(null)}>← Todos os imóveis</Btn><Btn busy={busy} onPress={() => void run(async () => { await api.propertyArchive(property.id, !property.archived); await load(); setMessage(property.archived ? "Imóvel reativado." : "Imóvel arquivado. As relações e o histórico foram preservados."); })}>{property.archived ? "Reativar imóvel" : "Arquivar imóvel"}</Btn></div>
       {property.archived && <Notice tone="info">Este imóvel está arquivado. As publicações e o histórico continuam disponíveis.</Notice>}
+      <Collection key={property.id} propertyId={property.id} reference={property.ego_ref} />
       <Card title="Publicações por destino" actions={<Btn onPress={() => { setListingForm({ id: null, input: { property_id: property.id, portal_id: portals.find(p => !listings.some(l => l.portal_id === p.id))?.id ?? "", portal_ref: "", url: "", visibility: "desconhecida", monitoring: true } }); setActiveListing(null); }} isDisabled={listings.length >= portals.length}>Adicionar publicação</Btn>}>
         {!listings.length ? <p className="muted">Ainda não há publicações. Adiciona o primeiro destino para começar a auditoria.</p> : <div className="listing-grid">{listings.map(l => {
           const open = data.issues.filter(i => i.listing_id === l.id && i.status !== "resolvido").length;

@@ -4,6 +4,7 @@
 pub mod backup;
 pub mod catalog;
 pub mod cycle;
+pub mod collection;
 pub mod ego_import;
 pub mod clock;
 pub mod config;

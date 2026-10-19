@@ -1,5 +1,17 @@
 # Clara
 
+## Recolha manual local (0.3.0)
+
+Em **Imóveis**, as moradias e os apartamentos aparecem primeiro. Abre um imóvel e usa **Recolha manual e textos originais**:
+
+1. Guarda as capturas originais numa pasta com a referência EGO. Usa **Ler uma captura** para extrair texto localmente no Windows (PNG/JPEG, até 30 MB). Capturas longas são divididas em faixas; secções fechadas ou texto fora da área visível não podem ser lidos. A Clara guarda nomes e texto extraído no cofre, não a imagem original.
+2. Copia o título e a descrição para o idioma correto (PT/EN/FR/DE/ES). Confirma cada texto com a ficha. A cópia direta do texto é preferível ao OCR quando possível.
+3. Indica as características assinaladas que confirmaste visualmente, uma por linha. A leitura de texto não identifica checkboxes.
+4. Compara com o texto PT. As regras iniciais são conservadoras, têm cobertura limitada e devolvem a frase de origem; todas as diferenças exigem confirmação. Não provam que a característica esteja em falta. Quantidades são conferidas na frase, não preenchidas automaticamente. Textos sobre potencial, projetos ou negações são excluídos conservadoramente.
+5. Regista as faltas de meios e anexos nas observações, guarda uma versão e exporta CSV para abrir no Excel. Cada gravação acrescenta uma versão ao cofre cifrado, incluída nos backups existentes. O original não é sobrescrito.
+
+Não há consulta automática do eGO nem envio a serviços de IA. A visita virtual não faz parte dos requisitos. A otimização SEO e a comparação automática em outros idiomas ficam para uma fase posterior. A extração depende dos idiomas OCR instalados no Windows; se estiver indisponível, a introdução manual continua disponível.
+
 A sidekick da Andreia para a presença dos imóveis nos portais: ajuda a detetar o que falta e a clarificar o que precisa de melhorar.
 
 Aplicação desktop **local** para Windows 11. Sem servidor, sem cloud, sem IA, sem telemetria. Os dados ficam cifrados neste PC. As cópias de segurança, também cifradas, vão para a pasta **Clara Backups** do Google Drive da conta de trabalho.
