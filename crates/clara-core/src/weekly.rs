@@ -389,7 +389,7 @@ pub fn save(conn: &mut Connection, clock: &dyn Clock, report: &Report) -> Result
 }
 pub fn recent(conn: &Connection) -> Result<Vec<Report>> {
     let mut s = conn.prepare(
-        "SELECT payload FROM weekly_report ORDER BY generated_at DESC,rowid DESC LIMIT 20",
+        "SELECT payload FROM weekly_report ORDER BY generated_at DESC,rowid DESC LIMIT 260",
     )?;
     let rows = s.query_map([], |r| r.get::<_, String>(0))?;
     rows.map(|r| Ok(serde_json::from_str(&r?)?)).collect()
