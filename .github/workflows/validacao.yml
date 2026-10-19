@@ -36,7 +36,9 @@ jobs:
       - name: Testar instalação em máquina descartável
         shell: pwsh
         run: |
-          $setup = Get-ChildItem target/release/bundle/nsis/*-setup.exe | Select-Object -First 1
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $setup = Get-Item "target/release/bundle/nsis/Clara_${version}_x64-setup.exe"
+          "CLARA_INSTALLER=$($setup.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Start-Process -FilePath $setup.FullName -ArgumentList '/S' -Wait
           $exe = Join-Path $env:LOCALAPPDATA 'Clara\clara.exe'
           if (-not (Test-Path $exe)) { throw 'A Clara não foi instalada.' }
@@ -45,5 +47,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: clara-ciclo-instalador-teste
-          path: target/release/bundle/nsis/*-setup.exe
+          path: ${{ env.CLARA_INSTALLER }}
           retention-days: 14
