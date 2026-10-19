@@ -104,6 +104,9 @@ export interface VerifyReport {
   schema_version: number;
   cipher_version: string;
   portals: number;
+  properties: number;
+  listings: number;
+  issues: number;
   history_events: number;
   history_chain_ok: boolean;
   history_problem: string | null;

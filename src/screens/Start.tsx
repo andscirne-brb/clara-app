@@ -193,7 +193,7 @@ export function RestoreFlow(props: { onCancel: () => void; onDone: () => void })
       <Frame title="Backup restaurado" wide>
         <Notice tone="ok" title={result.report.file_name}>
           Cópia de {formatDateTime(result.report.created_at)}. Integridade verificada: {result.report.history_events} eventos no
-          histórico, {result.report.portals} destinos.
+          histórico, {result.report.portals} destinos, {result.report.properties} imóveis e {result.report.listings} publicações.
         </Notice>
         {result.previous_saved_as && (
           <Notice tone="info">

@@ -419,6 +419,9 @@ pub struct VerifyReport {
     pub schema_version: i64,
     pub cipher_version: String,
     pub portals: i64,
+    pub properties: i64,
+    pub listings: i64,
+    pub issues: i64,
     pub history_events: i64,
     pub history_chain_ok: bool,
     pub history_problem: Option<String>,
@@ -447,14 +450,24 @@ fn verify_into(path: &Path, kind: SecretKind, secret: &str, tmp_dir: &Path) -> R
         let conn = db::open_read_only(&tmp_db, &master)?;
         db::integrity(&conn)?;
         let chain = history::verify_chain(&conn)?;
+        let schema_version = migrations::current_version(&conn)?;
+        // Cópias da fundação continuam válidas, sem migrar a base de verificação.
+        let (properties, listings, issues) = if schema_version >= 3 {
+            (conn.query_row("SELECT count(*) FROM property", [], |r| r.get(0))?,
+             conn.query_row("SELECT count(*) FROM listing", [], |r| r.get(0))?,
+             conn.query_row("SELECT count(*) FROM issue", [], |r| r.get(0))?)
+        } else { (0, 0, 0) };
         let r = VerifyReport {
             file_name: path.file_name().map(|s| s.to_string_lossy().to_string()).unwrap_or_default(),
             created_at: header.created_at.clone(),
             source: header.source,
             app_version: header.app_version.clone(),
-            schema_version: migrations::current_version(&conn)?,
+            schema_version,
             cipher_version: db::cipher_version(&conn)?,
             portals: crate::catalog::count(&conn)?,
+            properties,
+            listings,
+            issues,
             history_events: chain.events,
             history_chain_ok: chain.ok,
             history_problem: chain.problem,

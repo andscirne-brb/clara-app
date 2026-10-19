@@ -202,7 +202,7 @@ export function Backups(props: { onLocked: (message: string) => void; refreshKey
         {report && (
           <Notice tone={report.history_chain_ok ? "ok" : "error"} title={`Teste de restauro: ${report.file_name}`}>
             {report.history_chain_ok
-              ? `A cópia abre e está íntegra. ${report.history_events} eventos no histórico, ${report.portals} destinos, esquema v${report.schema_version}. Nada foi alterado.`
+              ? `A cópia abre e está íntegra. ${report.properties} imóveis, ${report.listings} publicações, ${report.issues} problemas, ${report.history_events} eventos no histórico, ${report.portals} destinos, esquema v${report.schema_version}. Nada foi alterado.`
               : `A cópia abre mas o histórico tem um problema: ${report.history_problem}`}
           </Notice>
         )}
