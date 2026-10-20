@@ -3,6 +3,26 @@ use clara_core::company_profiles::{self, Profile, Version};
 use tauri::State;
 type Res<T> = Result<T, String>;
 #[tauri::command]
+pub async fn company_profile_sync(
+    state: State<'_, AppState>,
+    portal: String,
+) -> Res<crate::work_commands::Written> {
+    state.touch();
+    let v = state.vault.lock().unwrap();
+    let c = v.conn().map_err(|e| e.to_string())?;
+    let path = clara_core::settings::get(c, clara_core::weekly::PATH_KEY).map_err(|e|e.to_string())?
+        .ok_or("A versão está guardada na Clara. Escolhe o levantamento principal em Resumo semanal e volta a guardar para atualizar o Excel.")?;
+    let versions = company_profiles::versions_for_excel(c, &portal).map_err(|e| e.to_string())?;
+    let latest = versions
+        .first()
+        .ok_or("Guarda uma versão antes de atualizar o Excel.")?;
+    let hash =
+        clara_core::weekly::fingerprint(std::path::Path::new(&path)).map_err(|e| e.to_string())?;
+    crate::work_commands::write_request(
+        serde_json::json!({"path":path,"expected_hash":hash,"profiles":versions,"work":{"id":latest.id}}),
+    )
+}
+#[tauri::command]
 pub async fn company_profile_draft(
     state: State<'_, AppState>,
     portal: String,

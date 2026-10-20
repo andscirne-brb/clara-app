@@ -45,6 +45,8 @@ jobs:
           retention-days: 14
       - name: Escrita controlada do levantamento com dados fictícios
         run: python scripts/testar-escrita.py
+      - name: Perfis no Excel com dados fictícios
+        run: python scripts/testar-perfis-excel.py
       - name: Criar instalador de teste
         # O teste nativo do OCR corre localmente; os idiomas dos runners variam.
         run: npx tauri build

@@ -159,7 +159,11 @@ pub fn write_request(request: serde_json::Value) -> Res<Written> {
         .join("System32/WindowsPowerShell/v1.0/powershell.exe");
         let script = format!(
             "[Console]::InputEncoding=[Text.UTF8Encoding]::new($false);[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false);{}",
-            include_str!("workbook-write.ps1")
+            if request.get("profiles").is_some() {
+                include_str!("profiles-write.ps1")
+            } else {
+                include_str!("workbook-write.ps1")
+            }
         );
         // EncodedCommand carries fixed program text, never user data; JSON goes through stdin.
         let wrapper = "[Console]::InputEncoding=[Text.UTF8Encoding]::new($false);[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false);& ([scriptblock]::Create($env:CLARA_WRITER_SCRIPT))";

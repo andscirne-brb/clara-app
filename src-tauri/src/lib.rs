@@ -151,6 +151,7 @@ pub fn run() {
             profile_commands::company_profile_draft_save,
             profile_commands::company_profile_versions,
             profile_commands::company_profile_save,
+            profile_commands::company_profile_sync,
             audit_commands::capture_audit_prepare,
             audit_commands::capture_audit_write,
             work_commands::work_overview,

@@ -394,13 +394,69 @@ pub fn build(path: &Path, start: &str, end: &str, clock: &dyn Clock) -> Result<R
         ));
     }
     let mut closing = String::new();
+    // Profile work is separate from property corrections and public publication.
+    if wb.sheet_names().iter().any(|s| s == "Perfis dos portais") {
+        let current = rows(
+            wb.worksheet_range("Perfis dos portais")
+                .map_err(|_| invalid("Não foi possível ler os perfis."))?,
+            &["Portal", "Assunto", "Estado", "ID da versão"],
+        )?;
+        let mut profile_work = BTreeMap::<String, Vec<String>>::new();
+        if wb.sheet_names().iter().any(|s| s == "Histórico dos perfis") {
+            let history = rows(
+                wb.worksheet_range("Histórico dos perfis")
+                    .map_err(|_| invalid("Não foi possível ler o histórico dos perfis."))?,
+                &["Portal", "Data do registo", "ID da versão"],
+            )?;
+            let mut ids = HashSet::new();
+            for r in &history {
+                if in_period(get(r, "Data do registo"), from, to)
+                    && ids.insert(get(r, "ID da versão").to_string())
+                {
+                    profile_work.entry(get(r,"Portal").into()).or_default().push(format!("Registei uma versão do levantamento do perfil em {}. Este registo não confirma publicação no portal.", &get(r,"Data do registo")[..10]));
+                }
+            }
+        }
+        let mut pending = BTreeMap::<String, Vec<String>>::new();
+        for r in &current {
+            let subject = get(r, "Assunto");
+            let state = get(r, "Estado");
+            let note = get(r, "Ação / observação");
+            if ["Texto do perfil", "Origem da consulta"].contains(&subject)
+                || note.is_empty()
+                || ["Conferido", "Não aplicável", "Aplicado e conferido"].contains(&state)
+            {
+                continue;
+            }
+            let mut s = format!("{}: {}", line(subject), line(note));
+            if !get(r, "Depende de").is_empty() {
+                s.push_str(&format!(" Depende de: {}.", line(get(r, "Depende de"))));
+            }
+            pending.entry(get(r, "Portal").into()).or_default().push(s);
+        }
+        let mut portals: Vec<_> = profile_work.keys().chain(pending.keys()).cloned().collect();
+        portals.sort();
+        portals.dedup();
+        if !portals.is_empty() {
+            closing.push_str("\nPerfis dos portais\n");
+        }
+        for portal in portals {
+            closing.push_str(&format!("\n{}\n", portal));
+            for s in profile_work.get(&portal).into_iter().flatten() {
+                closing.push_str(&format!("- {}\n", s));
+            }
+            for s in pending.get(&portal).into_iter().flatten() {
+                closing.push_str(&format!("- Pendente: {}\n", s));
+            }
+        }
+    }
     if !warnings.is_empty() {
         closing.push_str("\nRegistos a esclarecer\n");
         for w in &warnings {
             closing.push_str(&format!("- {w}\n"));
         }
     }
-    closing.push_str("\nTrabalhos registados pela autora; detalhes e verificações disponíveis no Excel. As pendências refletem o estado atual do ficheiro, incluindo semanas anteriores. A ausência de registo datado não confirma ausência de trabalho. O resumo usa as datas registadas, sem distinguir horas.\n\nObrigada,\nAndreia");
+    closing.push_str("\nRegistei os detalhes e verificações no Excel. As pendências refletem o estado atual do ficheiro, incluindo semanas anteriores. A ausência de registo datado não confirma ausência de trabalho. O resumo usa as datas registadas, sem distinguir horas.\n\nObrigada,\nAndreia");
     body.push_str(&closing);
     Ok(Report {
         id: uuid::Uuid::new_v4().to_string(),

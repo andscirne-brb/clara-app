@@ -151,14 +151,22 @@ pub fn draft_save(conn: &Connection, clock: &dyn Clock, p: &Profile) -> Result<(
     Ok(())
 }
 pub fn versions(conn: &Connection, p: &str) -> Result<Vec<Version>> {
+    Ok(versions_for_excel(conn, p)?.into_iter().take(30).collect())
+}
+pub fn versions_for_excel(conn: &Connection, p: &str) -> Result<Vec<Version>> {
     portal(p)?;
-    let mut stmt =
-        conn.prepare("SELECT value FROM app_setting WHERE key LIKE ?1 ORDER BY key DESC LIMIT 30")?;
+    let mut stmt = conn
+        .prepare("SELECT value FROM app_setting WHERE key LIKE ?1 ORDER BY key DESC LIMIT 15001")?;
     let strings = stmt
         .query_map([format!("company_profile_version:{p}:%")], |r| {
             r.get::<_, String>(0)
         })?
         .collect::<std::result::Result<Vec<_>, _>>()?;
+    if strings.len() > 15000 {
+        return Err(ClaraError::Invalid(
+            "O histórico dos perfis excede o limite de exportação.".into(),
+        ));
+    }
     strings
         .into_iter()
         .map(|s| serde_json::from_str(&s).map_err(Into::into))

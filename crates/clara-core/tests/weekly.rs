@@ -175,6 +175,106 @@ fn fixture(path: &std::path::Path) {
     }
     std::fs::write(path, z.finish().unwrap().into_inner()).unwrap();
 }
+
+#[test]
+fn profiles_are_dated_work_with_current_dependencies_and_no_publication_claim() {
+    use std::io::Read;
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("Perfis TESTE.xlsx");
+    fixture(&path);
+    let bytes = std::fs::read(&path).unwrap();
+    let mut old = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
+    let mut parts = std::collections::BTreeMap::new();
+    for i in 0..old.len() {
+        let mut f = old.by_index(i).unwrap();
+        let mut b = Vec::new();
+        f.read_to_end(&mut b).unwrap();
+        parts.insert(f.name().to_string(), b);
+    }
+    for (id, name) in [(4, "Perfis dos portais"), (5, "Histórico dos perfis")] {
+        let p = "xl/workbook.xml";
+        let s = String::from_utf8(parts[p].clone()).unwrap().replace(
+            "</sheets>",
+            &format!(r#"<sheet name="{name}" sheetId="{id}" r:id="rId{id}"/></sheets>"#),
+        );
+        parts.insert(p.into(), s.into_bytes());
+        let p = "xl/_rels/workbook.xml.rels";
+        let s=String::from_utf8(parts[p].clone()).unwrap().replace("</Relationships>",&format!(r#"<Relationship Id="rId{id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet{id}.xml"/></Relationships>"#));
+        parts.insert(p.into(), s.into_bytes());
+        let p = "[Content_Types].xml";
+        let s=String::from_utf8(parts[p].clone()).unwrap().replace("</Types>",&format!(r#"<Override PartName="/xl/worksheets/sheet{id}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>"#));
+        parts.insert(p.into(), s.into_bytes());
+        let rows = if id == 4 {
+            vec![
+                vec![
+                    "Portal",
+                    "Assunto",
+                    "Ação / observação",
+                    "Estado",
+                    "Depende de",
+                    "Data do registo",
+                    "ID da versão",
+                ],
+                vec![
+                    "green-acres",
+                    "Validação",
+                    "Aguardo validação da Idília TESTE",
+                    "Em curso",
+                    "Idília",
+                    "2026-10-10",
+                    "old",
+                ],
+                vec![
+                    "green-acres",
+                    "Texto do perfil",
+                    "NÃO INCLUIR TEXTO LONGO",
+                    "Em curso",
+                    "",
+                    "2026-10-20",
+                    "new",
+                ],
+            ]
+        } else {
+            vec![
+                vec!["Portal", "Data do registo", "ID da versão"],
+                vec!["green-acres", "2026-10-20 19:50:00", "new"],
+                vec!["green-acres", "2026-10-20 19:50:00", "new"],
+                vec!["green-acres", "2026-10-10", "old"],
+            ]
+        };
+        let mut xml = String::from(
+            r#"<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>"#,
+        );
+        for (i, row) in rows.iter().enumerate() {
+            xml.push_str(&format!(r#"<row r="{}">"#, i + 1));
+            for (j, t) in row.iter().enumerate() {
+                xml.push_str(&format!(
+                    r#"<c r="{}{}" t="inlineStr"><is><t>{}</t></is></c>"#,
+                    (b'A' + j as u8) as char,
+                    i + 1,
+                    t
+                ));
+            }
+            xml.push_str("</row>");
+        }
+        xml.push_str("</sheetData></worksheet>");
+        parts.insert(format!("xl/worksheets/sheet{id}.xml"), xml.into_bytes());
+    }
+    let mut z = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    for (n, b) in parts {
+        z.start_file(n, zip::write::SimpleFileOptions::default())
+            .unwrap();
+        z.write_all(&b).unwrap();
+    }
+    std::fs::write(&path, z.finish().unwrap().into_inner()).unwrap();
+    let clock = FixedClock::new("2026-10-23T12:00:00Z".parse().unwrap());
+    let r = weekly::build(&path, "2026-10-17", "2026-10-23", &clock).unwrap();
+    assert_eq!(r.closing.matches("Registei uma versão").count(), 1);
+    assert!(r.closing.contains("Aguardo validação da Idília TESTE"));
+    assert!(r.closing.contains("não confirma publicação"));
+    assert!(!r.closing.contains("NÃO INCLUIR TEXTO LONGO"));
+    assert!(r.closing.contains("Depende de: Idília"));
+}
 #[test]
 fn report_reads_same_workbook_filters_dates_separates_sara_and_preserves_history() {
     let temp = tempfile::tempdir().unwrap();

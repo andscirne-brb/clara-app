@@ -141,6 +141,7 @@ export const api = {
   profileDraftSave:(data:CompanyProfile)=>call<void>('company_profile_draft_save',{data}),
   profileVersions:(portal:string)=>call<CompanyProfileVersion[]>('company_profile_versions',{portal}),
   profileSave:(data:CompanyProfile)=>call<CompanyProfileVersion>('company_profile_save',{data}),
+  profileSync:(portal:string)=>call<{file_name:string;already_written:boolean}>('company_profile_sync',{portal}),
   captureDraft:(reference:string)=>call<CaptureAudit|null>('capture_audit_draft_get',{reference}),
   captureSave:(data:CaptureAudit)=>call<void>('capture_audit_draft_save',{data}),
   captureImage:(name:string,bytes:number[])=>call<{name:string;text:string;description:string|null}>('capture_audit_image',{name,bytes}),
