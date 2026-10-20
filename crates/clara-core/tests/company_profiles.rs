@@ -93,6 +93,7 @@ fn publication_requires_human_evidence_and_valid_scope() {
     p.url = "javascript:alert(1)".into();
     assert!(company_profiles::validate(&p, &clock, true).is_err());
     p.url = "https://user:secret@example.invalid/".into();
+    assert!(company_profiles::validate(&p, &clock, false).is_err());
     assert!(company_profiles::validate(&p, &clock, true).is_err());
     p = data();
     p.texts[4].language = "ES".into();

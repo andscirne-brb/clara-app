@@ -71,18 +71,19 @@ pub fn validate(p: &Profile, clock: &dyn Clock, final_save: bool) -> Result<()> 
             return Err(ClaraError::Invalid("Texto demasiado longo.".into()));
         }
     }
-    if final_save && !p.url.is_empty() {
-        let u = url::Url::parse(&p.url).map_err(|_| {
-            ClaraError::Invalid("Usa uma ligação HTTPS válida para o perfil público.".into())
-        })?;
-        if u.scheme() != "https"
-            || u.host_str().is_none()
-            || !u.username().is_empty()
-            || u.password().is_some()
-        {
-            return Err(ClaraError::Invalid(
-                "Usa uma ligação HTTPS sem credenciais.".into(),
-            ));
+    if !p.url.is_empty() {
+        match url::Url::parse(&p.url) {
+            Ok(u)
+                if u.scheme() == "https"
+                    && u.host_str().is_some()
+                    && u.username().is_empty()
+                    && u.password().is_none() => {}
+            Err(_) if !final_save && !p.url.contains('@') => {}
+            _ => {
+                return Err(ClaraError::Invalid(
+                    "Usa uma ligação HTTPS válida para o perfil público, sem credenciais.".into(),
+                ));
+            }
         }
     }
     let mut langs = std::collections::HashSet::new();
