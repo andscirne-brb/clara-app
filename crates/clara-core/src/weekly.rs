@@ -11,7 +11,7 @@ use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeMap, HashMap, HashSet},
     path::Path,
 };
 pub const PATH_KEY: &str = "weekly_workbook_path";
@@ -25,6 +25,18 @@ pub struct Report {
     pub source_hash: String,
     pub body: String,
     pub warnings: Vec<String>,
+    #[serde(default)]
+    pub properties: Vec<PropertySummary>,
+    #[serde(default)]
+    pub intro: String,
+    #[serde(default)]
+    pub closing: String,
+}
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct PropertySummary {
+    pub reference: String,
+    pub work: Vec<String>,
+    pub pending: Vec<String>,
 }
 type Row = HashMap<String, String>;
 fn invalid(s: &str) -> ClaraError {
@@ -154,20 +166,19 @@ pub fn build(path: &Path, start: &str, end: &str, clock: &dyn Clock) -> Result<R
         })
         .collect();
     let mut warnings = vec![];
-    let mut checked = vec![];
-    let mut done = vec![];
-    let mut sara = vec![];
-    let mut other = vec![];
-    let mut resolved = vec![];
+    let mut grouped: BTreeMap<String, PropertySummary> = BTreeMap::new();
     let mut seen = HashSet::new();
     for r in &main {
         let reference = get(r, "Referência EGO");
         if !reference.is_empty() && in_period(get(r, "Data da verificação"), from, to) {
-            checked.push(format!(
-                "- {} — {}.",
-                line(reference),
-                line(get(r, "Estado da verificação"))
-            ));
+            grouped
+                .entry(reference.into())
+                .or_default()
+                .work
+                .push(format!(
+                    "Verificação registada: {}.",
+                    line(get(r, "Estado da verificação"))
+                ));
         }
     }
     for r in &changes {
@@ -201,29 +212,30 @@ pub fn build(path: &Path, start: &str, end: &str, clock: &dyn Clock) -> Result<R
             ));
             continue;
         }
-        let author = get(r, "Autor");
         let location = get(r, "Onde foi alterado");
         let result = get(r, "Resultado da verificação");
-        done.push(format!(
-            "- {} — {}. Local: {}. Autor: {}. Verificação: {}.",
-            line(reference),
-            line(after),
-            if location.is_empty() {
-                "por indicar".into()
-            } else {
-                line(location)
-            },
-            if author.is_empty() {
-                "por indicar".into()
-            } else {
-                line(author)
-            },
-            if result.is_empty() {
-                "por verificar".into()
-            } else {
-                line(result)
-            }
-        ));
+        let mut entry = line(after);
+        if !location.is_empty() && location != "eGO" {
+            entry.push_str(&format!(" ({}).", line(location)));
+        }
+        // Keep material verification failures visible, without repeating routine metadata.
+        if result.is_empty()
+            || (!result.starts_with("Realizado pela autora") && result != "Confirmado")
+        {
+            entry.push_str(&format!(
+                " Verificação: {}.",
+                if result.is_empty() {
+                    "por verificar".into()
+                } else {
+                    line(result)
+                }
+            ));
+        }
+        grouped
+            .entry(reference.into())
+            .or_default()
+            .work
+            .push(entry);
     }
     for r in &issues {
         let reference = get(r, "Referência EGO");
@@ -247,13 +259,16 @@ pub fn build(path: &Path, start: &str, end: &str, clock: &dyn Clock) -> Result<R
             && get(r, "Verificação final") == "Confirmado";
         if closed {
             if in_period(get(r, "Data de resolução"), from, to) {
-                resolved.push(format!(
-                    "- {} / {} — {}. {}",
-                    line(reference),
-                    line(id),
-                    line(subject),
-                    line(decision)
-                ));
+                grouped
+                    .entry(reference.into())
+                    .or_default()
+                    .work
+                    .push(format!(
+                        "Concluído ({}): {}. {}",
+                        line(id),
+                        line(subject),
+                        line(decision)
+                    ));
             }
             continue;
         }
@@ -268,11 +283,8 @@ pub fn build(path: &Path, start: &str, end: &str, clock: &dyn Clock) -> Result<R
             ));
         }
         let action = get(r, "Ação necessária");
-        let who = "Sara";
-        let owner = get(r, "Responsável");
         let entry = format!(
-            "- {} / {} — {}. {} Estado: {}. Responsável: {}. Aguarda análise de: {}.",
-            line(reference),
+            "{}: {}. {} Estado: {}.",
             line(id),
             line(subject),
             line(action),
@@ -280,70 +292,65 @@ pub fn build(path: &Path, start: &str, end: &str, clock: &dyn Clock) -> Result<R
                 "por definir".into()
             } else {
                 line(state)
-            },
-            if owner.is_empty() {
-                "por atribuir".into()
-            } else {
-                line(owner)
-            },
-            if who.is_empty() {
-                "por definir".into()
-            } else {
-                line(who)
             }
         );
-        sara.push(entry);
+        grouped
+            .entry(reference.into())
+            .or_default()
+            .pending
+            .push(entry);
     }
-    let mut body = format!(
+    let intro = format!(
         "Assunto: Levantamento de imóveis | {} a {}\n\nOlá Sara,\n\nPartilho o resumo do levantamento de imóveis entre {} e {}.\n",
         from.format("%d/%m/%Y"),
         to.format("%d/%m/%Y"),
         from.format("%d/%m/%Y"),
         to.format("%d/%m/%Y")
     );
-    for (title, entries, empty) in [
-        (
-            "Verificações registadas no período",
-            checked,
-            "- Sem verificações datadas neste período.",
-        ),
-        (
-            "Alterações realizadas e registadas",
-            done,
-            "- Sem alterações registadas neste período; isto não confirma ausência de trabalho realizado.",
-        ),
-        (
-            "Pendências concluídas no período",
-            resolved,
-            "- Sem conclusões confirmadas neste período.",
-        ),
-        (
-            "Pontos que aguardam análise da Sara",
-            sara,
-            "- Nenhum assunto identificado neste campo como aguardando análise da Sara.",
-        ),
-        (
-            "Outras pendências e próximos passos",
-            other,
-            "- Sem outras pendências registadas.",
-        ),
-    ] {
+    let properties: Vec<PropertySummary> = grouped
+        .into_iter()
+        .map(|(reference, mut p)| {
+            p.reference = reference;
+            p
+        })
+        .collect();
+    let mut body = intro.clone();
+    if properties.is_empty() {
+        body.push_str("\nSem verificações, alterações ou pendências registadas para apresentar.\n");
+    }
+    for p in &properties {
         body.push_str(&format!(
-            "\n{title}\n{}\n",
-            if entries.is_empty() {
-                empty.into()
+            "\n{}\nTrabalho realizado / verificação:\n{}\nPendentes / análise da Sara:\n{}\n",
+            p.reference,
+            if p.work.is_empty() {
+                "- Sem trabalho datado neste período.".into()
             } else {
-                entries.join("\n")
+                p.work
+                    .iter()
+                    .map(|s| format!("- {s}"))
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            },
+            if p.pending.is_empty() {
+                "- Sem pendências registadas.".into()
+            } else {
+                p.pending
+                    .iter()
+                    .map(|s| format!("- {s}"))
+                    .collect::<Vec<_>>()
+                    .join("\n")
             }
         ));
     }
+    let mut closing = String::new();
     if !warnings.is_empty() {
-        body.push_str("\nRegistos a esclarecer\n");
+        closing.push_str("\nRegistos a esclarecer\n");
         for w in &warnings {
-            body.push_str(&format!("- {w}\n"));
+            closing.push_str(&format!("- {w}\n"));
         }
     }
-    body.push_str("\nAs pendências refletem o estado atual do ficheiro, incluindo assuntos de semanas anteriores. O resumo usa as datas registadas; campos sem hora não permitem distinguir alterações antes ou depois das 20h15.\n\nObrigada,\nAndreia");
+    closing.push_str("\nTrabalhos registados pela autora; detalhes e verificações disponíveis no Excel. As pendências refletem o estado atual do ficheiro, incluindo semanas anteriores. A ausência de registo datado não confirma ausência de trabalho. O resumo usa as datas registadas, sem distinguir horas.\n\nObrigada,\nAndreia");
+    body.push_str(&closing);
     Ok(Report {
         id: uuid::Uuid::new_v4().to_string(),
         generated_at: ts(clock.now()),
@@ -357,6 +364,9 @@ pub fn build(path: &Path, start: &str, end: &str, clock: &dyn Clock) -> Result<R
         source_hash: hex::encode(Sha256::digest(&bytes)),
         body,
         warnings,
+        properties,
+        intro,
+        closing,
     })
 }
 pub fn save(conn: &mut Connection, clock: &dyn Clock, report: &Report) -> Result<()> {

@@ -117,6 +117,15 @@ fn fixture(path: &std::path::Path) {
                 "Planta",
             ],
             vec![
+                "19/10/2026",
+                "TESTE-01",
+                "TESTE",
+                "Certificado TESTE anexado",
+                "eGO",
+                "Confirmado",
+                "Certificado",
+            ],
+            vec![
                 "01/10/2026",
                 "TESTE-01",
                 "TESTE",
@@ -170,16 +179,37 @@ fn report_reads_same_workbook_filters_dates_separates_sara_and_preserves_history
     assert!(report.body.contains("Planta TESTE anexada"));
     assert!(!report.body.contains("FORA DO PERIODO"));
     assert!(report.body.contains("Conclusão por validar"));
-    let sara = report
-        .body
-        .split("Pontos que aguardam análise da Sara")
-        .nth(1)
-        .unwrap()
-        .split("Outras pendências")
-        .next()
-        .unwrap();
-    assert!(sara.contains("Áreas TESTE"));
-    assert!(sara.contains("Documento TESTE"));
+    assert_eq!(report.properties.len(), 1);
+    let property = &report.properties[0];
+    assert_eq!(property.reference, "TESTE-01");
+    assert!(
+        property
+            .work
+            .iter()
+            .any(|s| s.contains("Planta TESTE anexada"))
+    );
+    assert!(
+        property
+            .work
+            .iter()
+            .any(|s| s.contains("Certificado TESTE anexado"))
+    );
+    assert!(property.pending.iter().any(|s| s.contains("Áreas TESTE")));
+    assert!(
+        property
+            .pending
+            .iter()
+            .any(|s| s.contains("Documento TESTE"))
+    );
+    assert!(!report.body.contains("Autor:"));
+    // Reports saved before the table feature still deserialize without being rewritten.
+    let mut legacy = serde_json::to_value(&report).unwrap();
+    for key in ["properties", "intro", "closing"] {
+        legacy.as_object_mut().unwrap().remove(key);
+    }
+    let old: weekly::Report = serde_json::from_value(legacy).unwrap();
+    assert!(old.properties.is_empty());
+    assert_eq!(old.body, report.body);
     assert!(!report.warnings.is_empty());
     let mut c = rusqlite::Connection::open_in_memory().unwrap();
     migrations::migrate(&mut c, &clock).unwrap();

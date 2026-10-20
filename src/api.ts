@@ -184,5 +184,6 @@ export interface CollectionData {
 }
 export interface CollectionSnapshot { id: string; collected_at: string; data: CollectionData }
 export interface CollectionSuggestion { field: string; evidence: string; state: string }
-export interface WeeklyReport { id: string; generated_at: string; start: string; end: string; file_name: string; source_hash: string; body: string; warnings: string[] }
+export interface WeeklyProperty { reference: string; work: string[]; pending: string[] }
+export interface WeeklyReport { id: string; generated_at: string; start: string; end: string; file_name: string; source_hash: string; body: string; warnings: string[]; properties?: WeeklyProperty[]; intro?: string; closing?: string }
 export interface WeeklyOverview { file_name: string | null; start: string; end: string; reports: WeeklyReport[]; reminder: TaskStatus }

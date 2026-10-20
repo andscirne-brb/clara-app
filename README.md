@@ -1,5 +1,9 @@
 # Clara
 
+## Resumo por imóvel (0.3.2)
+
+Os novos resumos apresentam uma tabela com uma linha por imóvel: trabalho realizado/verificação e pendentes para análise da Sara. O Excel mantém uma linha por alteração, sem reorganização nem perda do histórico. **Copiar email** inclui a tabela formatada e uma alternativa em texto simples; se a cópia formatada não estiver disponível, a Clara avisa. Resumos antigos permanecem no seu formato original. Autoria, local e verificação detalhados continuam no Excel; falhas ou verificações pendentes permanecem visíveis no resumo. Júlia continua apenas em CC. Nenhum envio automático.
+
 ## Resumo semanal (0.3.1)
 
 Em **Resumo semanal**, escolhe uma vez o mesmo levantamento principal XLSM na pasta sincronizada do Drive. Guarda e sincroniza o ficheiro antes de gerar. A Clara lê as folhas Levantamento, Pendências da equipa e Registo de alterações, sem executar macros nem alterar o ficheiro. Seleciona o período, gera e usa **Copiar email**. Os resumos gerados são preservados no cofre cifrado, com período, data, nome e hash do ficheiro consultado. Gerar de novo preserva o resumo anterior. O registo de alterações no XLSM continua a ser o histórico colaborativo detalhado; a Clara guarda a fotografia semanal desse registo e das pendências.
