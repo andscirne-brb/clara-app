@@ -263,12 +263,7 @@ pub fn build(path: &Path, start: &str, end: &str, clock: &dyn Clock) -> Result<R
                     .entry(reference.into())
                     .or_default()
                     .work
-                    .push(format!(
-                        "Concluído ({}): {}. {}",
-                        line(id),
-                        line(subject),
-                        line(decision)
-                    ));
+                    .push(format!("Concluído: {}. {}", line(subject), line(decision)));
             }
             continue;
         }
@@ -284,8 +279,7 @@ pub fn build(path: &Path, start: &str, end: &str, clock: &dyn Clock) -> Result<R
         }
         let action = get(r, "Ação necessária");
         let entry = format!(
-            "{}: {}. {} Estado: {}.",
-            line(id),
+            "{}. {} Estado: {}.",
             line(subject),
             line(action),
             if state.is_empty() {

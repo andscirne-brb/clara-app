@@ -202,6 +202,8 @@ fn report_reads_same_workbook_filters_dates_separates_sara_and_preserves_history
             .any(|s| s.contains("Documento TESTE"))
     );
     assert!(!report.body.contains("Autor:"));
+    assert!(!report.body.contains("P1:"));
+    assert!(!report.body.contains("P2:"));
     // Reports saved before the table feature still deserialize without being rewritten.
     let mut legacy = serde_json::to_value(&report).unwrap();
     for key in ["properties", "intro", "closing"] {
