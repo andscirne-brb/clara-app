@@ -25,6 +25,7 @@ pub struct TrackerProperty {
     pub municipality: String,
     pub state: String,
     pub pending: Vec<String>,
+    pub priority: String,
 }
 pub fn tracker(path: &Path, clock: &dyn Clock) -> Result<Vec<TrackerProperty>> {
     let today = clock.now().with_timezone(&crate::TZ).date_naive();
@@ -57,11 +58,13 @@ pub fn tracker(path: &Path, clock: &dyn Clock) -> Result<Vec<TrackerProperty>> {
                 nature: get(&r, "Natureza").into(),
                 municipality: get(&r, "Concelho").into(),
                 state: get(&r, "Estado da verificação").into(),
+                priority: get(&r, "Prioridade").into(),
             }
         })
         .collect();
     result.sort_by_key(|r| {
         (
+            r.priority.to_lowercase() != "prioritária",
             !r.nature.to_lowercase().contains("moradia")
                 && !r.nature.to_lowercase().contains("apartamento"),
             r.reference.clone(),
@@ -460,4 +463,16 @@ mod tests {
         assert_eq!(s.to_string(), "2026-10-17");
         assert_eq!(e.to_string(), "2026-10-23");
     }
+}
+
+#[cfg(test)]
+#[test]
+#[ignore = "Local-only workbook fixture; no workbook is sent to CI"]
+fn tracker_local_fixture() {
+    let path = std::env::var_os("CLARA_QA_WORKBOOK").expect("local workbook path");
+    let output = std::env::var_os("CLARA_QA_TRACKER_OUTPUT").expect("local output path");
+    let clock = crate::clock::FixedClock::new("2026-10-20T12:00:00Z".parse().unwrap());
+    let data = tracker(std::path::Path::new(&path), &clock).unwrap();
+    assert!(data.iter().any(|p| p.priority == "Prioritária"));
+    std::fs::write(output, serde_json::to_vec(&data).unwrap()).unwrap();
 }

@@ -140,3 +140,15 @@ fn prepare_requires_review_preserves_unknowns_and_never_writes_workbook() {
     );
     assert!(capture_audit::extract("Sem secção identificada").is_none());
 }
+
+#[test]
+fn obsolete_virtual_tour_boilerplate_is_removed_without_erasing_other_notes() {
+    let note = "Observação TESTE\nVisita virtual: não aplicável em todos os imóveis, por decisão da responsável pelo levantamento.\nOutra observação TESTE";
+    assert_eq!(
+        capture_audit::clean_notes(note),
+        "Observação TESTE\nOutra observação TESTE"
+    );
+    assert!(
+        capture_audit::clean_notes("Visita virtual: não aplicável ao levantamento.").is_empty()
+    );
+}

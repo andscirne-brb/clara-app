@@ -3,6 +3,7 @@
 
 mod collection_commands;
 mod audit_commands;
+mod profile_commands;
 mod commands;
 mod cycle_commands;
 mod task;
@@ -146,6 +147,10 @@ pub fn run() {
             audit_commands::capture_audit_draft_save,
             audit_commands::capture_audit_image,
             audit_commands::capture_audit_analyse,
+            profile_commands::company_profile_draft,
+            profile_commands::company_profile_draft_save,
+            profile_commands::company_profile_versions,
+            profile_commands::company_profile_save,
             audit_commands::capture_audit_prepare,
             audit_commands::capture_audit_write,
             work_commands::work_overview,

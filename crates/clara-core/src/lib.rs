@@ -7,6 +7,7 @@ pub mod cycle;
 pub mod collection;
 pub mod capture_audit;
 pub mod capture_analysis;
+pub mod company_profiles;
 pub mod weekly;
 pub mod worklog;
 pub mod workbook_changes;

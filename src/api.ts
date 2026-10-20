@@ -12,7 +12,9 @@ export interface Issue { id: string; listing_id: string; field: string; title: s
 export interface Inventory { properties: Property[]; listings: Listing[]; issues: Issue[] }
 export interface Work {id:string;date:string;reference:string;author:string;location:string;field:string;before:string;after:string;reason:string;verification:string}
 export interface WorkEntry {data:Work;created_at:string;written_at:string|null;cancelled_at?:string|null}
-export interface TrackerProperty {reference:string;nature:string;municipality:string;state:string;pending:string[]}
+export interface CompanyProfile{portal:string;url:string;stage:string;source:string;next_action:string;sara:string;applied_date:string;applied_confirmed:boolean;texts:{language:string;original:string;proposed:string}[];items:{field:string;state:string;note:string}[]}
+export interface CompanyProfileVersion{id:string;saved_at:string;data:CompanyProfile}
+export interface TrackerProperty {reference:string;nature:string;municipality:string;state:string;pending:string[];priority?:string}
 export interface WorkOverview {file_name:string|null;file_error:string|null;properties:TrackerProperty[];entries:WorkEntry[];form?:Work|null;last_property_ref?:string|null;today:string}
 export interface CaptureAudit {reference:string;captures:{name:string;text:string}[];contents:{language:string;title:string;description:string;reviewed:boolean}[];states:Record<string,string>;notes:string;missing_features:string;reference_confirmed:boolean;selected_features:string[];feature_list_reviewed:boolean}
 export interface AuditPrepared {id:string;hash:string;reference:string;date:string;cells:{sheet:string;column:string;row:number;header:string;before:string;after:string}[];source:string;written:boolean}
@@ -135,6 +137,10 @@ function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
 }
 
 export const api = {
+  profileDraft:(portal:string)=>call<CompanyProfile|null>('company_profile_draft',{portal}),
+  profileDraftSave:(data:CompanyProfile)=>call<void>('company_profile_draft_save',{data}),
+  profileVersions:(portal:string)=>call<CompanyProfileVersion[]>('company_profile_versions',{portal}),
+  profileSave:(data:CompanyProfile)=>call<CompanyProfileVersion>('company_profile_save',{data}),
   captureDraft:(reference:string)=>call<CaptureAudit|null>('capture_audit_draft_get',{reference}),
   captureSave:(data:CaptureAudit)=>call<void>('capture_audit_draft_save',{data}),
   captureImage:(name:string,bytes:number[])=>call<{name:string;text:string;description:string|null}>('capture_audit_image',{name,bytes}),

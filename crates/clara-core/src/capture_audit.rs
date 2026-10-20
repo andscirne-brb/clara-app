@@ -47,6 +47,9 @@ pub struct Prepared {
 fn invalid(s: &str) -> ClaraError {
     ClaraError::Invalid(s.into())
 }
+pub fn clean_notes(notes: &str) -> String {
+    notes.lines().filter(|line| !["Visita virtual: não aplicável em todos os imóveis, por decisão da responsável pelo levantamento.","Visita virtual: não aplicável ao levantamento."].contains(&line.trim())).collect::<Vec<_>>().join("\n").trim().to_string()
+}
 pub fn validate(a: &Audit) -> Result<()> {
     if a.reference.trim().is_empty()
         || a.reference.len() > 100
@@ -84,7 +87,7 @@ pub fn validate(a: &Audit) -> Result<()> {
         {
             return Err(invalid("Estado do levantamento inválido."));
         }
-        if v == "Não aplicável" && a.notes.trim().is_empty() {
+        if v == "Não aplicável" && clean_notes(&a.notes).is_empty() {
             return Err(invalid(
                 "Justifica os campos não aplicáveis nas observações.",
             ));
@@ -222,9 +225,10 @@ pub fn prepare(c: &Connection, clock: &dyn Clock, path: &Path, a: &Audit) -> Res
         .with_timezone(&crate::TZ)
         .date_naive()
         .to_string();
-    if !a.notes.trim().is_empty() {
+    let notes = clean_notes(&a.notes);
+    if !notes.trim().is_empty() {
         let old = row.get(21).map(|v| v.to_string()).unwrap_or_default();
-        let note = format!("Capturas revistas em {date}: {}", a.notes.trim());
+        let note = format!("Capturas revistas em {date}: {}", notes.trim());
         if !old.contains(&note) {
             push(21, format!("{}\n{}", old, note).trim().into());
         }
