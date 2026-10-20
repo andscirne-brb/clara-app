@@ -245,9 +245,9 @@ pub fn build(path: &Path, start: &str, end: &str, clock: &dyn Clock) -> Result<R
         let id = get(r, "ID");
         if id.is_empty() || !seen.insert(id.to_string()) {
             warnings.push(format!(
-                "Pendência sem ID ou com ID repetido: {} / {}.",
+                "Pendência com identificação em falta ou repetida: {} — {}.",
                 line(reference),
-                line(id)
+                line(get(r, "Assunto"))
             ));
         }
         let state = get(r, "Estado");
@@ -274,7 +274,7 @@ pub fn build(path: &Path, start: &str, end: &str, clock: &dyn Clock) -> Result<R
             warnings.push(format!(
                 "Conclusão por validar: {} / {}.",
                 line(reference),
-                line(id)
+                line(subject)
             ));
         }
         let action = get(r, "Ação necessária");
