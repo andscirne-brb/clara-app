@@ -120,8 +120,11 @@ pub async fn collection_capture(
 }
 #[cfg(windows)]
 pub(crate) fn read_ocr(path: &std::path::Path) -> Res<String> {
+    parse_ocr_output(&run_ocr_program(path, include_str!("ocr.ps1"))?)
+}
+#[cfg(windows)]
+fn run_ocr_program(path: &std::path::Path, program: &str) -> Res<Vec<u8>> {
     use std::{
-        io::Write,
         os::windows::process::CommandExt,
         process::{Command, Stdio},
     };
@@ -129,31 +132,37 @@ pub(crate) fn read_ocr(path: &std::path::Path) -> Res<String> {
         std::env::var_os("SystemRoot").unwrap_or_else(|| "C:\\Windows".into()),
     )
     .join("System32/WindowsPowerShell/v1.0/powershell.exe");
-    let mut child = Command::new(shell)
-        .args(["-NoProfile", "-NonInteractive", "-Command", "-"])
+    // Run the complete fixed program. Streaming compound statements with -Command -
+    // can exit successfully before the final block executes, producing no JSON.
+    // Only trusted program text is encoded; the image path remains an environment value.
+    let bytes: Vec<u8> = program.encode_utf16().flat_map(u16::to_le_bytes).collect();
+    let encoded = crate::work_commands::encode_base64(&bytes);
+    let output = Command::new(shell)
+        .args(["-NoProfile", "-NonInteractive", "-EncodedCommand", &encoded])
         .env("CLARA_OCR_PATH", path)
         .creation_flags(0x08000000)
-        .stdin(Stdio::piped())
+        .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .spawn()
+        .output()
         .map_err(|_| "Não foi possível iniciar a leitura local.")?;
-    child
-        .stdin
-        .take()
-        .ok_or("Leitura indisponível.")?
-        .write_all(include_bytes!("ocr.ps1"))
-        .map_err(|_| "Leitura interrompida.")?;
-    let output = child
-        .wait_with_output()
-        .map_err(|_| "Leitura interrompida.")?;
     if !output.status.success() {
         return Err("Não foi possível ler esta imagem. Confirma os idiomas OCR instalados no Windows; podes sempre colar o texto manualmente.".into());
     }
-    let raw = String::from_utf8_lossy(&output.stdout);
-    let json: serde_json::Value = serde_json::from_str(raw.trim().trim_start_matches('\u{feff}'))
-        .map_err(|_| "A leitura não devolveu texto válido.")?;
-    let text = json["text"].as_str().ok_or("Não foi encontrado texto.")?;
+    Ok(output.stdout)
+}
+fn parse_ocr_output(bytes: &[u8]) -> Res<String> {
+    let raw = std::str::from_utf8(bytes)
+        .map_err(|_| "A leitura devolveu uma resposta com codificação inválida.")?;
+    let raw = raw.trim().trim_start_matches('\u{feff}').trim();
+    if raw.is_empty() {
+        return Err("O leitor não devolveu uma resposta. A imagem não foi acrescentada; volta a tentar a leitura.".into());
+    }
+    let json: serde_json::Value =
+        serde_json::from_str(raw).map_err(|_| "A leitura não devolveu texto válido.")?;
+    let text = json["text"]
+        .as_str()
+        .ok_or("O leitor não devolveu o campo de texto esperado.")?;
     if text.len() > 150000 {
         return Err("Texto demasiado extenso; divide a captura.".into());
     }
@@ -162,4 +171,52 @@ pub(crate) fn read_ocr(path: &std::path::Path) -> Res<String> {
 #[cfg(not(windows))]
 pub(crate) fn read_ocr(_: &std::path::Path) -> Res<String> {
     Err("Leitura de imagens disponível no Windows. Cola o texto para continuar.".into())
+}
+
+#[cfg(test)]
+mod ocr_tests {
+    #[test]
+    fn response_parser_rejects_missing_truncated_and_invalid_output() {
+        for bytes in [
+            b"".as_slice(),
+            b"   ",
+            b"not json",
+            b"{",
+            b"{}",
+            b"{\"text\":7}",
+            b"\xff",
+        ] {
+            assert!(super::parse_ocr_output(bytes).is_err());
+        }
+        assert_eq!(
+            super::parse_ocr_output("\u{feff} {\"text\":\"Descrição de teste\"} ".as_bytes())
+                .unwrap(),
+            "Descrição de teste"
+        );
+        assert!(
+            super::parse_ocr_output(
+                serde_json::json!({"text":"x".repeat(150001)})
+                    .to_string()
+                    .as_bytes()
+            )
+            .is_err()
+        );
+    }
+    #[cfg(windows)]
+    #[test]
+    fn complete_ocr_program_runs_final_block_without_streaming_stdin() {
+        let path = std::path::Path::new("C:\\Capturas TESTE\\imagem com espaço ' e $dados.png");
+        let program = r#"[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false)
+$prefix='TESTE'
+try {
+ @{text=($prefix+' '+$env:CLARA_OCR_PATH)} | ConvertTo-Json -Compress
+} finally {
+}
+"#;
+        let bytes = super::run_ocr_program(path, program).unwrap();
+        assert_eq!(
+            super::parse_ocr_output(&bytes).unwrap(),
+            format!("TESTE {}", path.display())
+        );
+    }
 }

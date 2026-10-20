@@ -198,7 +198,7 @@ pub fn write_request(request: serde_json::Value) -> Res<Written> {
     }
 }
 #[cfg(windows)]
-fn encode_base64(bytes: &[u8]) -> String {
+pub(crate) fn encode_base64(bytes: &[u8]) -> String {
     const TABLE: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let mut s = String::new();
     for c in bytes.chunks(3) {
