@@ -92,7 +92,7 @@ pub struct PropertySummary {
     pub work: Vec<String>,
     pub pending: Vec<String>,
 }
-type Row = HashMap<String, String>;
+pub(crate) type Row = HashMap<String, String>;
 fn invalid(s: &str) -> ClaraError {
     ClaraError::Invalid(s.into())
 }
@@ -106,7 +106,7 @@ fn text(d: &Data) -> String {
         _ => d.to_string(),
     }
 }
-fn rows(range: calamine::Range<Data>, required: &[&str]) -> Result<Vec<Row>> {
+pub(crate) fn rows(range: calamine::Range<Data>, required: &[&str]) -> Result<Vec<Row>> {
     let mut all = range.rows();
     let header=all.find(|r|required.iter().all(|h|r.iter().any(|c|text(c)==*h))).ok_or_else(||invalid("O ficheiro não tem os cabeçalhos esperados. Usa o levantamento principal atualizado."))?;
     let headers: Vec<String> = header.iter().map(text).collect();

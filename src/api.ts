@@ -14,6 +14,8 @@ export interface WorkEntry {data:Work;created_at:string;written_at:string|null;c
 export interface TrackerProperty {reference:string;nature:string;municipality:string;state:string;pending:string[]}
 export interface WorkOverview {file_name:string|null;file_error:string|null;properties:TrackerProperty[];entries:WorkEntry[];form?:Work|null;last_property_ref?:string|null;today:string}
 export interface WorkPreview {id:string;hash:string;file_name:string}
+export interface WorkbookChange {reference:string;field:string;before:string;after:string}
+export interface WorkbookReview {token:string;first_read:boolean;baseline_at:string|null;captured_at:string;changes:WorkbookChange[];added:string[];removed:string[];file_name:string}
 export interface AuditItem { field: string; state: string; note: string }
 export interface Audit { id: string; listing_id: string; listing_revision: number; checklist_version: string; rules_status: string; items: AuditItem[]; created_at: string }
 export interface ImportRow { row: number; input: PropertyInput; status: string; error: string | null; changes: string[] }
@@ -132,6 +134,8 @@ function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
 export const api = {
   weeklyOverview: () => call<WeeklyOverview>("weekly_overview"),
   workOverview:()=>call<WorkOverview>('work_overview'),
+  workbookChangesPreview:()=>call<WorkbookReview>('workbook_changes_preview'),
+  workbookChangesAccept:(token:string)=>call<void>('workbook_changes_accept',{token}),
   workSave:(data:Work)=>call<WorkEntry>('work_save',{data}),
   workDraftSave:(data:Work)=>call<void>('work_draft_save',{data}),
   workCancel:(id:string)=>call<void>('work_cancel',{id}),

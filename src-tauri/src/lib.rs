@@ -142,6 +142,8 @@ pub fn run() {
             weekly_commands::weekly_generate,
             weekly_commands::weekly_reminder,
             work_commands::work_overview,
+            work_commands::workbook_changes_preview,
+            work_commands::workbook_changes_accept,
             work_commands::work_save,
             work_commands::work_draft_save,
             work_commands::work_cancel,

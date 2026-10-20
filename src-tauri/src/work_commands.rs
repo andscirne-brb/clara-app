@@ -5,6 +5,31 @@ use clara_core::{
 };
 use tauri::State;
 type Res<T> = Result<T, String>;
+#[tauri::command]
+pub async fn workbook_changes_preview(
+    state: State<'_, AppState>,
+) -> Res<clara_core::workbook_changes::Review> {
+    state.touch();
+    let v = state.vault.lock().unwrap();
+    let c = v.conn().map_err(|e| e.to_string())?;
+    let p = settings::get(c, weekly::PATH_KEY)
+        .map_err(|e| e.to_string())?
+        .ok_or("Escolhe o levantamento principal em Resumo semanal.")?;
+    clara_core::workbook_changes::preview(c, v.clock(), std::path::Path::new(&p))
+        .map_err(|e| e.to_string())
+}
+#[tauri::command]
+pub async fn workbook_changes_accept(state: State<'_, AppState>, token: String) -> Res<()> {
+    state.touch();
+    let mut v = state.vault.lock().unwrap();
+    let clock = v.clock_arc();
+    let c = v.conn_mut().map_err(|e| e.to_string())?;
+    let p = settings::get(c, weekly::PATH_KEY)
+        .map_err(|e| e.to_string())?
+        .ok_or("Escolhe o levantamento principal em Resumo semanal.")?;
+    clara_core::workbook_changes::accept(c, clock.as_ref(), std::path::Path::new(&p), &token)
+        .map_err(|e| e.to_string())
+}
 #[derive(serde::Serialize)]
 pub struct Overview {
     file_name: Option<String>,
