@@ -2,6 +2,7 @@
 //! backup das 22h com a app aberta. Toda a lógica vive em `clara-core`.
 
 mod collection_commands;
+mod audit_commands;
 mod commands;
 mod cycle_commands;
 mod task;
@@ -141,6 +142,11 @@ pub fn run() {
             weekly_commands::weekly_pick,
             weekly_commands::weekly_generate,
             weekly_commands::weekly_reminder,
+            audit_commands::capture_audit_draft_get,
+            audit_commands::capture_audit_draft_save,
+            audit_commands::capture_audit_image,
+            audit_commands::capture_audit_prepare,
+            audit_commands::capture_audit_write,
             work_commands::work_overview,
             work_commands::workbook_changes_preview,
             work_commands::workbook_changes_accept,

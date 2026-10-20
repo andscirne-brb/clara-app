@@ -13,6 +13,8 @@ export interface Work {id:string;date:string;reference:string;author:string;loca
 export interface WorkEntry {data:Work;created_at:string;written_at:string|null;cancelled_at?:string|null}
 export interface TrackerProperty {reference:string;nature:string;municipality:string;state:string;pending:string[]}
 export interface WorkOverview {file_name:string|null;file_error:string|null;properties:TrackerProperty[];entries:WorkEntry[];form?:Work|null;last_property_ref?:string|null;today:string}
+export interface CaptureAudit {reference:string;captures:{name:string;text:string}[];contents:{language:string;title:string;description:string;reviewed:boolean}[];states:Record<string,string>;notes:string;missing_features:string;reference_confirmed:boolean;selected_features:string[];feature_list_reviewed:boolean}
+export interface AuditPrepared {id:string;hash:string;reference:string;date:string;cells:{sheet:string;column:string;row:number;header:string;before:string;after:string}[];source:string;written:boolean}
 export interface WorkPreview {id:string;hash:string;file_name:string}
 export interface WorkbookChange {reference:string;field:string;before:string;after:string}
 export interface WorkbookReview {token:string;first_read:boolean;baseline_at:string|null;captured_at:string;changes:WorkbookChange[];added:string[];removed:string[];file_name:string}
@@ -132,6 +134,11 @@ function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
 }
 
 export const api = {
+  captureDraft:(reference:string)=>call<CaptureAudit|null>('capture_audit_draft_get',{reference}),
+  captureSave:(data:CaptureAudit)=>call<void>('capture_audit_draft_save',{data}),
+  captureImage:(name:string,bytes:number[])=>call<{name:string;text:string;description:string|null}>('capture_audit_image',{name,bytes}),
+  capturePrepare:(data:CaptureAudit)=>call<AuditPrepared>('capture_audit_prepare',{data}),
+  captureWrite:(id:string)=>call<{already_written:boolean;file_name:string}>('capture_audit_write',{id}),
   weeklyOverview: () => call<WeeklyOverview>("weekly_overview"),
   workOverview:()=>call<WorkOverview>('work_overview'),
   workbookChangesPreview:()=>call<WorkbookReview>('workbook_changes_preview'),

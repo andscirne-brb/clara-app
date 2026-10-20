@@ -119,7 +119,7 @@ pub async fn collection_capture(
     Ok(Some(OcrCapture { name, text }))
 }
 #[cfg(windows)]
-fn read_ocr(path: &std::path::Path) -> Res<String> {
+pub(crate) fn read_ocr(path: &std::path::Path) -> Res<String> {
     use std::{
         io::Write,
         os::windows::process::CommandExt,
@@ -160,6 +160,6 @@ fn read_ocr(path: &std::path::Path) -> Res<String> {
     Ok(text.into())
 }
 #[cfg(not(windows))]
-fn read_ocr(_: &std::path::Path) -> Res<String> {
+pub(crate) fn read_ocr(_: &std::path::Path) -> Res<String> {
     Err("Leitura de imagens disponível no Windows. Cola o texto para continuar.".into())
 }

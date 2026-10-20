@@ -12,11 +12,12 @@ import { Properties } from "./screens/Properties";
 import { Weekly } from "./screens/Weekly";
 import {flushDrafts}from "./drafts";
 import{WorkLog}from './screens/WorkLog';
+import{CaptureAuditScreen}from './screens/CaptureAudit';
 
-export type Page = "hoje" | "imoveis" | "trabalho" | "resumo" | "destinos" | "backups" | "seguranca" | "historico";
+export type Page = "hoje" | "capturas" | "imoveis" | "trabalho" | "resumo" | "destinos" | "backups" | "seguranca" | "historico";
 
 const NAV: { group: string; items: { id: Page; label: string }[] }[] = [
-  { group: "", items: [{ id: "hoje", label: "Hoje" }, { id: "imoveis", label: "Imóveis" }, {id:'trabalho',label:'Registar trabalho'}, { id: "resumo", label: "Resumo semanal" }] },
+  { group: "", items: [{ id: "hoje", label: "Hoje" }, { id: "imoveis", label: "Imóveis" }, {id:"capturas",label:"Levantamento por capturas"}, {id:'trabalho',label:'Registar trabalho'}, { id: "resumo", label: "Resumo semanal" }] },
   {
     group: "Configuração",
     items: [
@@ -181,6 +182,7 @@ export default function App() {
         {navigationError&&<Notice tone="error">{navigationError}</Notice>}
         {page === "hoje" && <Home go={navigate} openProperty={openReference} refreshKey={refreshKey} />}
         <div hidden={page !== "imoveis"}><Properties requested={requestedProperty}/></div>
+        {page === "capturas" && <CaptureAuditScreen/>}
         {page === "trabalho" && <WorkLog/>}
         {page === "resumo" && <Weekly />}
         {page === "destinos" && <Portals />}

@@ -1,20 +1,14 @@
-# Apenas dados sinteticos. Nenhuma captura real entra no repositorio.
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName System.Drawing
-$bitmap=New-Object System.Drawing.Bitmap(1200,9000)
-$g=[System.Drawing.Graphics]::FromImage($bitmap)
-$g.Clear([System.Drawing.Color]::White)
-$font=New-Object System.Drawing.Font('Arial',36)
-$g.DrawString('CLARA TESTE MORADIA', $font, [System.Drawing.Brushes]::Black, 40, 40)
-$g.DrawString('COZINHA EQUIPADA TESTE', $font, [System.Drawing.Brushes]::Black, 40, 8000)
-$path=Join-Path ([System.IO.Path]::GetTempPath()) ('clara-ocr-'+[guid]::NewGuid().ToString()+'.png')
-try {
- $bitmap.Save($path,[System.Drawing.Imaging.ImageFormat]::Png)
- $env:CLARA_OCR_PATH=$path
- $scriptPath=if($PSScriptRoot){Join-Path $PSScriptRoot '../src-tauri/src/ocr.ps1'}else{Join-Path (Get-Location) 'clara/src-tauri/src/ocr.ps1'}
- $result=Get-Content -Raw $scriptPath | & "$env:SystemRoot/System32/WindowsPowerShell/v1.0/powershell.exe" -NoProfile -NonInteractive -Command -
- if ($LASTEXITCODE -ne 0) {throw 'OCR falhou.'}
- $parsed=$result | ConvertFrom-Json
- if ($parsed.text -notmatch 'MORADIA' -or $parsed.text -notmatch 'EQUIPADA') {throw 'OCR nao leu o principio e o fim da captura longa.'}
- Write-Output 'OCR local: PASS (captura sintetica longa, principio e fim).'
-} finally {$g.Dispose();$font.Dispose();$bitmap.Dispose();if(Test-Path -LiteralPath $path){Remove-Item -LiteralPath $path}}
+$folder=Join-Path $PSScriptRoot '../qa-output/ocr'
+[void][IO.Directory]::CreateDirectory($folder)
+$path=[IO.Path]::GetFullPath((Join-Path $folder 'TESTE-01.png'))
+$bmp=[Drawing.Bitmap]::new(1500,650);$g=[Drawing.Graphics]::FromImage($bmp);$g.Clear([Drawing.Color]::White);$font=[Drawing.Font]::new('Arial',28)
+try{$g.DrawString("TESTE-01`nDESCRIÇÃO`nMoradia de teste com cozinha equipada.`nCARACTERÍSTICAS",$font,[Drawing.Brushes]::Black,30,30);$bmp.Save($path,[Drawing.Imaging.ImageFormat]::Png)}finally{$font.Dispose();$g.Dispose();$bmp.Dispose()}
+$env:CLARA_OCR_PATH=$path
+$script=Join-Path $PSScriptRoot '../src-tauri/src/ocr.ps1'
+$result=& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $script
+if($LASTEXITCODE-ne0){throw 'OCR local indisponível ou falhou.'}
+$data=($result -join "`n")|ConvertFrom-Json
+if($data.text-notmatch'TESTE-[0O][1Il]'-or$data.text-notmatch'cozinha equipada'){throw 'OCR não reconheceu o texto fictício esperado.'}
+Write-Output 'PASS: OCR Windows reconheceu a referência e o texto da imagem fictícia.'

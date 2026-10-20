@@ -5,6 +5,7 @@ pub mod backup;
 pub mod catalog;
 pub mod cycle;
 pub mod collection;
+pub mod capture_audit;
 pub mod weekly;
 pub mod worklog;
 pub mod workbook_changes;

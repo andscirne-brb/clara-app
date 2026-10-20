@@ -65,7 +65,26 @@ try{
   if(!$occupied){$row=$candidate;break}
  }
  if(!$row){throw 'A tabela de alterações está cheia. O trabalho continua guardado na Clara; amplia a tabela no Excel antes de repetir.'}
- $date=[datetime]::ParseExact($w.date,'yyyy-MM-dd',[Globalization.CultureInfo]::InvariantCulture)
+ if($request.audit){
+ function Save-Part($partDoc,[string]$partPath){$e=$archive.GetEntry($partPath);$e.Delete();$e=$archive.CreateEntry($partPath);$st=$e.Open();$opt=[Xml.XmlWriterSettings]::new();$opt.Encoding=[Text.UTF8Encoding]::new($false);$wr=[Xml.XmlWriter]::Create($st,$opt);try{$partDoc.Save($wr)}finally{$wr.Dispose();$st.Dispose()}}
+ $docs=@{'Levantamento'=$mainDoc};$paths=@{'Levantamento'=(Sheet-Path $main)}
+ foreach($change in $request.audit.cells){
+  $name=[string]$change.sheet;if($name-notin@('Levantamento','Textos por idioma')){throw 'Destino de levantamento inválido.'}
+  if(!$docs.ContainsKey($name)){$node=$book.SelectSingleNode("//m:sheet[@name='$name']",$bn);if(!$node){throw 'Folha de textos em falta.'};$paths[$name]=Sheet-Path $node;$docs[$name]=Xml-Read (Entry-Text $archive $paths[$name])}
+  $dd=$docs[$name];$nn=Namespace $dd;$rn=[int]$change.row;$rr=$dd.SelectSingleNode("//m:row[@r='$rn']",$nn);if(!$rr){throw 'Linha do levantamento em falta.'}
+  if((Cell-Text ($rr.SelectSingleNode("m:c[@r='A$rn']",$nn)) $nn $shared)-ne$w.reference){throw 'A linha já não pertence ao imóvel.'}
+  $column=[string]$change.column;if($column-notmatch'^[A-W]$'){throw 'Coluna inválida.'}
+  $addr=$column+$rn;$cc=$rr.SelectSingleNode("m:c[@r='$addr']",$nn);if($cc-and$cc.SelectSingleNode('m:f',$nn)){throw 'Não é permitido substituir uma fórmula.'}
+  if((Cell-Text $cc $nn $shared)-cne[string]$change.before){throw 'Um valor mudou desde a revisão.'}
+  if($name-eq'Textos por idioma'-and$column-eq'F'){$dt=[datetime]::ParseExact([string]$change.after,'yyyy-MM-dd',[Globalization.CultureInfo]::InvariantCulture);Put-Cell $dd $rr $nn $column ([string][int](($dt-([datetime]'1899-12-30')).TotalDays)) $true}else{Put-Cell $dd $rr $nn $column ([string]$change.after)}
+ }
+ # Invalidate only computed caches of the edited property. Excel recalculates on opening.
+ $rr=$mainDoc.SelectSingleNode("//m:row[@r='$($matching[0].ParentNode.GetAttribute('r'))']",$mn)
+ foreach($cc in $rr.SelectNodes('m:c[m:f]',$mn)){$vv=$cc.SelectSingleNode('m:v',$mn);if($vv){[void]$cc.RemoveChild($vv)}}
+ foreach($name in $docs.Keys){Save-Part $docs[$name] $paths[$name]}
+ $calc=$book.SelectSingleNode('//m:calcPr',$bn);if(!$calc){$calc=$book.CreateElement('calcPr',$bn.LookupNamespace('m'));[void]$book.DocumentElement.AppendChild($calc)};$calc.SetAttribute('fullCalcOnLoad','1');$calc.SetAttribute('forceFullCalc','1');Save-Part $book 'xl/workbook.xml'
+}
+$date=[datetime]::ParseExact($w.date,'yyyy-MM-dd',[Globalization.CultureInfo]::InvariantCulture)
  $serial=[int](($date-([datetime]'1899-12-30')).TotalDays)
  Put-Cell $doc $row $ns 'A' ([string]$serial) $true
  $values=@($w.reference,'',$w.author,$w.location,$w.field,$w.before,$w.after,($w.reason+"`n"+$marker).Trim(),$w.verification,'','')

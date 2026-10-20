@@ -143,6 +143,9 @@ pub struct Written {
     pub recovery_file: Option<String>,
 }
 pub fn write_workbook(path: &std::path::Path, hash: &str, data: &Work) -> Res<Written> {
+    write_request(serde_json::json!({"path":path,"expected_hash":hash,"work":data}))
+}
+pub fn write_request(request: serde_json::Value) -> Res<Written> {
     #[cfg(windows)]
     {
         use std::{
@@ -159,17 +162,18 @@ pub fn write_workbook(path: &std::path::Path, hash: &str, data: &Work) -> Res<Wr
             include_str!("workbook-write.ps1")
         );
         // EncodedCommand carries fixed program text, never user data; JSON goes through stdin.
-        let bytes: Vec<u8> = script.encode_utf16().flat_map(u16::to_le_bytes).collect();
+        let wrapper = "[Console]::InputEncoding=[Text.UTF8Encoding]::new($false);[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false);& ([scriptblock]::Create($env:CLARA_WRITER_SCRIPT))";
+        let bytes: Vec<u8> = wrapper.encode_utf16().flat_map(u16::to_le_bytes).collect();
         let encoded = encode_base64(&bytes);
         let mut child = Command::new(shell)
             .args(["-NoProfile", "-NonInteractive", "-EncodedCommand", &encoded])
+            .env("CLARA_WRITER_SCRIPT", script)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .creation_flags(0x08000000)
             .spawn()
             .map_err(|_| "Não foi possível iniciar a gravação local.")?;
-        let request = serde_json::json!({"path":path,"expected_hash":hash,"work":data});
         child
             .stdin
             .take()
@@ -189,7 +193,7 @@ pub fn write_workbook(path: &std::path::Path, hash: &str, data: &Work) -> Res<Wr
     }
     #[cfg(not(windows))]
     {
-        let _ = (path, hash, data);
+        let _ = request;
         Err("Gravação do XLSM disponível apenas no Windows.".into())
     }
 }
