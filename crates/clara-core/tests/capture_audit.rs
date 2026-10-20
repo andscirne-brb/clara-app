@@ -45,10 +45,12 @@ fn fixture(path: &std::path::Path, notes: &str, duplicate: bool) {
     for (name,data) in [
  ("_rels/.rels",r#"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>"#.into()),
  ("[Content_Types].xml",r#"<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/></Types>"#.into()),
- ("xl/workbook.xml",r#"<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Levantamento" sheetId="1" r:id="rId1"/></sheets></workbook>"#.into()),
- ("xl/_rels/workbook.xml.rels",r#"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>"#.into()),
- ("xl/worksheets/sheet1.xml",format!("<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><sheetData><row>{}</row><row>{row}</row>{}</sheetData></worksheet>",cells(headers),if duplicate{format!("<row>{row}</row>")}else{String::new()}))
+ ("xl/workbook.xml",r#"<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Levantamento" sheetId="1" r:id="rId1"/><sheet name="Textos por idioma" sheetId="2" r:id="rId2"/></sheets></workbook>"#.into()),
+ ("xl/_rels/workbook.xml.rels",r#"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/></Relationships>"#.into()),
+ ("xl/worksheets/sheet1.xml",format!("<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><sheetData><row r=\"9\">{}</row><row r=\"10\">{row}</row>{}</sheetData></worksheet>",cells(headers),if duplicate{format!("<row r=\"11\">{row}</row>")}else{String::new()}))
  ] {z.start_file(name,options).unwrap();z.write_all(data.as_bytes()).unwrap();}
+    z.start_file("xl/worksheets/sheet2.xml", options).unwrap();
+    z.write_all(r#"<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="5"><c t="inlineStr"><is><t>Referência EGO</t></is></c><c t="inlineStr"><is><t>Idioma</t></is></c><c t="inlineStr"><is><t>Título original</t></is></c><c t="inlineStr"><is><t>Descrição original</t></is></c><c t="inlineStr"><is><t>Origem / evidência</t></is></c><c t="inlineStr"><is><t>Data de recolha</t></is></c><c t="inlineStr"><is><t>Estado da recolha</t></is></c></row><row r="6"><c t="inlineStr"><is><t>TESTE-01</t></is></c><c t="inlineStr"><is><t>PT</t></is></c><c t="inlineStr"><is><t>Título preservado</t></is></c><c t="inlineStr"><is><t>Texto anterior</t></is></c><c t="inlineStr"><is><t>Fonte anterior</t></is></c><c><v>46315</v></c><c t="inlineStr"><is><t>Recolhido</t></is></c></row></sheetData></worksheet>"#.as_bytes()).unwrap();
     z.finish().unwrap();
 }
 
@@ -106,6 +108,26 @@ fn prepare_requires_review_preserves_unknowns_and_never_writes_workbook() {
         2
     );
     assert!(!capture_audit::prepared(&c, &p.id).unwrap().written);
+    a.contents[0].reviewed = true;
+    a.contents[0].description = "Texto PT TESTE revisto".into();
+    a.missing_features = "Cozinha Equipada".into();
+    a.states.insert("K".into(), "Preenchido".into());
+    let p2 = capture_audit::prepare(&c, &clock, &path, &a).unwrap();
+    assert!(
+        p2.cells
+            .iter()
+            .any(|x| x.sheet == "Textos por idioma" && x.column == "D")
+    );
+    assert!(
+        !p2.cells
+            .iter()
+            .any(|x| x.sheet == "Textos por idioma" && ["C", "F"].contains(&x.column.as_str()))
+    );
+    assert!(
+        p2.cells
+            .iter()
+            .any(|x| x.sheet == "Levantamento" && x.column == "K" && x.after == "Em falta")
+    );
     a.states.insert("Z".into(), "Preenchido".into());
     assert!(capture_audit::validate(&a).is_err());
     a.states.remove("Z");

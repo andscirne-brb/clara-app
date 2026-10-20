@@ -164,6 +164,11 @@ pub fn prepare(c: &Connection, clock: &dyn Clock, path: &Path, a: &Audit) -> Res
     }
     let (idx, row) = matches[0];
     let excelrow = ns.0 + idx as u32 + 1;
+    if excelrow < 10 {
+        return Err(invalid(
+            "A referência não corresponde a uma linha de imóvel.",
+        ));
+    }
     let headers = main
         .rows()
         .find(|r| r.first().map(|v| v.to_string()).as_deref() == Some("Referência EGO"))
@@ -209,6 +214,9 @@ pub fn prepare(c: &Connection, clock: &dyn Clock, path: &Path, a: &Audit) -> Res
         }
     };
     for (k, v) in &a.states {
+        if k == "K" && !a.missing_features.trim().is_empty() {
+            continue;
+        }
         push((k.as_bytes()[0] - b'A') as usize, v.clone());
     }
     for content in a.contents.iter().filter(|x| x.reviewed) {
@@ -231,6 +239,7 @@ pub fn prepare(c: &Connection, clock: &dyn Clock, path: &Path, a: &Audit) -> Res
     }
     if !a.missing_features.trim().is_empty() {
         push(20, a.missing_features.trim().into());
+        push(10, "Em falta".into());
     }
     let date = clock
         .now()

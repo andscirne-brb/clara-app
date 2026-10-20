@@ -65,7 +65,9 @@ pub async fn capture_audit_image(
             drop(f);
             crate::collection_commands::read_ocr(&path)
         })();
-        if created { let _ = std::fs::remove_file(&path); }
+        if created {
+            let _ = std::fs::remove_file(&path);
+        }
         result
     })
     .await
