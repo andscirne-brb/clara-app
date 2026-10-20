@@ -29,7 +29,7 @@ export function History(props: { refreshKey: number }) {
         <p className="eyebrow">Configuração</p>
         <h1>Histórico</h1>
         <p className="lead">
-          Tudo o que muda fica registado aqui e não pode ser editado nem apagado. Cada evento está ligado ao anterior, por
+          As operações confirmadas e os eventos da Clara ficam registados aqui. Os rascunhos em edição não criam um evento por cada tecla. Cada evento está ligado ao anterior, por
           isso uma alteração feita por fora é detetada.
         </p>
       </header>
