@@ -131,3 +131,17 @@ pub async fn capture_audit_write(
     capture_audit::mark_written(c, clock.as_ref(), &mut p).map_err(|e| e.to_string())?;
     Ok(result)
 }
+
+#[tauri::command]
+pub async fn capture_audit_analyse(
+    state: State<'_, AppState>,
+    data: Audit,
+    language: String,
+) -> Res<clara_core::capture_analysis::Analysis> {
+    state.touch();
+    {
+        let v = state.vault.lock().unwrap();
+        v.conn().map_err(|e| e.to_string())?;
+    }
+    clara_core::capture_analysis::analyse(&data, &language).map_err(|e| e.to_string())
+}

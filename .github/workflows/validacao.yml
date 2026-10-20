@@ -30,6 +30,19 @@ jobs:
       - run: npm run verificar
       - name: Testes do núcleo e do Windows
         run: cargo test --workspace --release --locked
+      - name: Preparar teste local da análise de capturas
+        shell: pwsh
+        run: |
+          $messages = & cargo test -p clara-core --lib --release --no-run --locked --message-format=json
+          if ($LASTEXITCODE -ne 0) { throw 'Falhou a compilação do teste local.' }
+          $artifacts = @($messages | Where-Object { $_.StartsWith('{') } | ForEach-Object { $_ | ConvertFrom-Json } | Where-Object { $_.reason -eq 'compiler-artifact' -and $_.target.name -eq 'clara_core' -and $_.profile.test -and $_.executable })
+          if ($artifacts.Count -ne 1) { throw 'Não foi identificado um único executável de teste.' }
+          Copy-Item -LiteralPath $artifacts[0].executable -Destination 'clara-capturas-qa.exe'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clara-capturas-qa
+          path: clara-capturas-qa.exe
+          retention-days: 14
       - name: Escrita controlada do levantamento com dados fictícios
         run: python scripts/testar-escrita.py
       - name: Criar instalador de teste

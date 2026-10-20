@@ -1,4 +1,5 @@
 // Chamadas tipadas aos comandos da Clara (lado Rust).
+import type {CaptureAnalysis} from "./capture-proposals";
 import { invoke } from "@tauri-apps/api/core";
 
 export type SecretKind = "password" | "recovery";
@@ -137,6 +138,7 @@ export const api = {
   captureDraft:(reference:string)=>call<CaptureAudit|null>('capture_audit_draft_get',{reference}),
   captureSave:(data:CaptureAudit)=>call<void>('capture_audit_draft_save',{data}),
   captureImage:(name:string,bytes:number[])=>call<{name:string;text:string;description:string|null}>('capture_audit_image',{name,bytes}),
+  captureAnalyse:(data:CaptureAudit,language:string)=>call<CaptureAnalysis>('capture_audit_analyse',{data,language}),
   capturePrepare:(data:CaptureAudit)=>call<AuditPrepared>('capture_audit_prepare',{data}),
   captureWrite:(id:string)=>call<{already_written:boolean;file_name:string}>('capture_audit_write',{id}),
   weeklyOverview: () => call<WeeklyOverview>("weekly_overview"),

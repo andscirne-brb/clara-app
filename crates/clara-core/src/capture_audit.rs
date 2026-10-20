@@ -110,34 +110,10 @@ pub fn save(c: &Connection, clock: &dyn Clock, a: &Audit) -> Result<()> {
     settings::put(c, clock, &key(&a.reference), &serde_json::to_string(a)?)
 }
 pub fn extract(text: &str) -> Option<String> {
-    let lines: Vec<_> = text.lines().collect();
-    let start = lines.iter().position(|l| {
-        [
-            "descrição",
-            "descrição do imóvel",
-            "descricao",
-            "description",
-            "descrição:",
-        ]
-        .contains(&l.trim().to_lowercase().as_str())
-    })? + 1;
-    let end = lines[start..]
-        .iter()
-        .position(|l| {
-            [
-                "características",
-                "caracteristicas",
-                "detalhes",
-                "fotos",
-                "características do imóvel",
-                "caracteristicas do imovel",
-            ]
-            .contains(&l.trim().to_lowercase().as_str())
-        })
-        .map(|n| start + n)
-        .unwrap_or(lines.len());
-    let s = lines[start..end].join("\n").trim().to_string();
-    if s.is_empty() { None } else { Some(s) }
+    crate::capture_analysis::descriptions(text, "PT")
+        .into_iter()
+        .max_by_key(|(_, s, partial)| (!partial, s.len()))
+        .map(|(_, s, _)| s)
 }
 pub fn prepare(c: &Connection, clock: &dyn Clock, path: &Path, a: &Audit) -> Result<Prepared> {
     validate(a)?;
