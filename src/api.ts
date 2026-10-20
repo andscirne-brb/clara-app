@@ -9,6 +9,11 @@ export interface ListingInput { property_id: string; portal_id: string; portal_r
 export interface Listing extends ListingInput { id: string; portal_name: string; revision: number }
 export interface Issue { id: string; listing_id: string; field: string; title: string; status: string; change_id: string | null; qa_id: string | null; change_reason: string | null; qa_note: string | null }
 export interface Inventory { properties: Property[]; listings: Listing[]; issues: Issue[] }
+export interface Work {id:string;date:string;reference:string;author:string;location:string;field:string;before:string;after:string;reason:string;verification:string}
+export interface WorkEntry {data:Work;created_at:string;written_at:string|null;cancelled_at?:string|null}
+export interface TrackerProperty {reference:string;nature:string;municipality:string;state:string;pending:string[]}
+export interface WorkOverview {file_name:string|null;file_error:string|null;properties:TrackerProperty[];entries:WorkEntry[];form?:Work|null;last_property_ref?:string|null;today:string}
+export interface WorkPreview {id:string;hash:string;file_name:string}
 export interface AuditItem { field: string; state: string; note: string }
 export interface Audit { id: string; listing_id: string; listing_revision: number; checklist_version: string; rules_status: string; items: AuditItem[]; created_at: string }
 export interface ImportRow { row: number; input: PropertyInput; status: string; error: string | null; changes: string[] }
@@ -126,10 +131,18 @@ function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
 
 export const api = {
   weeklyOverview: () => call<WeeklyOverview>("weekly_overview"),
+  workOverview:()=>call<WorkOverview>('work_overview'),
+  workSave:(data:Work)=>call<WorkEntry>('work_save',{data}),
+  workDraftSave:(data:Work)=>call<void>('work_draft_save',{data}),
+  workCancel:(id:string)=>call<void>('work_cancel',{id}),
+  workPreview:(id:string)=>call<WorkPreview>('work_preview',{id}),
+  workExport:(id:string,expectedHash:string)=>call<{file_name:string;already_written:boolean;recovery_file:string|null}>('work_export',{id,expectedHash}),
   weeklyPick: () => call<string | null>("weekly_pick"),
   weeklyGenerate: (start: string, end: string) => call<WeeklyReport>("weekly_generate", { start, end }),
   weeklyReminder: (enabled: boolean) => call<TaskStatus>("weekly_reminder", { enabled }),
   collectionList: (propertyId: string) => call<CollectionSnapshot[]>("collection_list", { propertyId }),
+  collectionDraft: (propertyId: string) => call<CollectionData|null>("collection_draft_get",{propertyId}),
+  collectionDraftSave: (propertyId:string,data:CollectionData) => call<void>("collection_draft_save",{propertyId,data}),
   collectionSave: (propertyId: string, data: CollectionData) => call<CollectionSnapshot>("collection_save", { propertyId, data }),
   collectionSuggestions: (data: CollectionData) => call<CollectionSuggestion[]>("collection_suggestions", { data }),
   collectionCapture: () => call<{ name: string; text: string } | null>("collection_capture"),

@@ -45,7 +45,16 @@ fn original_versions_survive_edits_and_migration_is_repeatable() {
     let first = collection::save(&mut c, &clock, &p.id, data()).unwrap();
     let mut next = data();
     next.contents[0].title = "Nova versão TESTE".into();
+    next.source.clear();
+    collection::draft_save(&c, &clock, &p.id, &next).unwrap();
+    assert_eq!(
+        collection::draft_get(&c, &p.id).unwrap().unwrap().contents[0].title,
+        "Nova versão TESTE"
+    );
+    assert_eq!(collection::list(&c, &p.id).unwrap().len(), 1);
+    next.source = "Ficha TESTE".into();
     collection::save(&mut c, &clock, &p.id, next).unwrap();
+    assert!(collection::draft_get(&c, &p.id).unwrap().is_none());
     let versions = collection::list(&c, &p.id).unwrap();
     assert_eq!(versions.len(), 2);
     assert_eq!(versions[1].id, first.id);

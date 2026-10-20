@@ -448,7 +448,7 @@ dependencies = [
 
 [[package]]
 name = "clara"
-version = "0.3.3"
+version = "0.4.0"
 dependencies = [
  "chrono",
  "clara-core",
@@ -461,7 +461,7 @@ dependencies = [
 
 [[package]]
 name = "clara-core"
-version = "0.3.3"
+version = "0.4.0"
 dependencies = [
  "argon2",
  "calamine",

@@ -1,0 +1,52 @@
+import zipfile,pathlib,xml.etree.ElementTree as E,subprocess,json,hashlib,base64,uuid
+repo=pathlib.Path(__file__).resolve().parents[1]
+d=repo/'qa-output/escrita';d.mkdir(parents=True,exist_ok=True);p=d/'Levantamento TESTE é.xlsm';N='http://schemas.openxmlformats.org/spreadsheetml/2006/main';ns={'m':N}
+def sheet(rows):
+ root=E.Element('{'+N+'}worksheet');data=E.SubElement(root,'{'+N+'}sheetData')
+ for r,values in rows:
+  row=E.SubElement(data,'{'+N+'}row',r=str(r))
+  for i,v in enumerate(values):
+   c=E.SubElement(row,'{'+N+'}c',r=chr(65+i)+str(r),t='inlineStr',s='0');E.SubElement(E.SubElement(c,'{'+N+'}is'),'{'+N+'}t').text=v
+ return root
+headers=['Data da alteração','Referência EGO','ID da pendência','Autor','Onde foi alterado','Campo / assunto','Antes','Depois / alteração realizada','Motivo / fonte','Resultado da verificação','Data da verificação','Verificado por']
+root=sheet([(5,headers),(6,['']*12),(7,['']*12)]);tp=E.SubElement(root,'{'+N+'}tableParts',count='1');E.SubElement(tp,'{'+N+'}tablePart',{'{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id':'rId1'})
+def make():
+ with zipfile.ZipFile(p,'w',zipfile.ZIP_DEFLATED)as z:
+  z.writestr('xl/workbook.xml','<workbook xmlns="'+N+'" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Levantamento" sheetId="1" r:id="rId1"/><sheet name="Registo de alterações" sheetId="2" r:id="rId2"/></sheets></workbook>')
+  z.writestr('xl/_rels/workbook.xml.rels','<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Target="worksheets/sheet2.xml"/></Relationships>')
+  z.writestr('xl/worksheets/sheet1.xml',E.tostring(sheet([(9,['Referência EGO']),(10,['TESTE-01'])])))
+  z.writestr('xl/worksheets/sheet2.xml',E.tostring(root))
+  z.writestr('xl/worksheets/_rels/sheet2.xml.rels','<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Target="../tables/table1.xml"/></Relationships>')
+  z.writestr('xl/tables/table1.xml','<table xmlns="'+N+'" ref="A5:L7"/>')
+  z.writestr('xl/vbaProject.bin',b'MARCADOR FICTICIO SEM MACROS EXECUTAVEIS');z.writestr('custom/keep.txt',b'PRESERVAR')
+
+# Disposable fixtures are regenerated; never read a production workbook.
+make();original=p.read_bytes()
+for previous in d.glob('.Clara-recuperacao-*'):
+ previous.unlink()
+script="[Console]::InputEncoding=[Text.UTF8Encoding]::new($false);[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false);"+(repo/'src-tauri/src/workbook-write.ps1').read_text(encoding='utf-8')
+cmd=['C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe','-NoProfile','-NonInteractive','-EncodedCommand',base64.b64encode(script.encode('utf-16-le')).decode()]
+w={'id':str(uuid.uuid4()),'date':'2026-10-20','reference':'TESTE-01','author':'TESTE','location':'eGO','field':'Planta','before':'','after':'Planta TESTE <exemplo> & anexada.','reason':'Evidência fictícia','verification':'Por verificar'}
+def run(hash,work=w):return subprocess.run(cmd,input=json.dumps({'path':str(p.resolve()),'expected_hash':hash,'work':work},ensure_ascii=False).encode(),capture_output=True)
+h=hashlib.sha256(original).hexdigest();out=run('0'*64);assert out.returncode!=0 and p.read_bytes()==original,out.stderr.decode('utf-8',errors='replace')
+out=run(h);assert out.returncode==0,out.stderr.decode('utf-8',errors='replace');r=json.loads(out.stdout);assert not r['already_written'];after=p.read_bytes()
+with zipfile.ZipFile(p)as new,zipfile.ZipFile(__import__('io').BytesIO(original))as old:
+ for k in old.namelist():
+  if k!='xl/worksheets/sheet2.xml':assert new.read(k)==old.read(k),k
+ row=E.fromstring(new.read('xl/worksheets/sheet2.xml')).find("m:sheetData/m:row[@r='6']",ns);assert row.find("m:c[@r='H6']/m:is/m:t",ns).text==w['after']
+assert p.with_name(r['recovery_file']).read_bytes()==original
+out=run(h);assert out.returncode==0 and json.loads(out.stdout)['already_written'] and p.read_bytes()==after
+other={**w,'id':str(uuid.uuid4()),'reference':'DESCONHECIDO'};out=run(hashlib.sha256(after).hexdigest(),other);assert out.returncode!=0 and p.read_bytes()==after
+
+# A second entry uses the next row; a full table must leave bytes intact.
+second={**w,'id':str(uuid.uuid4()),'after':'Segundo trabalho TESTE'}
+out=run(hashlib.sha256(after).hexdigest(),second);assert out.returncode==0,out.stderr.decode('utf-8',errors='replace')
+full=p.read_bytes();third={**w,'id':str(uuid.uuid4())};out=run(hashlib.sha256(full).hexdigest(),third);assert out.returncode!=0 and p.read_bytes()==full
+# Same local sharing lock used by an open Excel workbook.
+import ctypes
+kernel=ctypes.WinDLL('kernel32',use_last_error=True);kernel.CreateFileW.restype=ctypes.c_void_p;kernel.CreateFileW.argtypes=[ctypes.c_wchar_p,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_void_p,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_void_p];kernel.CloseHandle.argtypes=[ctypes.c_void_p]
+handle=kernel.CreateFileW(str(p.resolve()),0x80000000,0,None,3,0,None);assert handle not in [None,ctypes.c_void_p(-1).value]
+try:out=run(hashlib.sha256(full).hexdigest(),third);assert out.returncode!=0
+finally:kernel.CloseHandle(handle)
+assert p.read_bytes()==full
+print('PASS: tabela cheia e ficheiro bloqueado sem perda; conflito sem escrita; gravação; recuperação; partes preservadas; Unicode/HTML literal; repetição sem duplicado; referência desconhecida bloqueada.')

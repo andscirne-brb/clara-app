@@ -15,6 +15,60 @@ use std::{
     path::Path,
 };
 pub const PATH_KEY: &str = "weekly_workbook_path";
+pub fn fingerprint(path: &Path) -> Result<String> {
+    Ok(hex::encode(Sha256::digest(ego_import::read_file(path)?)))
+}
+#[derive(Clone, Debug, Serialize)]
+pub struct TrackerProperty {
+    pub reference: String,
+    pub nature: String,
+    pub municipality: String,
+    pub state: String,
+    pub pending: Vec<String>,
+}
+pub fn tracker(path: &Path, clock: &dyn Clock) -> Result<Vec<TrackerProperty>> {
+    let today = clock.now().with_timezone(&crate::TZ).date_naive();
+    let report = build(
+        path,
+        &(today - Duration::days(365)).to_string(),
+        &today.to_string(),
+        clock,
+    )?;
+    let pending: HashMap<_, _> = report
+        .properties
+        .into_iter()
+        .map(|p| (p.reference, p.pending))
+        .collect();
+    let bytes = ego_import::read_file(path)?;
+    let mut wb = ego_import::workbook(&bytes)?;
+    let data = rows(
+        wb.worksheet_range("Levantamento")
+            .map_err(|_| invalid("Falta a folha Levantamento."))?,
+        &["Referência EGO", "Natureza", "Estado da verificação"],
+    )?;
+    let mut result: Vec<_> = data
+        .into_iter()
+        .filter(|r| !get(r, "Referência EGO").is_empty())
+        .map(|r| {
+            let reference = get(&r, "Referência EGO").to_string();
+            TrackerProperty {
+                pending: pending.get(&reference).cloned().unwrap_or_default(),
+                reference,
+                nature: get(&r, "Natureza").into(),
+                municipality: get(&r, "Concelho").into(),
+                state: get(&r, "Estado da verificação").into(),
+            }
+        })
+        .collect();
+    result.sort_by_key(|r| {
+        (
+            !r.nature.to_lowercase().contains("moradia")
+                && !r.nature.to_lowercase().contains("apartamento"),
+            r.reference.clone(),
+        )
+    });
+    Ok(result)
+}
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Report {
     pub id: String,

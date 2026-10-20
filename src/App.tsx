@@ -10,11 +10,13 @@ import { Security } from "./screens/Security";
 import { History } from "./screens/History";
 import { Properties } from "./screens/Properties";
 import { Weekly } from "./screens/Weekly";
+import {flushDrafts}from "./drafts";
+import{WorkLog}from './screens/WorkLog';
 
-export type Page = "hoje" | "imoveis" | "resumo" | "destinos" | "backups" | "seguranca" | "historico";
+export type Page = "hoje" | "imoveis" | "trabalho" | "resumo" | "destinos" | "backups" | "seguranca" | "historico";
 
 const NAV: { group: string; items: { id: Page; label: string }[] }[] = [
-  { group: "", items: [{ id: "hoje", label: "Hoje" }, { id: "imoveis", label: "Imóveis" }, { id: "resumo", label: "Resumo semanal" }] },
+  { group: "", items: [{ id: "hoje", label: "Hoje" }, { id: "imoveis", label: "Imóveis" }, {id:'trabalho',label:'Registar trabalho'}, { id: "resumo", label: "Resumo semanal" }] },
   {
     group: "Configuração",
     items: [
@@ -30,6 +32,10 @@ export default function App() {
   const [status, setStatus] = useState<AppStatus | null>(null);
   const [fatal, setFatal] = useState<string | null>(null);
   const [page, setPage] = useState<Page>("hoje");
+  const [navigationError,setNavigationError]=useState("");
+  const[requestedProperty,setRequestedProperty]=useState<{reference:string;nonce:number}|null>(null);
+  const openReference=(reference:string)=>{void flushDrafts().then(()=>{setRequestedProperty({reference,nonce:Date.now()});setPage('imoveis')}).catch(e=>setNavigationError(e.message))};
+  const navigate=(p:Page)=>{void flushDrafts().then(()=>{setNavigationError("");setPage(p)}).catch(e=>setNavigationError(e.message))};
   const [lockMessage, setLockMessage] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -148,7 +154,7 @@ export default function App() {
                     <button
                       className={`nav-item ${page === it.id ? "active" : ""}`}
                       aria-current={page === it.id ? "page" : undefined}
-                      onClick={() => setPage(it.id)}
+                      onClick={() => navigate(it.id)}
                     >
                       {it.label}
                     </button>
@@ -162,7 +168,7 @@ export default function App() {
           <button
             className="btn btn-ghost full"
             onClick={async () => {
-              await api.lock();
+              try{await flushDrafts();await api.lock();}catch(e){setNavigationError((e as Error).message);return;}
               onLocked("Clara bloqueada.");
             }}
           >
@@ -172,8 +178,10 @@ export default function App() {
         </div>
       </aside>
       <div className="content">
-        {page === "hoje" && <Home go={setPage} refreshKey={refreshKey} />}
-        <div hidden={page !== "imoveis"}><Properties /></div>
+        {navigationError&&<Notice tone="error">{navigationError}</Notice>}
+        {page === "hoje" && <Home go={navigate} openProperty={openReference} refreshKey={refreshKey} />}
+        <div hidden={page !== "imoveis"}><Properties requested={requestedProperty}/></div>
+        {page === "trabalho" && <WorkLog/>}
         {page === "resumo" && <Weekly />}
         {page === "destinos" && <Portals />}
         {page === "backups" && <Backups onLocked={onLocked} refreshKey={refreshKey} />}

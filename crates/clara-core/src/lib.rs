@@ -6,6 +6,7 @@ pub mod catalog;
 pub mod cycle;
 pub mod collection;
 pub mod weekly;
+pub mod worklog;
 pub mod ego_import;
 pub mod clock;
 pub mod config;

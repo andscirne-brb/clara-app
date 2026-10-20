@@ -3,6 +3,7 @@ import { api, type Inventory, type PropertyInput, type Listing, type ListingInpu
 import { Btn, Card, CheckLine, Field, Notice } from "../components";
 import { formatDateTime } from "../format";
 import { Collection } from "./Collection";
+import {flushDrafts}from "../drafts";
 
 const EMPTY: PropertyInput = { ego_ref: "", nature: "", municipality: "", availability: "", ego_modified: "" };
 export const CHECKLIST = [
@@ -18,7 +19,7 @@ function Memo({ label, value, onChange, required = false }: { label: string; val
   return <label className="field"><span>{label}</span><textarea value={value} onChange={e => onChange(e.target.value)} rows={3} required={required} maxLength={4000} /></label>;
 }
 
-export function Properties() {
+export function Properties({requested}:{requested?:{reference:string;nonce:number}|null}) {
   const [data, setData] = useState<Inventory>({ properties: [], listings: [], issues: [] });
   const [portals, setPortals] = useState<Portal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +39,7 @@ export function Properties() {
   const load = async () => { const [d, p] = await Promise.all([api.inventory(), api.portals()]); setData(d); setPortals(p); };
   useEffect(() => { load().catch(e => setError(e.message)).finally(() => setLoading(false)); }, []);
   useEffect(() => { if (error) errorRef.current?.focus(); }, [error]);
+  useEffect(()=>{if(!requested||loading)return;const p=data.properties.find(p=>p.ego_ref===requested.reference);if(p){setSelected(p.id);setActiveListing(null);setNewProperty(false)}else{setSelected(null);setQ(requested.reference);setMessage('Esta referência existe no levantamento, mas ainda não está importada na Clara. Importa a exportação do eGO ou adiciona o imóvel para iniciar a recolha.')}},[requested,loading]);
   const run = async (fn: () => Promise<void>) => {
     setBusy(true); setError(null); setMessage(null);
     try { await fn(); } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
@@ -48,7 +50,7 @@ export function Properties() {
   const shown = data.properties.filter(p => p.archived === archived && ([p.ego_ref, p.nature, p.municipality, ...data.listings.filter(l => l.property_id === p.id).flatMap(l => [l.portal_ref, l.portal_name])].some(v => v.toLocaleLowerCase("pt-PT").includes(term))));
   shown.sort((a, b) => Number(!/moradia|apartamento/i.test(a.nature)) - Number(!/moradia|apartamento/i.test(b.nature)) || a.ego_ref.localeCompare(b.ego_ref));
   const active = listings.find(l => l.id === activeListing);
-  const openProperty = (id: string | null) => { setSelected(id); setActiveListing(null); setListingForm(null); setNewProperty(false); setError(null); setMessage(null); requestAnimationFrame(() => heading.current?.focus()); };
+  const openProperty = (id: string | null) => { void flushDrafts().then(()=>{setSelected(id); setActiveListing(null); setListingForm(null); setNewProperty(false); setError(null); setMessage(null); requestAnimationFrame(() => heading.current?.focus());}).catch(e=>setError(e.message)); };
   return <div className="page inventory-page">
     <header className="page-head"><p className="eyebrow">Acompanhamento local</p><h1 ref={heading} tabIndex={-1}>{property ? property.ego_ref : "Imóveis"}</h1>
       <p className="lead">{property ? `${property.nature || "Natureza por indicar"} · ${property.municipality || "Concelho por indicar"} · ${property.availability || "Disponibilidade por confirmar"}` : "Começa com um imóvel ou importa a exportação do EGO. O EGO continua a ser a fonte oficial."}</p></header>
@@ -115,7 +117,7 @@ function ListingWorkspace({ listing, issues, busy, run, reload, onEdit }: { list
       <p className="path">{listing.url || "URL pública por indicar"}</p><p className="muted small">Referência {listing.portal_ref || "por indicar"} · versão {listing.revision} · monitorização {listing.monitoring ? "ligada" : "desligada"}</p>
       <Notice tone="info" title="Regras específicas do portal por confirmar">Checklist-base v1: boas práticas de revisão, sem mínimos de fotos, caracteres ou outros requisitos presumidos. Health Score: <strong>Não configurado</strong>.</Notice>
       {loadError && <Notice tone="error">{loadError}</Notice>}
-      {latest && <><p>Completude observada: <strong>{evaluated ? `${conforming}/${evaluated}` : "N/D"}</strong> itens conformes entre os avaliados. Cobertura: <strong>{applicable ? `${evaluated}/${applicable}` : "N/D"}</strong>. Por verificar: <strong>{latest.items.filter(i => i.state === "por_verificar").length}</strong>.</p><p className="muted small">Última auditoria: {formatDateTime(latest.created_at)} · {latest.checklist_version} · publicação v{latest.listing_revision}{latest.listing_revision !== listing.revision ? " · anterior à versão atual" : ""}</p></>}
+      {latest && <><p>Conformidade da revisão: <strong>{evaluated ? `${conforming}/${evaluated}` : "N/D"}</strong> itens conformes entre os avaliados. Cobertura da revisão: <strong>{applicable ? `${evaluated}/${applicable}` : "N/D"}</strong>. Por verificar: <strong>{latest.items.filter(i => i.state === "por_verificar").length}</strong>.</p><p className="muted small">Última auditoria: {formatDateTime(latest.created_at)} · {latest.checklist_version} · publicação v{latest.listing_revision}{latest.listing_revision !== listing.revision ? " · anterior à versão atual" : ""}</p></>}
       {!editingAudit && <div className="row-start"><Btn variant="primary" onPress={() => { setItems(draft ?? (latest ? latest.items.map(i => ({ ...i })) : CHECKLIST.map(([field]) => ({ field, state: "por_verificar", note: "" })))); setEditingAudit(true); }}>{draft ? "Retomar rascunho" : "Nova auditoria"}</Btn>{audits.length > 0 && <Btn onPress={() => setHistory(!history)}>{history ? "Ocultar auditorias" : `Ver auditorias (${audits.length})`}</Btn>}</div>}
       {history && audits.map(a => <details key={a.id}><summary>{formatDateTime(a.created_at)} · {a.checklist_version} · publicação v{a.listing_revision}</summary><ul className="explain">{a.items.map(i => <li key={i.field}><strong>{CHECKLIST.find(([f]) => f === i.field)?.[1]}</strong>: {i.state.replaceAll("_", " ")}{i.note && ` · ${i.note}`}</li>)}</ul></details>)}
       {editingAudit && <form className="stack" onSubmit={e => { e.preventDefault(); void run(async () => { await queue.current; if (draftFailed.current) throw new Error("O rascunho não foi guardado. Tenta novamente antes de concluir."); await api.auditRecord(listing.id, items); setDraft(null); setDraftStatus(""); await Promise.all([load(), reload()]); setEditingAudit(false); }); }}>

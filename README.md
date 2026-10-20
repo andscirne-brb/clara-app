@@ -1,5 +1,13 @@
 # Clara
 
+## Organização e registo (0.4.0)
+
+**Hoje** passa a mostrar a lista do levantamento, com moradias/apartamentos prioritários, assuntos pendentes, pesquisa e acesso ao último imóvel em preparação. **Registar trabalho** guarda rascunhos no cofre e cria um registo imutável; depois de pré-visualizar, confirma a gravação na folha **Registo de alterações** do mesmo XLSM. Não altera o eGO nem conclui automaticamente pendências.
+
+Fecha o Excel antes de confirmar. A gravação verifica se o ficheiro mudou, bloqueia escrita concorrente local, conserva as outras partes do XLSM e cria `.Clara-recuperacao-<operação>.xlsm` junto ao original. Repetir a mesma operação não duplica linhas. Se a tabela estiver cheia ou o ficheiro estiver indisponível, o trabalho continua no cofre para nova tentativa. Uma gravação local não comprova sincronização na nuvem. Gera um novo resumo semanal após guardar/sincronizar.
+
+Recolhas e formulários de trabalho guardam rascunhos cifrados; a navegação e o bloqueio manual esperam pela gravação. Rascunho e versão original confirmada são distintos. A medida da checklist interna chama-se **Conformidade da revisão**, separada da completude nativa do eGO/portais.
+
 ## Resumo por imóvel (0.3.2)
 
 Os novos resumos apresentam uma tabela com uma linha por imóvel: trabalho realizado/verificação e pendentes para análise da Sara. O Excel mantém uma linha por alteração, sem reorganização nem perda do histórico. **Copiar email** inclui a tabela formatada e uma alternativa em texto simples; se a cópia formatada não estiver disponível, a Clara avisa. Resumos antigos permanecem no seu formato original. Autoria, local e verificação detalhados continuam no Excel; falhas ou verificações pendentes permanecem visíveis no resumo. Júlia continua apenas em CC. Nenhum envio automático.

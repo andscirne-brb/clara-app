@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { api, type BackupOverview, type Portal } from "../api";
+import { api, type BackupOverview, type Portal,type WorkOverview } from "../api";
 import { Btn, Card, Notice } from "../components";
 import { formatBytes, formatDateTime, formatToday, timeAgo } from "../format";
 import type { Page } from "../App";
 
-export function Home(props: { go: (p: Page) => void; refreshKey: number }) {
+export function Home(props: { go: (p: Page) => void; openProperty:(ref:string)=>void;refreshKey: number }) {
+  const[work,setWork]=useState<WorkOverview|null>(null),[workError,setWorkError]=useState(''),[q,setQ]=useState(''),[kind,setKind]=useState('prioritarios');
   const [ov, setOv] = useState<BackupOverview | null>(null);
   const [portals, setPortals] = useState<Portal[]>([]);
   const [busy, setBusy] = useState(false);
@@ -13,6 +14,7 @@ export function Home(props: { go: (p: Page) => void; refreshKey: number }) {
   const load = () => {
     api.backupOverview().then(setOv).catch(() => setOv(null));
     api.portals().then(setPortals).catch(() => setPortals([]));
+    api.workOverview().then(setWork).catch(e=>setWorkError(e.message));
   };
   useEffect(load, [props.refreshKey]);
 
@@ -20,6 +22,8 @@ export function Home(props: { go: (p: Page) => void; refreshKey: number }) {
   const last = ov?.last_success;
   const attempt = ov?.last_attempt;
   const lastFailed = attempt && !attempt.ok && (!last || attempt.finished_at > last.finished_at);
+  const pending=work?.properties.filter(p=>p.pending.length)??[];
+  const queue=(work?.properties??[]).filter(p=>(kind!=='prioritarios'||/moradia|apartamento/i.test(p.nature))&&(kind!=='pendentes'||p.pending.length>0)&&[p.reference,p.nature,p.municipality,...p.pending].join(' ').toLocaleLowerCase('pt-PT').includes(q.toLocaleLowerCase('pt-PT'))).sort((a,b)=>Number(b.pending.length>0)-Number(a.pending.length>0));
 
   return (
     <div className="page">
@@ -27,6 +31,9 @@ export function Home(props: { go: (p: Page) => void; refreshKey: number }) {
         <p className="eyebrow">{formatToday()}</p>
         <h1>Hoje</h1>
       </header>
+      {workError&&<Notice tone="error">{workError}</Notice>}
+      <Card title="O teu trabalho"><div className="row-start"><Btn variant="primary" onPress={()=>props.go('trabalho')}>Registar trabalho realizado</Btn><Btn onPress={()=>props.go('resumo')}>Preparar resumo semanal</Btn>{work?.last_property_ref&&<Btn onPress={()=>props.openProperty(work.last_property_ref!)}>Continuar {work.last_property_ref}</Btn>}</div><p className="muted">{work?.file_name?`Levantamento: ${work.file_name}`:'Liga o mesmo Excel em Resumo semanal para mostrar a lista de trabalho.'}</p>{work?.file_error&&<Notice tone="warn">{work.file_error}</Notice>}{work&&<p>{pending.length} {pending.length===1?"imóvel com assuntos pendentes":"imóveis com assuntos pendentes"} · {work.entries.filter(e=>!e.written_at&&!e.cancelled_at).length} registos locais por gravar no Excel.</p>}</Card>
+      {!!work?.properties.length&&<Card title="Próximos imóveis"><div className="two-cols"><label className="field"><span>Pesquisar imóvel, concelho ou assunto</span><input value={q} onChange={e=>setQ(e.target.value)}/></label><label className="field"><span>Mostrar</span><select value={kind} onChange={e=>setKind(e.target.value)}><option value="prioritarios">Moradias e apartamentos</option><option value="pendentes">Com assuntos pendentes</option><option value="todos">Todos os imóveis</option></select></label></div><p className="muted">{queue.length} {queue.length===1?"imóvel encontrado":"imóveis encontrados"}. Mostram-se os primeiros 8, com assuntos pendentes em primeiro lugar. Os estados vêm do levantamento e não são novas verificações.</p><div className="stack">{queue.slice(0,8).map(p=><div key={p.reference} className="card"><strong>{p.reference} · {p.nature}</strong><p className="muted">{p.municipality} · {p.state}</p>{p.pending.length?<p>{p.pending[0]}{p.pending.length>1?` Mais ${p.pending.length-1} assuntos no levantamento.`:''}</p>:<p>Consultar a ficha e identificar a próxima verificação.</p>}<Btn onPress={()=>props.openProperty(p.reference)}>Abrir imóvel</Btn></div>)}</div></Card>}
 
       {ov && !ov.dir && (
         <Notice tone="warn" title="Os backups ainda não estão configurados">

@@ -4,6 +4,31 @@ use tauri::{AppHandle, State};
 use tauri_plugin_dialog::DialogExt;
 type Res<T> = Result<T, String>;
 #[tauri::command]
+pub async fn collection_draft_get(
+    state: State<'_, AppState>,
+    property_id: String,
+) -> Res<Option<Collection>> {
+    let v = state.vault.lock().unwrap();
+    collection::draft_get(v.conn().map_err(|e| e.to_string())?, &property_id)
+        .map_err(|e| e.to_string())
+}
+#[tauri::command]
+pub async fn collection_draft_save(
+    state: State<'_, AppState>,
+    property_id: String,
+    data: Collection,
+) -> Res<()> {
+    state.touch();
+    let v = state.vault.lock().unwrap();
+    collection::draft_save(
+        v.conn().map_err(|e| e.to_string())?,
+        v.clock(),
+        &property_id,
+        &data,
+    )
+    .map_err(|e| e.to_string())
+}
+#[tauri::command]
 pub async fn collection_list(
     state: State<'_, AppState>,
     property_id: String,

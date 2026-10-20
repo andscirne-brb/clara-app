@@ -44,8 +44,16 @@ fn fixture(path: &std::path::Path) {
                 "Referência EGO",
                 "Data da verificação",
                 "Estado da verificação",
+                "Natureza",
+                "Concelho",
             ],
-            vec!["TESTE-01", "19/10/2026", "Verificado"],
+            vec![
+                "TESTE-01",
+                "19/10/2026",
+                "Verificado",
+                "Moradia TESTE",
+                "Concelho TESTE",
+            ],
         ],
         vec![
             vec![
@@ -174,6 +182,11 @@ fn report_reads_same_workbook_filters_dates_separates_sara_and_preserves_history
     fixture(&p);
     let before = std::fs::read(&p).unwrap();
     let clock = FixedClock::new("2026-10-23T19:15:00Z".parse().unwrap());
+    let tracker = weekly::tracker(&p, &clock).unwrap();
+    assert_eq!(tracker.len(), 1);
+    assert_eq!(tracker[0].nature, "Moradia TESTE");
+    assert!(!tracker[0].pending.is_empty());
+    assert_eq!(weekly::fingerprint(&p).unwrap().len(), 64);
     let report = weekly::build(&p, "2026-10-17", "2026-10-23", &clock).unwrap();
     assert_eq!(std::fs::read(&p).unwrap(), before);
     assert!(report.body.contains("Planta TESTE anexada"));

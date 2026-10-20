@@ -135,7 +135,41 @@ pub fn save(
     data: Collection,
 ) -> Result<Snapshot> {
     cycle::get_property(conn, property_id)?;
-    if data.source.trim().is_empty()
+    validate(&data, true)?;
+    let id = uuid::Uuid::new_v4().to_string();
+    let collected_at = ts(clock.now());
+    let tx = conn.transaction()?;
+    tx.execute(
+        "INSERT INTO collection_snapshot(id,property_id,collected_at,payload) VALUES(?1,?2,?3,?4)",
+        params![id, property_id, collected_at, serde_json::to_string(&data)?],
+    )?;
+    tx.execute(
+        "DELETE FROM app_setting WHERE key=?1",
+        [format!("collection_draft:{property_id}")],
+    )?;
+    history::record(
+        &tx,
+        clock,
+        Actor::Andreia,
+        NewEvent::new(
+            "property",
+            Some(property_id),
+            "recolha.guardada",
+            "Versão da recolha manual guardada",
+        ),
+    )?;
+    tx.commit()?;
+    Ok(Snapshot {
+        id,
+        collected_at,
+        data,
+    })
+}
+fn validate(data: &Collection, complete: bool) -> Result<()> {
+    if serde_json::to_vec(data)?.len() > 5_000_000 {
+        return Err(ClaraError::Invalid("Recolha demasiado grande.".into()));
+    }
+    if (complete && data.source.trim().is_empty())
         || data.source.len() > 500
         || data.notes.len() > 20000
         || data.captures.len() > 30
@@ -168,30 +202,30 @@ pub fn save(
             "Captura ou característica demasiado extensa.".into(),
         ));
     }
-    let id = uuid::Uuid::new_v4().to_string();
-    let collected_at = ts(clock.now());
-    let tx = conn.transaction()?;
-    tx.execute(
-        "INSERT INTO collection_snapshot(id,property_id,collected_at,payload) VALUES(?1,?2,?3,?4)",
-        params![id, property_id, collected_at, serde_json::to_string(&data)?],
-    )?;
-    history::record(
-        &tx,
+    Ok(())
+}
+pub fn draft_save(
+    conn: &Connection,
+    clock: &dyn Clock,
+    property_id: &str,
+    data: &Collection,
+) -> Result<()> {
+    cycle::get_property(conn, property_id)?;
+    validate(data, false)?;
+    crate::settings::put(
+        conn,
         clock,
-        Actor::Andreia,
-        NewEvent::new(
-            "property",
-            Some(property_id),
-            "recolha.guardada",
-            "Versão da recolha manual guardada",
-        ),
+        &format!("collection_draft:{property_id}"),
+        &serde_json::to_string(data)?,
     )?;
-    tx.commit()?;
-    Ok(Snapshot {
-        id,
-        collected_at,
-        data,
-    })
+    let property = cycle::get_property(conn, property_id)?;
+    crate::settings::put(conn, clock, "last_property_ref", &property.ego_ref)
+}
+pub fn draft_get(conn: &Connection, property_id: &str) -> Result<Option<Collection>> {
+    cycle::get_property(conn, property_id)?;
+    crate::settings::get(conn, &format!("collection_draft:{property_id}"))?
+        .map(|s| serde_json::from_str(&s).map_err(Into::into))
+        .transpose()
 }
 pub fn list(conn: &Connection, property_id: &str) -> Result<Vec<Snapshot>> {
     cycle::get_property(conn, property_id)?;

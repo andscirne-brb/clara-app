@@ -1,12 +1,15 @@
 //! Camada Tauri da Clara: comandos específicos, bloqueio por inatividade e
 //! backup das 22h com a app aberta. Toda a lógica vive em `clara-core`.
 
+mod collection_commands;
 mod commands;
 mod cycle_commands;
-mod collection_commands;
-mod weekly_commands;
 mod task;
-pub fn run_weekly_reminder()->i32 {task::show_weekly_reminder()}
+mod weekly_commands;
+mod work_commands;
+pub fn run_weekly_reminder() -> i32 {
+    task::show_weekly_reminder()
+}
 
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
@@ -66,41 +69,50 @@ pub fn run_scheduled_backup() -> i32 {
 }
 
 fn background(app: tauri::AppHandle) {
-    std::thread::spawn(move || loop {
-        std::thread::sleep(Duration::from_secs(15));
-        let state = app.state::<AppState>();
+    std::thread::spawn(move || {
+        loop {
+            std::thread::sleep(Duration::from_secs(15));
+            let state = app.state::<AppState>();
 
-        // 1. Bloqueio por inatividade.
-        let idle = state.last_activity.lock().unwrap().elapsed();
-        let limit = Duration::from_secs(state.lock_minutes.load(Ordering::Relaxed) as u64 * 60);
-        {
-            let mut v = state.vault.lock().unwrap();
-            if v.is_unlocked() && idle > limit {
-                v.lock();
-                *state.ego_import.lock().unwrap() = cycle_commands::ImportSession::default();
-                let _ = app.emit("clara://bloqueada", ());
+            // 1. Bloqueio por inatividade.
+            let idle = state.last_activity.lock().unwrap().elapsed();
+            let limit = Duration::from_secs(state.lock_minutes.load(Ordering::Relaxed) as u64 * 60);
+            {
+                let mut v = state.vault.lock().unwrap();
+                if v.is_unlocked() && idle > limit {
+                    v.lock();
+                    *state.ego_import.lock().unwrap() = cycle_commands::ImportSession::default();
+                    let _ = app.emit("clara://bloqueada", ());
+                    continue;
+                }
+            }
+
+            // 2. Backup das 22h com a app desbloqueada.
+            let dd = state.dd();
+            let Some(dir) = Config::load(&dd).ok().and_then(|c| c.backup_dir) else {
+                continue;
+            };
+            let now = SystemClock.now();
+            if !schedule::app_backup_due(now, StatusFile::load(&dd).last_success_at()) {
                 continue;
             }
-        }
-
-        // 2. Backup das 22h com a app desbloqueada.
-        let dd = state.dd();
-        let Some(dir) = Config::load(&dd).ok().and_then(|c| c.backup_dir) else { continue };
-        let now = SystemClock.now();
-        if !schedule::app_backup_due(now, StatusFile::load(&dd).last_success_at()) {
-            continue;
-        }
-        {
-            let mut last = state.last_auto_backup_attempt.lock().unwrap();
-            if last.map(|t| t.elapsed() < Duration::from_secs(30 * 60)).unwrap_or(false) {
-                continue;
+            {
+                let mut last = state.last_auto_backup_attempt.lock().unwrap();
+                if last
+                    .map(|t| t.elapsed() < Duration::from_secs(30 * 60))
+                    .unwrap_or(false)
+                {
+                    continue;
+                }
+                *last = Some(Instant::now());
             }
-            *last = Some(Instant::now());
-        }
-        let v = state.vault.lock().unwrap();
-        if let Ok(conn) = v.conn() {
-            if let Ok(r) = backup::backup_from_app(conn, &dd, v.clock(), std::path::Path::new(&dir)) {
-                let _ = app.emit("clara://backup", r.ok);
+            let v = state.vault.lock().unwrap();
+            if let Ok(conn) = v.conn() {
+                if let Ok(r) =
+                    backup::backup_from_app(conn, &dd, v.clock(), std::path::Path::new(&dir))
+                {
+                    let _ = app.emit("clara://backup", r.ok);
+                }
             }
         }
     });
@@ -129,7 +141,15 @@ pub fn run() {
             weekly_commands::weekly_pick,
             weekly_commands::weekly_generate,
             weekly_commands::weekly_reminder,
+            work_commands::work_overview,
+            work_commands::work_save,
+            work_commands::work_draft_save,
+            work_commands::work_cancel,
+            work_commands::work_preview,
+            work_commands::work_export,
             collection_commands::collection_list,
+            collection_commands::collection_draft_get,
+            collection_commands::collection_draft_save,
             collection_commands::collection_save,
             collection_commands::collection_suggestions,
             collection_commands::collection_capture,
