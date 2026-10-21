@@ -10,7 +10,9 @@ Documento de passagem de testemunho. Mantido atualizado no fim de cada sessão. 
   - A Andreia **autorizou** aplicar: fuso Europe/Lisbon, listas de escolha nas colunas de categoria e proteção das colunas calculadas. As opções das listas são mostradas à Andreia antes de aplicar.
 - **Em curso:** função `listarCategorias()` em `apps-script/estrutura.gs` para ver que opções já se usam nas colunas de categoria (só valores de categoria, nunca referências nem textos), para desenhar as listas sem invalidar o que já existe.
 - **Exportação do EGO** tem só estas colunas: Referência, Natureza, Disponibilidade, Venda (€), Trespasse (€), Arrendamento (€), Permuta (€), Concelho, Data de criação, Data de alteração, Descrição.
-  - Consequência: **não traz fotografias, plantas, documentos nem características.** Pelo ponto de decisão do M1, essa informação vem de um botão no navegador ("Ler esta ficha") na ficha do EGO, que copia os campos para colar na Clara.
+  - Consequência: **não traz fotografias, plantas, documentos nem características.**
+- **Descoberta (ver `docs/FONTES-DE-DADOS.md`):** a página pública de cada imóvel no site da Janela tem quase tudo: títulos e descrições nos 5 idiomas, fotografias (com legendas e texto alternativo), 360, visita virtual, vídeo, plantas com o formato, folhetos, características, áreas, classe energética e data da última alteração. O EGO só é indispensável para os 4 documentos (caderneta, certificado energético, contrato de mediação, licença de habitação).
+  - **Decisão para o M1:** botão "Ler esta página" no site público (marcador no navegador, sem login), em vez de "Ler esta ficha" no EGO. Documentos: lista curta na Clara.
 
 **Próximo passo:** terminar `listarCategorias`, propor as listas à Andreia, aplicar as regras ao Sheet (M0). Depois arrancar o M1.
 
@@ -22,8 +24,9 @@ A Clara prepara o levantamento e encontra o que falta. A Andreia só revê dúvi
 |---|---|
 | EGO (CRM) | Fonte oficial dos imóveis |
 | Exportação do EGO | Lista de imóveis, preços, datas e descrição principal |
-| Ficha do EGO no navegador ("Ler esta ficha") | Fotografias, plantas (e formato), documentos, características |
-| Site público da Janela | Títulos e descrições por idioma (lido pelo Apps Script) |
+| Página pública do imóvel ("Ler esta página") | Textos nos 5 idiomas, fotografias, legendas, 360, visita virtual, vídeo, plantas e formato, folhetos, características |
+| Ficha do EGO | Só os 4 documentos (caderneta, certificado energético, contrato de mediação, licença de habitação) |
+| Apps Script | Releitura diária dos textos por idioma no site (JSON-LD), depois de a ligação estar guardada |
 | Google Sheet | Registo partilhado com a equipa: resultado, pendências, evolução |
 | Clara (PC, sem internet) | Cruza as fontes, deteta faltas, mostra só o que precisa de decisão |
 | Prints do EGO | Último recurso: o OCR só lê texto, não deteta galerias, anexos nem caixas assinaladas |
@@ -67,7 +70,8 @@ A Clara prepara o levantamento e encontra o que falta. A Andreia só revê dúvi
 
 **M1 · Um imóvel automático (até 31 out)**: imóvel piloto escolhido pela Andreia (referência só no Sheet).
 - Apps Script lê o site público nos cinco idiomas e preenche "Textos por idioma" com data e origem; aplica a regra do idioma trocado.
-- Botão "Ler esta ficha" para a ficha do EGO (bookmarklet ou extensão local): copia fotografias, plantas com formato, documentos e características para a área de transferência; a Clara cola e propõe estados e ações.
+- Botão "Ler esta página" (marcador) na página pública do imóvel: lê os dados já carregados pela página e as 4 versões noutros idiomas; copia um resumo; a Clara cola e propõe estados e ações (idioma trocado, planta em PDF, fotografias sem texto alternativo, sem vídeo, etc.).
+- Lista curta na Clara para os 4 documentos do EGO.
 - Ecrã do imóvel só com dúvidas e ações.
 - Concluído quando a proposta coincide com a verificação manual e demora 5 minutos ou menos.
 
