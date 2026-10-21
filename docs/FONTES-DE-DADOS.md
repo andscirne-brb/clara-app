@@ -32,7 +32,8 @@ Análise feita a 21 out 2026 num imóvel real (página pública do site da Janel
 | **Licença de habitação** | Não (campo público vazio) | Sim | **EGO** |
 | Publicação por portal | Não | Sim | EGO / portais |
 | Notas internas, proprietário, visitas | Não | Sim | EGO (não entra no levantamento) |
-| Indicador de preenchimento da eGO (percentagem no cabeçalho da ficha) | Não | Sim | EGO (a confirmar o que mede) |
+| Nível de preenchimento da eGO (percentagem na lista de imóveis, com "campos por preencher") | Não | Sim | EGO, só como referência |
+| Contagens por imóvel na lista do EGO: oportunidades, site/portais, visitas | Não | Sim | EGO (candidato a indicador de contactos por imóvel no M4) |
 
 ## Exemplos de problemas detetados automaticamente no teste
 
@@ -49,3 +50,7 @@ Análise feita a 21 out 2026 num imóvel real (página pública do site da Janel
 3. **EGO só para os quatro documentos.** Na Clara, uma lista curta para marcar (caderneta, certificado energético, contrato de mediação, licença de habitação), ou mais tarde um botão igual na ficha do EGO.
 
 Ligação entre referência EGO e página do site: o site usa um número próprio no endereço (não a referência). A primeira leitura com o botão guarda a ligação; a partir daí o Apps Script consegue reler sozinho.
+
+## Nível de preenchimento da eGO não chega
+
+Confirmado com a Andreia: a percentagem da eGO é o "nível de preenchimento" e lista os "campos por preencher". No imóvel de teste dava 94% e só apontava a falta de vídeo. Não detetou a descrição FR vazia, a planta em PDF, as fotografias sem texto alternativo nem os documentos sem ficheiro. A pontuação da Clara mede a qualidade para os portais, não só se o campo existe; a da eGO fica como referência no levantamento.

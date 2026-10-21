@@ -14,6 +14,8 @@ Documento de passagem de testemunho. Mantido atualizado no fim de cada sessão. 
 - **Descoberta (ver `docs/FONTES-DE-DADOS.md`):** a página pública de cada imóvel no site da Janela tem quase tudo: títulos e descrições nos 5 idiomas, fotografias (com legendas e texto alternativo), 360, visita virtual, vídeo, plantas com o formato, folhetos, características, áreas, classe energética e data da última alteração. O EGO só é indispensável para os 4 documentos (caderneta, certificado energético, contrato de mediação, licença de habitação).
   - **Decisão para o M1:** botão "Ler esta página" no site público (marcador no navegador, sem login), em vez de "Ler esta ficha" no EGO. Documentos: lista curta na Clara.
 
+- Nível de preenchimento da eGO (percentagem na lista de imóveis) só aponta campos vazios; não deteta idioma trocado, planta em PDF, texto alternativo nem documentos. A lista de imóveis do EGO mostra também oportunidades, site/portais e visitas por imóvel (possível fonte de contactos para o M4).
+
 **Próximo passo:** terminar `listarCategorias`, propor as listas à Andreia, aplicar as regras ao Sheet (M0). Depois arrancar o M1.
 
 ## Para que serve a Clara
