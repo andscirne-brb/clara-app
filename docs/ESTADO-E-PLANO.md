@@ -2,6 +2,17 @@
 
 Documento de passagem de testemunho. Mantido atualizado no fim de cada sessão. Sem dados reais (repositório público).
 
+## DECISÃO (21 out 2026, 23:55): a Clara passa a viver dentro do Google Sheet
+
+Aprovado pela Andreia ("gosto da ideia de ter tudo num só lugar"). A aplicação de Windows (Tauri) fica **em pausa**: continua instalada e funcional na 0.7.4, mas não recebe novo desenvolvimento. Todo o trabalho novo é feito no Google Sheet do levantamento com Apps Script:
+- **Menu "Clara" e painel lateral dentro do Sheet** (script ligado ao Sheet), para rever só as dúvidas.
+- **Botão "Ler esta página"** (marcador no navegador) na página pública do imóvel: lê os dados que a página carregou e as 4 versões noutros idiomas e envia-os para um serviço Apps Script restrito à conta janela.pt, que preenche o Levantamento e cria as pendências. Plano B, se o Google da Janela bloquear o serviço: o botão copia um resumo e a Andreia cola-o no painel da Clara no Sheet.
+- **Apps Script diário**: relê títulos e descrições (JSON-LD) dos imóveis com ligação guardada.
+- Deixa de existir a "ponte" por ficheiros e a escrita no XLSM.
+- Mantém-se: custo zero, nada enviado sem a Andreia, pendências no Sheet, esclarecimentos para a Sara e trabalho operacional para a Andreia.
+- Perde-se a cifra local; aceite porque o levantamento já vive no Google da Janela.
+- Se no fim do M1 faltar algo que só uma aplicação local resolva, reavalia-se.
+
 ## Último ponto de situação (21 out 2026)
 
 - **Versão instalada no PC da Andreia: 0.7.4.** Inclui tudo o que existia na 0.7.3 (comparação feita função a função) mais a regra dos destinos alimentados pelo EGO.
@@ -21,7 +32,7 @@ Documento de passagem de testemunho. Mantido atualizado no fim de cada sessão. 
 - **Listas de escolha propostas à Andreia (21/10, à espera de aprovação):** valores em uso lidos com `opcoesLevantamento()` e `vocabularioPendencias()`. Proposta: campos de verificação do Levantamento = Por verificar, Preenchido, Em falta, Formato errado, Não aplicável, Não foi possível verificar; Estado da verificação = Por iniciar, Em curso, Verificado; Prioridade = Prioritária, Alta, Normal; Pendências: Estado = Por tratar, A aguardar esclarecimento, Em curso, Concluído, Não aplicável; Verificação final = Por verificar, Confirmado, Não confirmado; Onde corrigir = eGO, eGO e portais, eGO, site, portais e folhetos, Portais, Site; Registo: Resultado da verificação inclui "Confirmado" (o resumo semanal depende deste valor). Modo proposto: aviso, sem bloquear. Colunas calculadas ficam protegidas.
 - **M0 no Sheet concluído (21/10 23:48):** fuso Europe/Lisbon; 28 listas de escolha (aviso, sem bloquear) em Levantamento, Pendências e Registo (`apps-script/regras-m0.gs`). Proteções automáticas impossíveis: os separadores são tabelas do Google Sheets. Pendências: P0017 a P0019 atribuídas à Andreia (operacionais); P0016, P0020 e P0021 são perguntas à Sara.
 
-**Próximo passo:** M1, botão "Ler esta página" (marcador) e ecrã de análise na Clara. M0 concluído do lado da Andreia; falta só a resposta da Sara à P0016 e a medição de rede do WebView2.
+**Próximo passo:** M1 no Sheet: criar o script ligado ao Sheet (menu Clara), o serviço que recebe os dados do botão e o marcador "Ler esta página"; testar com o imóvel piloto. M0 concluído do lado da Andreia; falta só a resposta da Sara à P0016 e a medição de rede do WebView2.
 
 ## Para que serve a Clara
 
@@ -85,15 +96,15 @@ A Clara prepara o levantamento e encontra o que falta. A Andreia só revê dúvi
 - Concluído quando a proposta coincide com a verificação manual e demora 5 minutos ou menos.
 
 **M2 · Todos os imóveis (até 14 nov)**
-- Ponte com o Sheet: Apps Script exporta fotografia .xlsx para a pasta `Clara Ponte`; a Clara lê-a e escreve ficheiro de saída; o script acrescenta ao Registo de alterações sem duplicar (ID de operação).
-- Leitura automática às 18:20; ecrã "Hoje" pronto às 18:30.
+- (Ponte por ficheiros cancelada: a Clara vive no Sheet.)
+- Resumo "Hoje" no Sheet, atualizado automaticamente às 18:20.
 - Exportação do EGO detetada numa pasta do Drive.
 - Leitura diária do site para todos os imóveis.
-- Conversão local de plantas PDF para JPG (Windows.Data.Pdf, sem programas extra).
+- Plantas PDF para imagem: indicar ferramenta gratuita ou solução no Drive (a aplicação local está em pausa).
 - O XLSM antigo passa a arquivo.
 
 **M3 · Pedidos e seguimento (até 28 nov)**
-- Pedidos consolidados à equipa com a ação concreta; rascunhos no Gmail (Apps Script); lembretes de pendências antigas; atualização da Clara por pasta do Drive.
+- Pedidos consolidados à equipa com a ação concreta; rascunhos no Gmail (Apps Script); lembretes de pendências antigas; (atualização da aplicação por pasta do Drive deixa de ser necessária).
 
 **M4 · Painel de indicadores (dezembro)**
 - Looker Studio (gratuito) sobre o Sheet: seletor de período com comparação ao anterior; filtro por plataforma e por imóvel; evolução de contactos no total e por imóvel; comparação idealista, Green Acres, RightMove, EGO; qualidade (completos vs. com faltas, pendências e idade).

@@ -12,10 +12,14 @@ A Andreia alterna entre o Claude e o ChatGPT/Codex, muitas vezes quando os créd
 4. Código que corre fora do repositório (Apps Script, configurações do Sheet) é copiado para `apps-script/` sem IDs nem dados reais.
 5. Decisões e regras de negócio novas ditas pela Andreia entram em `docs/ESTADO-E-PLANO.md` no mesmo commit.
 
+## Decisão em vigor (21 out 2026)
+
+A Clara passou a viver **dentro do Google Sheet** (Apps Script, menu "Clara", painel lateral, botão "Ler esta página"). A aplicação de Windows em `src/`, `src-tauri/` e `crates/` está **em pausa**: não desenvolver nela sem a Andreia pedir. Código novo vai para `apps-script/`. Detalhes em `docs/ESTADO-E-PLANO.md`.
+
 ## Regras que não se quebram
 
 1. **Confidencialidade (NDA).** Nunca usar dados reais da Janela no repositório, em testes, em exemplos ou em conversas com assistentes. Usar só dados sintéticos (`TESTE-001`, `Concelho Exemplo`). O repositório é público.
-2. **A Clara não tem internet.** Não adicionar bibliotecas de rede, pedidos HTTP, telemetria nem atualizações automáticas. `scripts/verificar-rede.mjs` corre em cada compilação e falha se encontrar rede. Tudo o que precisa de internet vive no Apps Script do Google Sheet (pasta `apps-script/`), nunca na Clara.
+2. **A aplicação de Windows não tem internet** (regra mantida enquanto existir). Não adicionar bibliotecas de rede, pedidos HTTP, telemetria nem atualizações automáticas. `scripts/verificar-rede.mjs` corre em cada compilação e falha se encontrar rede. Tudo o que precisa de internet vive no Apps Script do Google Sheet (pasta `apps-script/`), nunca na Clara.
 3. **Custo zero.** Nenhum serviço pago.
 4. **Nada é publicado nem enviado sozinho.** Emails ficam em rascunho. Os portais são editados à mão. O RightMove só se corrige no EGO.
 5. **Não apagar dados nem histórico.** O histórico é só de acrescentar (encadeado por hash). Alterações à base de dados entram como nova migração em `crates/clara-core/migrations/`, numerada a seguir à última, e registada em `migrations.rs`.
