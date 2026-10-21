@@ -83,6 +83,10 @@ function aplicarArrumacao() {
   });
 
   // 6. Listas de escolha nas colunas que devem ser uniformes
+  passo('Listas: documentos do Levantamento aceitam "Categoria errada"', function () {
+    const v = ['Por verificar', 'Preenchido', 'Em falta', 'Categoria errada', 'Formato errado', 'Não aplicável', 'Não foi possível verificar'];
+    validar('Levantamento', 9, { 'Caderneta Predial (anexo)': v, 'Certificado Energético (anexo)': v, 'Contrato Mediação (anexo)': v, 'Licença Habitação (anexo)': v });
+  });
   passo('Listas: Registo de alterações', function () { validar('Registo de alterações', 5, { 'Autor': PESSOAS.concat(['Clara']), 'Onde foi alterado': ['eGO', 'Portal', 'Levantamento'], 'Verificado por': PESSOAS.concat(['Clara', 'Clara (conferência das referências)']) }); });
   passo('Listas: Textos por idioma', function () { validar('Textos por idioma', 5, { 'Idioma': ['PT', 'EN', 'FR', 'DE', 'ES'], 'Estado da recolha': ['Por recolher', 'Recolhido'], 'Estado da proposta': ['Por preparar', 'Proposta pronta', 'Aplicada no eGO', 'Não aplicável'], 'Revisor': PESSOAS }); });
   passo('Listas: Histórico de indicadores', function () { validar('Histórico de indicadores', 5, { 'Plataforma': ['eGO', 'Idealista', 'Green-Acres', 'Rightmove'], 'Estado do anúncio': ['Disponível', 'Em Prospecção', 'Reservado', 'Vendido', 'Retirado'], 'Registado por': PESSOAS.concat(['Clara']) }); });

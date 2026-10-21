@@ -23,14 +23,14 @@ td{border-bottom:1px solid #eee;padding:4px 2px;vertical-align:top}
 <div class="muted">1. Na página pública do imóvel, carrega no marcador <b>Clara</b>.<br>2. Cola aqui (Ctrl+V).</div>
 <textarea id="txt" placeholder="Cola aqui a leitura da Clara"></textarea>
 <h3>Documentos na ficha do EGO</h3>
-<div class="muted">Vê o bloco "Documentos" na ficha do imóvel no EGO.</div>
+<div class="muted">Vê o bloco "Documentos" na ficha do imóvel no EGO. "Está noutra categoria": o ficheiro existe mas foi carregado no sítio errado (por exemplo, em Outros documentos).</div>
 <div id="docs"></div>
 <button id="analisar" onclick="analisar()">Analisar</button>
 <div id="erro" class="erro"></div>
 <div id="res"></div>
 <script>
 const DOCS=[['caderneta','Caderneta Predial'],['certificado','Certificado Energético'],['contrato','Contrato de Mediação'],['licenca','Licença de Habitação']];
-document.getElementById('docs').innerHTML=DOCS.map(d=>'<div class="doc"><span>'+d[1]+'</span><select id="d_'+d[0]+'"><option value="">Não vi</option><option value="sim">Tem ficheiro</option><option value="nao">Em falta</option></select></div>').join('');
+document.getElementById('docs').innerHTML=DOCS.map(d=>'<div class="doc"><span>'+d[1]+'</span><select id="d_'+d[0]+'"><option value="">Não vi</option><option value="sim">Tem ficheiro</option><option value="categoria">Está noutra categoria</option><option value="nao">Em falta</option><option value="na">Não se aplica</option></select></div>').join('');
 function docs(){const o={};DOCS.forEach(d=>o[d[0]]=document.getElementById('d_'+d[0]).value);return o;}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;');}
 function falhou(e){document.getElementById('erro').textContent=(e&&e.message)||String(e);document.querySelectorAll('button').forEach(b=>b.disabled=false);}
@@ -42,7 +42,7 @@ function analisar(){
 function mostrar(a){
   document.getElementById('analisar').disabled=false;
   let h='<h3>'+esc(a.ref)+' · linha '+a.linha+' do Levantamento</h3>';
-  h+='<table>'+a.campos.map(c=>{const m=String(c.atual)!==String(c.novo);const cls=/Em falta|Formato errado/.test(c.novo)?'falta':(c.novo==='Preenchido'?'ok':'');return '<tr class="'+(m?'muda':'')+'"><td>'+esc(c.coluna)+'</td><td>'+(m?'<s class="muted">'+esc(c.atual||'vazio')+'</s> ':'')+'<span class="'+cls+'">'+esc(c.novo)+'</span><div class="muted">'+esc(c.motivo)+'</div></td></tr>';}).join('')+'</table>';
+  h+='<table>'+a.campos.map(c=>{const m=String(c.atual)!==String(c.novo);const cls=/Em falta|Formato errado|Categoria errada/.test(c.novo)?'falta':(c.novo==='Preenchido'?'ok':'');return '<tr class="'+(m?'muda':'')+'"><td>'+esc(c.coluna)+'</td><td>'+(m?'<s class="muted">'+esc(c.atual||'vazio')+'</s> ':'')+'<span class="'+cls+'">'+esc(c.novo)+'</span><div class="muted">'+esc(c.motivo)+'</div></td></tr>';}).join('')+'</table>';
   const novas=a.pendencias.filter(p=>!p.jaExiste), ja=a.pendencias.filter(p=>p.jaExiste);
   h+='<h3>Pendências novas ('+novas.length+')</h3>'+(novas.length?novas.map(p=>'<div class="p '+(p.sara?'sara':'')+'"><b>'+esc(p.assunto)+'</b><div class="muted">'+(p.sara?'Pergunta para a Sara':'Para ti (operacional)')+' · '+esc(p.acao)+'</div></div>').join(''):'<div class="muted">Nenhuma.</div>');
   if(a.resolvidas&&a.resolvidas.length)h+='<h3>Correções confirmadas ('+a.resolvidas.length+')</h3>'+a.resolvidas.map(r=>'<div class="p" style="border-left-color:#188038"><b>'+esc(r.id+' '+r.assunto)+'</b><div class="muted">Já não aparece no site: passa a Concluído e Confirmado.</div></div>').join('');

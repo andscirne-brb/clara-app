@@ -27,7 +27,8 @@ A Clara passou a viver **dentro do Google Sheet** (Apps Script, menu "Clara", pa
 7. **Tudo o que é partilhado com a Janela e todas as pendências vão para o Google Sheet**, para a Sara consultar num só sítio. Pendências: separador "Pendências da equipa" (títulos na linha 5, dados a partir da linha 6), uma linha por assunto, ID sequencial `P0001`, sem duplicar referência + assunto, nunca escrever na coluna P (Conferência, fórmula). Valores em uso: Responsável "Por atribuir"; Prioridade "Normal" ou "Alta"; Estado "Por tratar", "A aguardar esclarecimento", "Concluído", "Não aplicável"; Onde corrigir "eGO", "eGO e portais"…; Verificação final "Por verificar" ou "Confirmado"; Aguarda análise de "Sara". Modelo em `apps-script/pendencias.gs`.
 8. **Visita virtual foi descontinuada:** não avaliar nem criar pendências sobre ela.
 9. **Prioritários** = imóveis com a etiqueta "melhora" no eGO (22 em 22/10/2026), marcados "Prioritária" no Levantamento.
-10. **Datas no Sheet só com dia, nunca com horas** (pedido da Andreia). Usar a data do dia no fuso do Sheet (`Utilities.parseDate(formatDate(..., 'yyyy-MM-dd'))`), nunca `new Date()` direto.
+10. **Documentos podem estar na categoria errada** no eGO (ex.: em Outros documentos): estado "Categoria errada", pendência operacional para a Andreia mover o ficheiro. Também existe "Não se aplica".
+11. **Datas no Sheet só com dia, nunca com horas** (pedido da Andreia). Usar a data do dia no fuso do Sheet (`Utilities.parseDate(formatDate(..., 'yyyy-MM-dd'))`), nunca `new Date()` direto.
 
 ## Como se trabalha
 

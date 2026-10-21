@@ -122,13 +122,16 @@ function analisar(texto, docs) {
   }
   if (d.folhetos != null) prop('Folheto', d.folhetos > 0 ? 'Preenchido' : 'Em falta', d.folhetos + ' folhetos');
   // Documentos (marcados no painel a partir da ficha do EGO)
-  const emFalta = [];
+  const emFalta = [], noutra = [];
   DOCS.forEach(function (x) {
     const v = docs && docs[x[0]];
     if (v === 'sim') prop(x[1], 'Preenchido', 'ficha do EGO');
     else if (v === 'nao') { prop(x[1], 'Em falta', 'ficha do EGO'); emFalta.push(x[2]); }
+    else if (v === 'categoria') { prop(x[1], 'Categoria errada', 'o ficheiro existe mas está noutra categoria'); noutra.push(x[2]); }
+    else if (v === 'na') prop(x[1], 'Não aplicável', 'não se aplica a este imóvel');
   });
   if (emFalta.length) nova('Documentos', 'Documentos obrigatórios sem ficheiro no eGO', 'Na ficha do eGO sem ficheiro: ' + emFalta.join(', ') + ' (' + hoje + ').', 'Verificar no dossier do escritório e carregar no eGO. Só os que não estiverem no dossier passam a pergunta à Sara.');
+  if (noutra.length) nova('Documentos', 'Documentos na categoria errada no eGO', 'Na ficha do eGO, carregados noutra categoria: ' + noutra.join(', ') + ' (' + hoje + ').', 'Mover cada ficheiro para a categoria certa no bloco Documentos do eGO.');
   if (d.url && c.col('Página pública')) prop('Página pública', d.url, 'ligação ao anúncio no site');
   if (c.col('Data da verificação')) prop('Data da verificação', hoje, '');
   if (c.col('Estado da verificação')) prop('Estado da verificação', 'Verificado', '');
@@ -146,7 +149,9 @@ function analisar(texto, docs) {
   });
   if (d.videos != null) pode('Existe vídeo do imóvel?');
   if (d.plantas) { pode('Imóvel sem planta'); pode('Planta só em PDF'); }
-  if (docs && DOCS.every(function (x) { return docs[x[0]] === 'sim'; })) pode('Documentos obrigatórios sem ficheiro no eGO');
+  const todosVistos = docs && DOCS.every(function (x) { return !!docs[x[0]]; });
+  if (todosVistos && emFalta.length === 0) pode('Documentos obrigatórios sem ficheiro no eGO');
+  if (todosVistos && noutra.length === 0) pode('Documentos na categoria errada no eGO');
   const detetados = {}; pend.forEach(function (p) { detetados[p.assunto] = true; });
 
   // Pendências já existentes: não duplicar e confirmar as que foram corrigidas
