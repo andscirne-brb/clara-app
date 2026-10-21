@@ -1,4 +1,5 @@
 $ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 function Xml-Read([string]$text) {
@@ -75,7 +76,14 @@ try{
   if((Cell-Text ($rr.SelectSingleNode("m:c[@r='A$rn']",$nn)) $nn $shared)-ne$w.reference){throw 'A linha já não pertence ao imóvel.'}
   $column=[string]$change.column;if($column-notmatch'^[A-W]$'){throw 'Coluna inválida.'}
   $addr=$column+$rn;$cc=$rr.SelectSingleNode("m:c[@r='$addr']",$nn);if($cc-and$cc.SelectSingleNode('m:f',$nn)){throw 'Não é permitido substituir uma fórmula.'}
-  if((Cell-Text $cc $nn $shared)-cne[string]$change.before){throw 'Um valor mudou desde a revisão.'}
+  $actual=Cell-Text $cc $nn $shared;$same=$actual-ceq[string]$change.before
+  # calamine displays numeric dates without .0; the XML may retain that suffix.
+  # Only compare numerically for the date column, never for descriptions or IDs.
+  if(!$same-and$name-eq'Textos por idioma'-and$column-eq'F'-and$cc-and$cc.GetAttribute('t')-notin@('s','inlineStr','str')){
+   $av=0.0;$bv=0.0;$style=[Globalization.NumberStyles]::Float;$culture=[Globalization.CultureInfo]::InvariantCulture
+   $same=[double]::TryParse($actual,$style,$culture,[ref]$av)-and[double]::TryParse([string]$change.before,$style,$culture,[ref]$bv)-and$av-eq$bv
+  }
+  if(!$same){throw "O valor em $name!$addr difere da pré-visualização. Atualiza a pré-visualização e confirma novamente."}
   if($name-eq'Textos por idioma'-and$column-eq'F'){$dt=[datetime]::ParseExact([string]$change.after,'yyyy-MM-dd',[Globalization.CultureInfo]::InvariantCulture);Put-Cell $dd $rr $nn $column ([string][int](($dt-([datetime]'1899-12-30')).TotalDays)) $true}else{Put-Cell $dd $rr $nn $column ([string]$change.after)}
  }
  # Invalidate only computed caches of the edited property. Excel recalculates on opening.

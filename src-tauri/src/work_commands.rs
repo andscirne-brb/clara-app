@@ -158,7 +158,7 @@ pub fn write_request(request: serde_json::Value) -> Res<Written> {
         )
         .join("System32/WindowsPowerShell/v1.0/powershell.exe");
         let script = format!(
-            "[Console]::InputEncoding=[Text.UTF8Encoding]::new($false);[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false);{}",
+            "$ProgressPreference='SilentlyContinue';[Console]::InputEncoding=[Text.UTF8Encoding]::new($false);[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false);{}",
             if request.get("profiles").is_some() {
                 include_str!("profiles-write.ps1")
             } else {
@@ -189,7 +189,7 @@ pub fn write_request(request: serde_json::Value) -> Res<Written> {
             .map_err(|_| "A gravação foi interrompida.")?;
         if !out.status.success() {
             return Err(format!(
-                "Não foi possível gravar no Excel. O registo continua guardado na Clara. Fecha o Excel e atualiza a pré-visualização antes de repetir. {}",
+                "Não foi possível gravar no Excel. O registo continua guardado na Clara. Atualiza a pré-visualização antes de repetir. Se o Excel estiver aberto, fecha-o primeiro. {}",
                 String::from_utf8_lossy(&out.stderr).trim()
             ));
         }

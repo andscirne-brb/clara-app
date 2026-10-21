@@ -62,12 +62,14 @@ rels=E.fromstring(parts['xl/_rels/workbook.xml.rels']);E.SubElement(rels,'{http:
 main=sheet([(9,['Referência EGO','Natureza','Concelho','Imagens','Alt-text','Descrição PT']),(10,['TESTE-01','Moradia','TESTE','','','Por verificar'])]);row=main.find("m:sheetData/m:row[@r='10']",ns);cell=E.SubElement(row,'{'+N+'}c',r='Y10');E.SubElement(cell,'{'+N+'}f').text='IF(F10="Preenchido","Verificado","Em curso")';E.SubElement(cell,'{'+N+'}v').text='Verificado'
 parts['xl/worksheets/sheet1.xml']=E.tostring(main)
 parts['xl/worksheets/sheet3.xml']=E.tostring(sheet([(5,['Referência EGO','Idioma','Título original','Descrição original','Origem / evidência','Data de recolha','Estado da recolha']),(6,['TESTE-01','PT','Título a preservar','Texto anterior','','','Por recolher'])]))
+dates=E.fromstring(parts['xl/worksheets/sheet3.xml']);dc=dates.find("m:sheetData/m:row[@r='6']/m:c[@r='F6']",ns);dc.clear();dc.set('r','F6');E.SubElement(dc,'{'+N+'}v').text='46314.0';parts['xl/worksheets/sheet3.xml']=E.tostring(dates)
 with zipfile.ZipFile(p,'w',zipfile.ZIP_DEFLATED)as z:
  for n,b in parts.items():z.writestr(n,b)
 before=p.read_bytes();audit_work={**w,'id':str(uuid.uuid4()),'location':'Levantamento Excel'}
-audit={'cells':[{'sheet':'Levantamento','column':'F','row':10,'before':'Por verificar','after':'Preenchido'},{'sheet':'Textos por idioma','column':'D','row':6,'before':'Texto anterior','after':'=Texto TESTE <literal> & revisto'},{'sheet':'Textos por idioma','column':'F','row':6,'before':'','after':'2026-10-20'}]}
+audit={'cells':[{'sheet':'Levantamento','column':'F','row':10,'before':'Por verificar','after':'Preenchido'},{'sheet':'Textos por idioma','column':'D','row':6,'before':'Texto anterior','after':'=Texto TESTE <literal> & revisto'},{'sheet':'Textos por idioma','column':'F','row':6,'before':'46314','after':'2026-10-20'}]}
 def audit_run(hash,a=audit):return subprocess.run(cmd,input=json.dumps({'path':str(p.resolve()),'expected_hash':hash,'work':audit_work,'audit':a},ensure_ascii=False).encode(),capture_output=True)
 out=audit_run('0'*64);assert out.returncode!=0 and p.read_bytes()==before
+changed_date={'cells':[{**audit['cells'][-1],'before':'46313'}]};out=audit_run(hashlib.sha256(before).hexdigest(),changed_date);assert out.returncode!=0 and p.read_bytes()==before;assert b'CLIXML'not in out.stderr
 out=audit_run(hashlib.sha256(before).hexdigest());assert out.returncode==0,out.stderr.decode('utf-8',errors='replace')
 after=p.read_bytes();result=json.loads(out.stdout);assert p.with_name(result['recovery_file']).read_bytes()==before
 with zipfile.ZipFile(p)as z:
