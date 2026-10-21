@@ -112,7 +112,7 @@ function analisar(texto, docs) {
     prop('Vídeo', d.videos > 0 ? 'Preenchido' : 'Em falta', d.videos + ' vídeos');
     if (d.videos === 0) nova('Vídeo', 'Existe vídeo do imóvel?', 'O site não mostra vídeo' + fonte + '.', 'Esclarecer se existe vídeo e onde está, para a Andreia o carregar no eGO.', 'eGO', true);
   }
-  if (d.visitaVirtual != null) prop('Visita virtual (não avaliada)', d.visitaVirtual ? 'Preenchido' : 'Em falta', d.visitaVirtual ? 'tem visita virtual' : 'sem visita virtual');
+  // Visita virtual: descontinuada na Janela (22/10/2026), não se avalia.
   if (d.plantas) {
     const img = d.plantas.filter(function (e) { return /jpg|png|webp|gif/.test(e); }).length;
     const pdf = d.plantas.filter(function (e) { return e === 'pdf'; }).length;
@@ -129,6 +129,7 @@ function analisar(texto, docs) {
     else if (v === 'nao') { prop(x[1], 'Em falta', 'ficha do EGO'); emFalta.push(x[2]); }
   });
   if (emFalta.length) nova('Documentos', 'Documentos obrigatórios sem ficheiro no eGO', 'Na ficha do eGO sem ficheiro: ' + emFalta.join(', ') + ' (' + hoje + ').', 'Verificar no dossier do escritório e carregar no eGO. Só os que não estiverem no dossier passam a pergunta à Sara.');
+  if (d.url && c.col('Página pública')) prop('Página pública', d.url, 'ligação ao anúncio no site');
   if (c.col('Data da verificação')) prop('Data da verificação', hoje, '');
   if (c.col('Estado da verificação')) prop('Estado da verificação', 'Verificado', '');
   if (d.parcial) notas.push('Leitura parcial: o site não devolveu todos os dados; texto alternativo e características não foram verificados.');
