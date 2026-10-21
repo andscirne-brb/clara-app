@@ -1,6 +1,7 @@
 //! Núcleo da Clara: segurança, persistência, histórico, catálogo e backups.
 //! Não depende do Tauri nem da interface e não tem acesso à rede.
 
+pub mod audit;
 pub mod backup;
 pub mod catalog;
 pub mod clock;
@@ -8,13 +9,16 @@ pub mod config;
 pub mod db;
 pub mod error;
 pub mod history;
+pub mod import;
 pub mod keys;
 pub mod migrations;
 pub mod paths;
+pub mod property;
 pub mod recovery;
 pub mod schedule;
 pub mod settings;
 pub mod vault;
+pub mod work;
 
 pub use error::{ClaraError, Result};
 
