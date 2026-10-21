@@ -5,6 +5,12 @@ name: Windows
 on:
   push:
     branches: [main]
+    # Documentação e Apps Script não mudam o instalador.
+    paths-ignore:
+      - 'docs/**'
+      - 'apps-script/**'
+      - 'AGENTS.md'
+      - '**/*.md'
   workflow_dispatch:
 
 permissions:
