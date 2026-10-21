@@ -18,7 +18,9 @@ Documento de passagem de testemunho. Mantido atualizado no fim de cada sessão. 
 
 - **Pendências registadas no Sheet para a Sara (21/10):** P0016 (o que conta como oportunidade no eGO) e P0017 a P0021 com as faltas do imóvel piloto (descrição FR, planta em PDF, texto alternativo, documentos, vídeo). Regra nova da Andreia: tudo o que é partilhado com a Janela e todas as pendências ficam no Sheet.
 
-**Próximo passo:** terminar `listarCategorias`, propor as listas à Andreia, aplicar as regras ao Sheet (M0). Depois arrancar o M1.
+- **Listas de escolha propostas à Andreia (21/10, à espera de aprovação):** valores em uso lidos com `opcoesLevantamento()` e `vocabularioPendencias()`. Proposta: campos de verificação do Levantamento = Por verificar, Preenchido, Em falta, Formato errado, Não aplicável, Não foi possível verificar; Estado da verificação = Por iniciar, Em curso, Verificado; Prioridade = Prioritária, Alta, Normal; Pendências: Estado = Por tratar, A aguardar esclarecimento, Em curso, Concluído, Não aplicável; Verificação final = Por verificar, Confirmado, Não confirmado; Onde corrigir = eGO, eGO e portais, eGO, site, portais e folhetos, Portais, Site; Registo: Resultado da verificação inclui "Confirmado" (o resumo semanal depende deste valor). Modo proposto: aviso, sem bloquear. Colunas calculadas ficam protegidas.
+
+**Próximo passo:** aplicar as listas e o fuso depois da aprovação (M0). Depois arrancar o M1 (botão "Ler esta página").
 
 ## Para que serve a Clara
 
