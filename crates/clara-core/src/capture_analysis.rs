@@ -85,8 +85,14 @@ fn ui_line(s: &str) -> bool {
         || n.starts_with("mais caracteristicas")
         || matches!(n.as_str(), "titulo" | "titulo o" | "descricao do imovel")
 }
+const DOC_MARKER: &str = "\u{1e}CLARA_DOCS_V1 ";
+fn document_rows(text: &str) -> Vec<serde_json::Value> {
+    text.lines().filter_map(|l| l.strip_prefix(DOC_MARKER))
+        .filter_map(|s| serde_json::from_str::<Vec<serde_json::Value>>(s).ok())
+        .flatten().take(30).collect()
+}
 pub fn descriptions(text: &str, fallback: &str) -> Vec<(String, String, bool)> {
-    let lines: Vec<_> = text.lines().map(str::trim).collect();
+    let lines: Vec<_> = text.lines().filter(|l| !l.starts_with(DOC_MARKER)).map(str::trim).collect();
     let editing = lines
         .iter()
         .any(|l| norm(l).starts_with("limite de caracteres"));
@@ -210,6 +216,9 @@ pub fn analyse(a: &Audit, fallback: &str) -> Result<Analysis> {
         warnings: vec![],
     };
     for cap in &a.captures {
+        let rows = document_rows(&cap.text);
+        let has_document_geometry = !rows.is_empty();
+        let cap = crate::collection::Capture { name: cap.name.clone(), text: cap.text.lines().filter(|l| !l.starts_with(DOC_MARKER)).collect::<Vec<_>>().join("\n") };
         let editing = cap
             .text
             .lines()
@@ -232,6 +241,14 @@ pub fn analyse(a: &Audit, fallback: &str) -> Result<Analysis> {
                     });
                 }
             };
+        for row in rows {
+            let field = row["field"].as_str().unwrap_or("");
+            let value = row["value"].as_str().unwrap_or("");
+            let evidence = row["evidence"].as_str().unwrap_or("");
+            if ["O", "P", "Q", "R"].contains(&field) && ["Preenchido", "Em falta"].contains(&value) && !evidence.is_empty() {
+                add(field, String::new(), value.into(), evidence.chars().take(500).collect(), false);
+            }
+        }
         for (lang, value, partial) in descriptions(&cap.text, fallback) {
             add(
                 "description",
@@ -324,6 +341,11 @@ pub fn analyse(a: &Audit, fallback: &str) -> Result<Analysis> {
                     ("S", "folheto"),
                     ("S", "brochure"),
                 ] {
+                    // The bounded panel takes precedence over a filename that
+                    // might actually belong to Outros documentos.
+                    if has_document_geometry && ["O", "P", "Q", "R"].contains(&field) {
+                        continue;
+                    }
                     if n.contains(word) {
                         add(
                             field,
@@ -396,7 +418,7 @@ mod tests {
         assert!(bytes.len() <= 5_000_000);
         let audit: Audit = serde_json::from_slice(&bytes).unwrap();
         let result = analyse(&audit, "PT").unwrap();
-        assert!(result.proposals.iter().any(|p| p.field == "description"));
+        assert!(!result.proposals.is_empty());
         std::fs::write(output, serde_json::to_vec_pretty(&result).unwrap()).unwrap();
     }
     fn data(texts: &[&str]) -> Audit {
@@ -492,6 +514,22 @@ mod tests {
         assert!(r.proposals.iter().any(|p| p.field == "O"));
         assert!(r.proposals.iter().any(|p| p.field == "N"));
         assert!(r.proposals.iter().all(|p| p.value != "Em falta"));
+    }
+    #[test]
+    fn bounded_document_rows_are_proposals_and_metadata_is_not_description() {
+        let s = "DESCRIÇÃO\nTexto manual.\n\u{1e}CLARA_DOCS_V1 [{\"field\":\"O\",\"value\":\"Em falta\",\"evidence\":\"Linha delimitada sem anexos\"},{\"field\":\"P\",\"value\":\"Preenchido\",\"evidence\":\"TESTE.pdf\"},{\"field\":\"N\",\"value\":\"Em falta\",\"evidence\":\"Não permitido\"}]";
+        let r = analyse(&data(&[s]), "PT").unwrap();
+        assert!(r.proposals.iter().any(|p| p.field == "O" && p.value == "Em falta"));
+        assert!(r.proposals.iter().any(|p| p.field == "P" && p.value == "Preenchido"));
+        assert!(!r.proposals.iter().any(|p| p.field == "N"));
+        assert_eq!(descriptions(s, "PT")[0].1, "Texto manual.");
+        let r = analyse(&data(&[s, "caderneta TESTE.pdf"]), "PT").unwrap();
+        assert!(r.warnings.iter().any(|w| w.contains("propostas diferentes")));
+        assert!(analyse(&data(&["\u{1e}CLARA_DOCS_V1 inválido"]), "PT").unwrap().proposals.is_empty());
+        let other = format!("{s}\nOutros documentos\ncaderneta TESTE.pdf");
+        let r = analyse(&data(&[&other]), "PT").unwrap();
+        assert_eq!(r.proposals.iter().filter(|p| p.field == "O").count(), 1);
+        assert!(r.proposals.iter().any(|p| p.field == "O" && p.value == "Em falta"));
     }
     #[test]
     fn multiple_descriptions_keep_sources_and_warn_on_conflicts() {

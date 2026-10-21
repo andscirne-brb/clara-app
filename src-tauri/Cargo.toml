@@ -1,6 +1,6 @@
 [package]
 name = "clara"
-version = "0.7.1"
+version = "0.7.2"
 description = "Clara: controlo da presença dos imóveis nos portais"
 authors = ["Andreia Cirne"]
 edition = "2024"

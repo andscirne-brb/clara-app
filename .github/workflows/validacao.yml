@@ -28,6 +28,9 @@ jobs:
             windows-cargo-
       - run: npm ci
       - run: npm run verificar
+      - name: Categorias de documentos com geometria fictícia
+        shell: pwsh
+        run: ./scripts/testar-documentos.ps1
       - name: Testes do núcleo e do Windows
         run: cargo test --workspace --release --locked
       - name: Preparar teste local da análise de capturas
