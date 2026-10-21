@@ -18,7 +18,7 @@ Análise feita a 21 out 2026 num imóvel real (página pública do site da Janel
 | Fotografias 360 | Sim, contagem | Sim | **Site** |
 | Visita virtual | Sim (existe ou não) | Sim | **Site** |
 | Vídeo | Sim (existe ou não) | Sim | **Site** |
-| Plantas e o **formato** (PDF ou JPG) | Sim | Sim | **Site** |
+| Plantas e o **formato** (PDF ou imagem) | Sim: cada planta tem o endereço do ficheiro com a extensão (.pdf, .jpg, .png) | Sim | **Site**. Plantas em PDF não são exportadas para os portais: têm de ser convertidas em imagem |
 | Folhetos (brochuras) | Sim, contagem | Sim | **Site** |
 | Características (divisões, equipamentos, segurança, conforto, extras, áreas, serviços, infraestruturas) | Sim, por grupo e com valores | Sim, em caixas assinaladas | **Site** |
 | Áreas, quartos, casas de banho, ano | Sim | Sim | **Site** |
