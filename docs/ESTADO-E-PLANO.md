@@ -74,7 +74,7 @@ A Clara prepara o levantamento e encontra o que falta. A Andreia só revê dúvi
 - [x] Regra de passagem de testemunho (AGENTS.md e CLAUDE.md): atualizar este documento e fazer push a cada passo, em Claude e Codex
 - [x] Listas de escolha e fuso Lisboa (proteções impossíveis em tabelas)
 - [x] Tempo atual por imóvel: cerca de 20 minutos (meta do M1: 5 minutos ou menos, menos 75%)
-- [x] Origem dos contactos: cada plataforma tem os seus números. Por confirmar (pendência P0016, Sara) se as oportunidades do eGO juntam os pedidos de contacto do Imovirtual, Green Acres e RightMove ou se os portais os medem à parte.
+- [x] Origem dos contactos: cada plataforma tem os seus números. Por confirmar (pendência P0016, Sara) se as oportunidades do eGO juntam os pedidos de contacto do idealista, Green Acres e RightMove ou se os portais os medem à parte.
 - [ ] Medição dos pedidos de rede do WebView2 (AC23) e confirmação do NDA
 
 **M1 · Um imóvel automático (até 31 out)**: imóvel piloto escolhido pela Andreia (referência só no Sheet).
