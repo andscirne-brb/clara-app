@@ -120,7 +120,7 @@ function listasEmFalta() {
     const h = sh.getRange(hr, 1, 1, sh.getLastColumn()).getDisplayValues()[0]; const n = sh.getMaxRows() - hr;
     Object.keys(regras[k]).forEach(function (c) {
       const i = h.indexOf(c); if (i < 0) { console.log('não encontrada · ' + nome + ' · ' + c); return; }
-      try { sh.getRange(hr + 1, i + 1, n, 1).setDataValidation(lista(regras[k][c])); console.log('OK · ' + nome + ' · ' + c); }
+      try { sh.getRange(hr + 1, i + 1, n, 1).setDataValidation(lista(regras[k][c])); SpreadsheetApp.flush(); console.log('OK · ' + nome + ' · ' + c); }
       catch (e) { console.log('JÁ TEM TIPO PRÓPRIO · ' + nome + ' · ' + c); }
     });
   });
