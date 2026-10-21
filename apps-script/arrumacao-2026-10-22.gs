@@ -104,3 +104,24 @@ function aplicarArrumacao() {
   });
   passo('Esconder Textos por idioma e Histórico dos perfis', function () { ss.getSheetByName('Textos por idioma').hideSheet(); ss.getSheetByName('Histórico dos perfis').hideSheet(); });
 }
+
+/** Segunda passagem: listas coluna a coluna (as colunas com tipo próprio na tabela já são uniformes e ficam como estão). */
+function listasEmFalta() {
+  const ss = SpreadsheetApp.getActive();
+  const PESSOAS = ['Andreia', 'Sara', 'Júlia', 'Idília'];
+  const lista = function (v) { return SpreadsheetApp.newDataValidation().requireValueInList(v, true).setAllowInvalid(true).setHelpText('Escolhe uma opção da lista.').build(); };
+  const regras = {
+    'Registo de alterações|5': { 'Autor': PESSOAS.concat(['Clara']), 'Onde foi alterado': ['eGO', 'Portal', 'Levantamento'], 'Verificado por': PESSOAS.concat(['Clara', 'Clara (conferência das referências)']) },
+    'Histórico de indicadores|5': { 'Plataforma': ['eGO', 'Idealista', 'Green-Acres', 'Rightmove'], 'Estado do anúncio': ['Disponível', 'Em Prospecção', 'Reservado', 'Vendido', 'Retirado'], 'Registado por': PESSOAS.concat(['Clara']) },
+    'Perfis dos portais|1': { 'Portal': ['idealista', 'green-acres', 'rightmove'], 'Estado': ['Por verificar', 'Em curso', 'Ajustar', 'Pendente', 'Fonte', 'Concluído'], 'Depende de': PESSOAS, 'Idioma': ['PT', 'EN', 'FR', 'DE', 'ES'] }
+  };
+  Object.keys(regras).forEach(function (k) {
+    const nome = k.split('|')[0], hr = +k.split('|')[1]; const sh = ss.getSheetByName(nome);
+    const h = sh.getRange(hr, 1, 1, sh.getLastColumn()).getDisplayValues()[0]; const n = sh.getMaxRows() - hr;
+    Object.keys(regras[k]).forEach(function (c) {
+      const i = h.indexOf(c); if (i < 0) { console.log('não encontrada · ' + nome + ' · ' + c); return; }
+      try { sh.getRange(hr + 1, i + 1, n, 1).setDataValidation(lista(regras[k][c])); console.log('OK · ' + nome + ' · ' + c); }
+      catch (e) { console.log('JÁ TEM TIPO PRÓPRIO · ' + nome + ' · ' + c); }
+    });
+  });
+}
