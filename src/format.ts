@@ -54,7 +54,7 @@ export const grupoLabel: Record<string, string> = {
   por_confirmar: "Por confirmar",
   core: "Core",
   secondary: "Secondary",
-  feed_only: "Feed only",
+  feed_only: "Só via EGO (feed)",
 };
 
 export const rulesLabel: Record<string, string> = {

@@ -484,3 +484,21 @@ fn foundation_upgrade_and_old_backup_preserve_settings_and_history() {
             .is_empty()
     );
 }
+#[test]
+fn feed_only_destination_accepts_only_ego_edits() {
+    let mut c = conn();
+    let rm = clara_core::catalog::get(&c, "rightmove-pt").unwrap();
+    assert_eq!(rm.grupo, "feed_only", "RightMove só recebe dados do EGO");
+    let p = property(&mut c);
+    let l = listing(&mut c, &p.id, "rightmove-pt");
+    assert_eq!(l.portal_group, "feed_only");
+    cycle::record_audit(&mut c, &clock(), &l.id, items()).unwrap();
+    let issue = cycle::issues(&c, Some(&l.id)).unwrap().remove(0);
+    assert!(cycle::record_change(&mut c, &clock(), &issue.id, "portal", "Planta", "TESTE").is_err());
+    cycle::record_change(&mut c, &clock(), &issue.id, "ego", "Planta", "TESTE: editado no EGO").unwrap();
+    // Outros destinos continuam a aceitar edição no portal; o grupo pode ser alterado.
+    let after = clara_core::catalog::set_group(&mut c, &clock(), "idealista-pt", "feed_only").unwrap();
+    assert_eq!(after.grupo, "feed_only");
+    assert!(clara_core::catalog::set_group(&mut c, &clock(), "idealista-pt", "outro").is_err());
+    assert!(history::verify_chain(&c).unwrap().ok);
+}

@@ -218,13 +218,15 @@ pub struct Listing {
     pub property_id: String,
     pub portal_id: String,
     pub portal_name: String,
+    /// "feed_only": o destino recebe os dados do EGO e não se edita no portal.
+    pub portal_group: String,
     pub portal_ref: String,
     pub url: String,
     pub visibility: String,
     pub monitoring: bool,
     pub revision: i64,
 }
-const LISTING_SELECT: &str = "SELECT l.id,l.property_id,l.portal_id,p.name,l.portal_ref,l.url,l.visibility,l.monitoring,l.revision FROM listing l JOIN portal p ON p.id=l.portal_id";
+const LISTING_SELECT: &str = "SELECT l.id,l.property_id,l.portal_id,p.name,l.portal_ref,l.url,l.visibility,l.monitoring,l.revision,p.grupo FROM listing l JOIN portal p ON p.id=l.portal_id";
 fn listing_row(r: &rusqlite::Row) -> rusqlite::Result<Listing> {
     Ok(Listing {
         id: r.get(0)?,
@@ -236,6 +238,7 @@ fn listing_row(r: &rusqlite::Row) -> rusqlite::Result<Listing> {
         visibility: r.get(6)?,
         monitoring: r.get(7)?,
         revision: r.get(8)?,
+        portal_group: r.get(9)?,
     })
 }
 pub fn listing(conn: &Connection, id: &str) -> Result<Listing> {
@@ -548,6 +551,9 @@ pub fn record_change(
         .optional()?
         .ok_or_else(|| invalid("Problema não encontrado."))?;
     let l = listing(&tx, &listing_id)?;
+    if edit_location == "portal" && l.portal_group == "feed_only" {
+        return Err(invalid("Este destino recebe os dados do EGO e não se edita no portal. Faz a edição no EGO e regista-a como EGO; o QA fica para depois do ciclo do feed."));
+    }
     let id = uuid::Uuid::new_v4().to_string();
     let now = ts(clock.now());
     tx.execute(

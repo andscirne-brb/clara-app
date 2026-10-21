@@ -133,7 +133,8 @@ function ListingWorkspace({ listing, issues, busy, run, reload, onEdit }: { list
 
 function IssueCard({ issue, listing, busy, run, reload }: { issue: Issue; listing: Listing; busy: boolean; run: (fn: () => Promise<void>) => Promise<void>; reload: () => Promise<void> }) {
   const [mode, setMode] = useState<"change" | "qa" | null>(null);
-  const [location, setLocation] = useState("portal");
+  const feedOnly = listing.portal_group === "feed_only";
+  const [location, setLocation] = useState(feedOnly ? "ego" : "portal");
   const [fields, setFields] = useState(issue.title);
   const [reason, setReason] = useState("");
   const [url, setUrl] = useState(listing.url);
@@ -144,7 +145,7 @@ function IssueCard({ issue, listing, busy, run, reload }: { issue: Issue; listin
     {!mode && <div className="row-start"><Btn onPress={() => setMode("change")}>Registar edição manual</Btn>{issue.change_id && <Btn onPress={() => { setUrl(listing.url); setMode("qa"); }}>Verificar no anúncio público</Btn>}</div>}
     {mode === "change" && <form className="stack" onSubmit={e => { e.preventDefault(); void run(async () => { await api.changeRecord(issue.id, location, fields, reason); await reload(); setReason(""); setMode(null); }); }}>
       <Notice tone="info">Confirma apenas uma edição que já fizeste manualmente. Este registo cria uma pendência de QA.</Notice>
-      <Select label="Onde fizeste a edição?" value={location} onChange={setLocation}><option value="portal">Portal</option><option value="ego">EGO</option></Select><Field label="Campos e idiomas alterados" value={fields} onChange={setFields} /><Memo label="O que alteraste e porquê?" value={reason} onChange={setReason} required />
+      {feedOnly ? <Notice tone="info">{listing.portal_name} recebe os anúncios do EGO e não se edita no portal. Regista a edição feita no EGO e faz o QA depois do ciclo do feed (até 48 horas).</Notice> : <Select label="Onde fizeste a edição?" value={location} onChange={setLocation}><option value="portal">Portal</option><option value="ego">EGO</option></Select>}<Field label="Campos e idiomas alterados" value={fields} onChange={setFields} /><Memo label="O que alteraste e porquê?" value={reason} onChange={setReason} required />
       <div className="row-start"><Btn type="submit" variant="primary" busy={busy}>Confirmar edição realizada agora</Btn><Btn onPress={() => setMode(null)}>Cancelar</Btn></div>
     </form>}
     {mode === "qa" && <form className="stack" onSubmit={e => { e.preventDefault(); void run(async () => { await api.qaRecord(issue.change_id!, result, url, note); await reload(); setNote(""); setMode(null); }); }}>

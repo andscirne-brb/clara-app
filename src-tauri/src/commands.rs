@@ -145,6 +145,14 @@ pub async fn portals_list(state: State<'_, AppState>) -> Res<Vec<Portal>> {
 }
 
 #[tauri::command]
+pub async fn portal_set_group(state: State<'_, AppState>, id: String, grupo: String) -> Res<Portal> {
+    state.touch();
+    let mut v = state.vault.lock().unwrap();
+    let clock = v.clock_arc();
+    catalog::set_group(v.conn_mut().map_err(e)?, clock.as_ref(), &id, &grupo).map_err(e)
+}
+
+#[tauri::command]
 pub async fn portal_set_monitoring(state: State<'_, AppState>, id: String, enabled: bool) -> Res<Portal> {
     state.touch();
     let mut v = state.vault.lock().unwrap();

@@ -294,3 +294,5 @@ code, .mono { font-family: var(--mono); font-size: 0.92em; }
 .weekly-table li+li { margin-top:.6rem; }
 
 .language-picker{border:0;padding:0;margin:0 0 20px;min-width:0}.language-picker legend{font-weight:600;margin-bottom:10px}.language-picker .row-start{flex-wrap:wrap}.language-picker button[aria-pressed="true"]{outline:2px solid var(--accent,#78bbd0);outline-offset:2px}
+
+.inline-select { font: inherit; font-size: 13px; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }

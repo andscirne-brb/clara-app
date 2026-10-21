@@ -7,7 +7,7 @@ export type SecretKind = "password" | "recovery";
 export interface PropertyInput { ego_ref: string; nature: string; municipality: string; availability: string; ego_modified: string }
 export interface Property extends PropertyInput { id: string; original_description: string | null; archived: boolean; updated_at: string }
 export interface ListingInput { property_id: string; portal_id: string; portal_ref: string; url: string; visibility: string; monitoring: boolean }
-export interface Listing extends ListingInput { id: string; portal_name: string; revision: number }
+export interface Listing extends ListingInput { id: string; portal_name: string; portal_group: string; revision: number }
 export interface Issue { id: string; listing_id: string; field: string; title: string; status: string; change_id: string | null; qa_id: string | null; change_reason: string | null; qa_note: string | null }
 export interface Inventory { properties: Property[]; listings: Listing[]; issues: Issue[] }
 export interface Work {id:string;date:string;reference:string;author:string;location:string;field:string;before:string;after:string;reason:string;verification:string}
@@ -191,6 +191,7 @@ export const api = {
   setLockMinutes: (minutes: number) => call<number>("set_lock_minutes", { minutes }),
   portals: () => call<Portal[]>("portals_list"),
   setMonitoring: (id: string, enabled: boolean) => call<Portal>("portal_set_monitoring", { id, enabled }),
+  setGroup: (id: string, grupo: string) => call<Portal>("portal_set_group", { id, grupo }),
   history: (limit: number, offset: number) => call<{ events: HistoryEvent[]; total: number }>("history_list", { limit, offset }),
   verifyHistory: () => call<ChainReport>("history_verify"),
   backupOverview: () => call<BackupOverview>("backup_overview"),

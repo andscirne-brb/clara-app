@@ -1,5 +1,9 @@
 # Clara
 
+## Destinos alimentados pelo EGO (0.7.4)
+
+Em **Destinos**, cada destino tem um grupo. **Só via EGO (feed)** indica que o portal recebe os anúncios do EGO e não se edita lá: a Clara só aceita edições registadas como feitas no EGO e lembra que o QA deve esperar pelo ciclo do feed (até 48 horas). O RightMove Portugal vem já marcado assim. O grupo de qualquer destino pode ser mudado e a mudança fica no histórico.
+
 ## Organização e registo (0.4.0)
 
 **Hoje** passa a mostrar a lista do levantamento, com moradias/apartamentos prioritários, assuntos pendentes, pesquisa e acesso ao último imóvel em preparação. **Registar trabalho** guarda rascunhos no cofre e cria um registo imutável; depois de pré-visualizar, confirma a gravação na folha **Registo de alterações** do mesmo XLSM. Não altera o eGO nem conclui automaticamente pendências.

@@ -193,6 +193,7 @@ pub fn run() {
             commands::set_lock_minutes,
             commands::portals_list,
             commands::portal_set_monitoring,
+            commands::portal_set_group,
             commands::history_list,
             commands::history_verify,
             commands::backup_overview,

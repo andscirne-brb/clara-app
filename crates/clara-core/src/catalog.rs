@@ -49,6 +49,36 @@ pub fn count(conn: &Connection) -> Result<i64> {
     Ok(conn.query_row("SELECT count(*) FROM portal", [], |r| r.get(0))?)
 }
 
+pub const GROUPS: [&str; 4] = ["por_confirmar", "core", "secondary", "feed_only"];
+
+/// Destinos "feed only" recebem os anúncios do EGO: não se editam no portal.
+pub fn is_feed_only(conn: &Connection, id: &str) -> Result<bool> {
+    Ok(get(conn, id)?.grupo == "feed_only")
+}
+
+/// Define o grupo de um destino (por confirmar, core, secondary, feed only).
+pub fn set_group(conn: &mut Connection, clock: &dyn Clock, id: &str, grupo: &str) -> Result<Portal> {
+    if !GROUPS.contains(&grupo) {
+        return Err(ClaraError::Invalid("grupo desconhecido".into()));
+    }
+    let tx = conn.transaction()?;
+    let before = get(&tx, id)?;
+    if before.grupo == grupo {
+        return Ok(before);
+    }
+    tx.execute("UPDATE portal SET grupo = ?1, updated_at = ?2 WHERE id = ?3", params![grupo, ts(clock.now()), id])?;
+    history::record(
+        &tx,
+        clock,
+        Actor::Andreia,
+        NewEvent::new("portal", Some(id), "portal.grupo", format!("Grupo de {}: {} → {}", before.name, before.grupo, grupo))
+            .payload(serde_json::json!({ "antes": before.grupo, "depois": grupo })),
+    )?;
+    let after = get(&tx, id)?;
+    tx.commit()?;
+    Ok(after)
+}
+
 /// Liga ou desliga a monitorização de um destino, com evento no histórico.
 pub fn set_monitoring(conn: &mut Connection, clock: &dyn Clock, id: &str, enabled: bool, reason: Option<String>) -> Result<Portal> {
     let tx = conn.transaction()?;
