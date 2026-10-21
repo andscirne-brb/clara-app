@@ -21,7 +21,7 @@ Documento de passagem de testemunho. Mantido atualizado no fim de cada sessão. 
 - **Listas de escolha propostas à Andreia (21/10, à espera de aprovação):** valores em uso lidos com `opcoesLevantamento()` e `vocabularioPendencias()`. Proposta: campos de verificação do Levantamento = Por verificar, Preenchido, Em falta, Formato errado, Não aplicável, Não foi possível verificar; Estado da verificação = Por iniciar, Em curso, Verificado; Prioridade = Prioritária, Alta, Normal; Pendências: Estado = Por tratar, A aguardar esclarecimento, Em curso, Concluído, Não aplicável; Verificação final = Por verificar, Confirmado, Não confirmado; Onde corrigir = eGO, eGO e portais, eGO, site, portais e folhetos, Portais, Site; Registo: Resultado da verificação inclui "Confirmado" (o resumo semanal depende deste valor). Modo proposto: aviso, sem bloquear. Colunas calculadas ficam protegidas.
 - **M0 no Sheet concluído (21/10 23:48):** fuso Europe/Lisbon; 28 listas de escolha (aviso, sem bloquear) em Levantamento, Pendências e Registo (`apps-script/regras-m0.gs`). Proteções automáticas impossíveis: os separadores são tabelas do Google Sheets. Pendências: P0017 a P0019 atribuídas à Andreia (operacionais); P0016, P0020 e P0021 são perguntas à Sara.
 
-**Próximo passo:** M1, botão "Ler esta página" (marcador) e ecrã de análise na Clara. Pendentes da Andreia no M0: tempo atual por imóvel, origem dos contactos por plataforma.
+**Próximo passo:** M1, botão "Ler esta página" (marcador) e ecrã de análise na Clara. M0 concluído do lado da Andreia; falta só a resposta da Sara à P0016 e a medição de rede do WebView2.
 
 ## Para que serve a Clara
 
@@ -73,8 +73,8 @@ A Clara prepara o levantamento e encontra o que falta. A Andreia só revê dúvi
 - [x] Autorização para regras no Sheet
 - [x] Regra de passagem de testemunho (AGENTS.md e CLAUDE.md): atualizar este documento e fazer push a cada passo, em Claude e Codex
 - [x] Listas de escolha e fuso Lisboa (proteções impossíveis em tabelas)
-- [ ] Tempo atual por imóvel medido (Andreia)
-- [ ] Origem dos números de contactos por plataforma (Andreia)
+- [x] Tempo atual por imóvel: cerca de 20 minutos (meta do M1: 5 minutos ou menos, menos 75%)
+- [x] Origem dos contactos: cada plataforma tem os seus números. Por confirmar (pendência P0016, Sara) se as oportunidades do eGO juntam os pedidos de contacto do Imovirtual, Green Acres e RightMove ou se os portais os medem à parte.
 - [ ] Medição dos pedidos de rede do WebView2 (AC23) e confirmação do NDA
 
 **M1 · Um imóvel automático (até 31 out)**: imóvel piloto escolhido pela Andreia (referência só no Sheet).
