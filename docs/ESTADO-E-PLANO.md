@@ -41,7 +41,9 @@ Aprovado pela Andreia ("gosto da ideia de ter tudo num só lugar"). A aplicaçã
 
 - **M1 CONCLUÍDO (22/10 00:31):** teste de ponta a ponta feito pela Andreia no imóvel piloto: marcador, colar, documentos, analisar, gravar. **2 minutos** (antes 20; meta era 5 ou menos). Gravou 17 campos; nenhuma pendência duplicada.
 
-**Próximo passo (M2):** 1) ler os 4 documentos na ficha do EGO com o mesmo marcador (ver a estrutura da página com a Andreia); 2) aplicar a todos os imóveis do levantamento e ver o resumo de progresso; 3) Apps Script diário a reler os textos dos imóveis já lidos (guardar a ligação pública de cada imóvel); 4) resumo "Hoje".
+- **Prioridades aprovadas pela Andreia (22/10 00:36):** documentos do EGO continuam manuais (rápido, não compensa automatizar). Ordem: 1) a Clara confirma correções sozinha ao reler um imóvel (FEITO no código, a testar); 2) "Clara > Próximos imóveis" (lista de trabalho: prioritários por verificar e pendências da Andreia); 3) resumo semanal para a Sara em rascunho no Gmail (M3).
+
+**(Anterior) Próximo passo (M2):** 1) ler os 4 documentos na ficha do EGO com o mesmo marcador (ver a estrutura da página com a Andreia); 2) aplicar a todos os imóveis do levantamento e ver o resumo de progresso; 3) Apps Script diário a reler os textos dos imóveis já lidos (guardar a ligação pública de cada imóvel); 4) resumo "Hoje".
 
 **(Feito) Teste:** a Andreia testa de ponta a ponta no imóvel piloto: Clara > Instalar o marcador; abrir a página pública; carregar no marcador; Clara > Analisar imóvel; colar; marcar os 4 documentos; confirmar. Medir o tempo (meta: 5 minutos ou menos). Depois: ler os documentos na ficha do EGO com o mesmo marcador (precisa de ver a estrutura da página do EGO com a Andreia).
 

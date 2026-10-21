@@ -133,13 +133,33 @@ function analisar(texto, docs) {
   if (c.col('Estado da verificação')) prop('Estado da verificação', 'Verificado', '');
   if (d.parcial) notas.push('Leitura parcial: o site não devolveu todos os dados; texto alternativo e características não foram verificados.');
 
-  // Pendências já existentes (não duplicar)
+  // Assuntos que esta leitura consegue verificar (para confirmar correções)
+  const verificaveis = {};
+  const pode = function (a) { verificaveis[a] = true; };
+  if (d.fotos != null) pode('Imóvel sem fotografias');
+  if (d.fotosComAlt != null) pode('Fotografias sem texto alternativo');
+  Object.keys(IDIOMAS).forEach(function (k) {
+    const t = T[k]; if (!t || t.erro) return;
+    pode('Descrição em ' + IDIOMAS[k] + ' em falta');
+    if (k !== 'PT' && k !== 'EN') pode('Título em ' + IDIOMAS[k] + ' em falta');
+  });
+  if (d.videos != null) pode('Existe vídeo do imóvel?');
+  if (d.plantas) { pode('Imóvel sem planta'); pode('Planta só em PDF'); }
+  if (docs && DOCS.every(function (x) { return docs[x[0]] === 'sim'; })) pode('Documentos obrigatórios sem ficheiro no eGO');
+  const detetados = {}; pend.forEach(function (p) { detetados[p.assunto] = true; });
+
+  // Pendências já existentes: não duplicar e confirmar as que foram corrigidas
   const ps = SpreadsheetApp.getActive().getSheetByName(PEND.nome);
-  const existentes = {};
-  ps.getRange(PEND.titulos + 1, 1, 300, 4).getDisplayValues().forEach(function (r) { if (r[1]) existentes[r[1].toUpperCase() + '|' + r[3]] = r[0]; });
+  const existentes = {}, resolvidas = [];
+  ps.getRange(PEND.titulos + 1, 1, 300, 9).getDisplayValues().forEach(function (r, i) {
+    if (!r[1] || r[1].toUpperCase() !== ref) return;
+    existentes[r[1].toUpperCase() + '|' + r[3]] = r[0];
+    const aberta = r[8] !== 'Concluído' && r[8] !== 'Não aplicável';
+    if (aberta && verificaveis[r[3]] && !detetados[r[3]]) resolvidas.push({ id: r[0], assunto: r[3], linha: PEND.titulos + 1 + i });
+  });
   pend.forEach(function (p) { p.jaExiste = existentes[ref + '|' + p.assunto] || ''; });
   const mudam = campos.filter(function (x) { return String(x.atual) !== String(x.novo); }).length;
-  return { ref: ref, linha: linha, campos: campos, pendencias: pend, notas: notas, mudam: mudam, url: d.url || '' };
+  return { ref: ref, linha: linha, campos: campos, pendencias: pend, resolvidas: resolvidas, notas: notas, mudam: mudam, url: d.url || '', hoje: hoje };
 }
 
 /* ---------- gravar (só depois de a Andreia confirmar) ---------- */
@@ -167,5 +187,16 @@ function gravar(texto, docs) {
     ps.getRange(linha, 17).setValue(p.sara ? 'Sara' : '');
     criadas.push(id + ' ' + p.assunto); linha++;
   });
-  return { ref: a.ref, escritos: escritos, criadas: criadas };
+  // Confirmar correções: Concluído + Confirmado, com data (a coluna Conferência exige resposta, data e confirmação)
+  const confirmadas = [];
+  a.resolvidas.forEach(function (r) {
+    const hoje = dataHoje_();
+    ps.getRange(r.linha, 9).setValue('Concluído');
+    ps.getRange(r.linha, 11).setValue(hoje);
+    ps.getRange(r.linha, 12).setValue('Corrigido: confirmado pela Clara na leitura do site de ' + a.hoje + '.');
+    ps.getRange(r.linha, 13).setValue(hoje);
+    ps.getRange(r.linha, 15).setValue('Confirmado');
+    confirmadas.push(r.id + ' ' + r.assunto);
+  });
+  return { ref: a.ref, escritos: escritos, criadas: criadas, confirmadas: confirmadas };
 }
