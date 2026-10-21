@@ -10,7 +10,8 @@
 function registarPendencias(novas) {
   // novas: [[referencia, tema, assunto, evidencia, acao, prioridade, estado, ondeCorrigir], ...]
   const sh = SpreadsheetApp.openById(SHEET_ID).getSheetByName('Pendências da equipa');
-  const hoje = new Date();
+  const tz = SpreadsheetApp.openById(SHEET_ID).getSpreadsheetTimeZone();
+  const hoje = Utilities.parseDate(Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd'), tz, 'yyyy-MM-dd'); // só data, sem horas
   const v = sh.getRange(6, 1, 300, 17).getDisplayValues();
   const existe = {}; let maxId = 0; let livre = -1;
   v.forEach(function (r, i) {

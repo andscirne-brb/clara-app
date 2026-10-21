@@ -1,0 +1,58 @@
+<!doctype html>
+<html><head><base target="_top"><meta charset="utf-8">
+<style>
+body{font-family:Arial,sans-serif;font-size:13px;color:#202124;margin:0;padding:12px}
+h3{font-size:14px;margin:14px 0 6px}
+textarea{width:100%;height:70px;box-sizing:border-box;font-size:11px}
+select{font-size:12px;width:100%}
+.doc{display:grid;grid-template-columns:1fr 120px;gap:4px;align-items:center;margin:3px 0}
+button{background:#1a73e8;color:#fff;border:0;border-radius:6px;padding:8px 14px;font-size:13px;cursor:pointer;margin-top:8px}
+button.sec{background:#fff;color:#1a73e8;border:1px solid #dadce0}
+button:disabled{opacity:.5}
+table{border-collapse:collapse;width:100%;font-size:12px}
+td{border-bottom:1px solid #eee;padding:4px 2px;vertical-align:top}
+.muda{background:#fff8e1}
+.falta{color:#c5221f;font-weight:bold}
+.ok{color:#188038}
+.p{border-left:3px solid #1a73e8;padding:4px 8px;margin:6px 0;background:#f8f9fa}
+.sara{border-left-color:#f9ab00}
+.erro{color:#c5221f;margin-top:8px}
+.muted{color:#5f6368;font-size:12px}
+</style></head>
+<body>
+<div class="muted">1. Na página pública do imóvel, carrega no marcador <b>Clara</b>.<br>2. Cola aqui (Ctrl+V).</div>
+<textarea id="txt" placeholder="Cola aqui a leitura da Clara"></textarea>
+<h3>Documentos na ficha do EGO</h3>
+<div class="muted">Vê o bloco "Documentos" na ficha do imóvel no EGO.</div>
+<div id="docs"></div>
+<button id="analisar" onclick="analisar()">Analisar</button>
+<div id="erro" class="erro"></div>
+<div id="res"></div>
+<script>
+const DOCS=[['caderneta','Caderneta Predial'],['certificado','Certificado Energético'],['contrato','Contrato de Mediação'],['licenca','Licença de Habitação']];
+document.getElementById('docs').innerHTML=DOCS.map(d=>'<div class="doc"><span>'+d[1]+'</span><select id="d_'+d[0]+'"><option value="">Não vi</option><option value="sim">Tem ficheiro</option><option value="nao">Em falta</option></select></div>').join('');
+function docs(){const o={};DOCS.forEach(d=>o[d[0]]=document.getElementById('d_'+d[0]).value);return o;}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+function falhou(e){document.getElementById('erro').textContent=(e&&e.message)||String(e);document.querySelectorAll('button').forEach(b=>b.disabled=false);}
+function analisar(){
+  document.getElementById('erro').textContent='';document.getElementById('res').innerHTML='A analisar…';
+  document.getElementById('analisar').disabled=true;
+  google.script.run.withSuccessHandler(mostrar).withFailureHandler(falhou).analisar(document.getElementById('txt').value,docs());
+}
+function mostrar(a){
+  document.getElementById('analisar').disabled=false;
+  let h='<h3>'+esc(a.ref)+' · linha '+a.linha+' do Levantamento</h3>';
+  h+='<table>'+a.campos.map(c=>{const m=String(c.atual)!==String(c.novo);const cls=/Em falta|Formato errado/.test(c.novo)?'falta':(c.novo==='Preenchido'?'ok':'');return '<tr class="'+(m?'muda':'')+'"><td>'+esc(c.coluna)+'</td><td>'+(m?'<s class="muted">'+esc(c.atual||'vazio')+'</s> ':'')+'<span class="'+cls+'">'+esc(c.novo)+'</span><div class="muted">'+esc(c.motivo)+'</div></td></tr>';}).join('')+'</table>';
+  const novas=a.pendencias.filter(p=>!p.jaExiste), ja=a.pendencias.filter(p=>p.jaExiste);
+  h+='<h3>Pendências novas ('+novas.length+')</h3>'+(novas.length?novas.map(p=>'<div class="p '+(p.sara?'sara':'')+'"><b>'+esc(p.assunto)+'</b><div class="muted">'+(p.sara?'Pergunta para a Sara':'Para ti (operacional)')+' · '+esc(p.acao)+'</div></div>').join(''):'<div class="muted">Nenhuma.</div>');
+  if(ja.length)h+='<div class="muted">Já registadas: '+ja.map(p=>esc(p.jaExiste+' '+p.assunto)).join('; ')+'</div>';
+  if(a.notas.length)h+='<div class="muted">'+a.notas.map(esc).join('<br>')+'</div>';
+  h+='<button onclick="gravar()">Confirmar e gravar no Sheet</button> <button class="sec" onclick="document.getElementById(\'res\').innerHTML=\'\'">Cancelar</button>';
+  document.getElementById('res').innerHTML=h;
+}
+function gravar(){
+  document.querySelectorAll('button').forEach(b=>b.disabled=true);
+  google.script.run.withSuccessHandler(r=>{document.getElementById('res').innerHTML='<p class="ok"><b>Gravado.</b> '+esc(r.ref)+': '+r.escritos+' campos atualizados'+(r.criadas.length?'; pendências criadas: '+r.criadas.map(esc).join(', '):'; nenhuma pendência nova')+'.</p>';document.getElementById('txt').value='';document.querySelectorAll('button').forEach(b=>b.disabled=false);}).withFailureHandler(falhou).gravar(document.getElementById('txt').value,docs());
+}
+</script>
+</body></html>

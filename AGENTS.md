@@ -25,6 +25,7 @@ A Clara passou a viver **dentro do Google Sheet** (Apps Script, menu "Clara", pa
 5. **Não apagar dados nem histórico.** O histórico é só de acrescentar (encadeado por hash). Alterações à base de dados entram como nova migração em `crates/clara-core/migrations/`, numerada a seguir à última, e registada em `migrations.rs`.
 6. **O Google Sheet é partilhado com a equipa.** Qualquer alteração à estrutura do Sheet (regras, proteções, colunas) precisa de autorização prévia da Andreia.
 7. **Tudo o que é partilhado com a Janela e todas as pendências vão para o Google Sheet**, para a Sara consultar num só sítio. Pendências: separador "Pendências da equipa" (títulos na linha 5, dados a partir da linha 6), uma linha por assunto, ID sequencial `P0001`, sem duplicar referência + assunto, nunca escrever na coluna P (Conferência, fórmula). Valores em uso: Responsável "Por atribuir"; Prioridade "Normal" ou "Alta"; Estado "Por tratar", "A aguardar esclarecimento", "Concluído", "Não aplicável"; Onde corrigir "eGO", "eGO e portais"…; Verificação final "Por verificar" ou "Confirmado"; Aguarda análise de "Sara". Modelo em `apps-script/pendencias.gs`.
+8. **Datas no Sheet só com dia, nunca com horas** (pedido da Andreia). Usar a data do dia no fuso do Sheet (`Utilities.parseDate(formatDate(..., 'yyyy-MM-dd'))`), nunca `new Date()` direto.
 
 ## Como se trabalha
 
