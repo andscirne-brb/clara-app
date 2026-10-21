@@ -2,6 +2,16 @@
 
 Este ficheiro serve qualquer assistente (Claude, ChatGPT/Codex) ou programador que pegue no trabalho. Ler primeiro `docs/ESTADO-E-PLANO.md`: diz onde está o projeto e qual é o próximo passo.
 
+## Obrigatório em todas as sessões (Claude e Codex)
+
+A Andreia alterna entre o Claude e o ChatGPT/Codex, muitas vezes quando os créditos de um acabam a meio. Quem vem a seguir só sabe o que está no repositório. Por isso:
+
+1. **No início:** ler este ficheiro e `docs/ESTADO-E-PLANO.md`; continuar a partir de "Próximo passo".
+2. **Sempre que um passo fica concluído** (não só no fim): atualizar a secção "Último ponto de situação" de `docs/ESTADO-E-PLANO.md` (data, o que foi feito, o que ficou a meio, próximo passo, decisões da Andreia) e fazer commit e push para `main`.
+3. **Trabalho a meio também vai para o repositório**: num ramo `desenvolvimento-<tema>` com push, e indicado no ponto de situação. Nada fica só no computador ou na conversa.
+4. Código que corre fora do repositório (Apps Script, configurações do Sheet) é copiado para `apps-script/` sem IDs nem dados reais.
+5. Decisões e regras de negócio novas ditas pela Andreia entram em `docs/ESTADO-E-PLANO.md` no mesmo commit.
+
 ## Regras que não se quebram
 
 1. **Confidencialidade (NDA).** Nunca usar dados reais da Janela no repositório, em testes, em exemplos ou em conversas com assistentes. Usar só dados sintéticos (`TESTE-001`, `Concelho Exemplo`). O repositório é público.

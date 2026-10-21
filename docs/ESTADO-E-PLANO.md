@@ -59,6 +59,7 @@ A Clara prepara o levantamento e encontra o que falta. A Andreia só revê dúvi
 - [x] Clara 0.7.4 instalada
 - [x] Colunas da exportação do EGO conhecidas
 - [x] Autorização para regras no Sheet
+- [x] Regra de passagem de testemunho (AGENTS.md e CLAUDE.md): atualizar este documento e fazer push a cada passo, em Claude e Codex
 - [ ] Listas de escolha propostas e aplicadas; fuso Lisboa; proteções
 - [ ] Tempo atual por imóvel medido (Andreia)
 - [ ] Origem dos números de contactos por plataforma (Andreia)
