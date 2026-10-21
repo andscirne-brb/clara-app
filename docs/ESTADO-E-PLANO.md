@@ -16,6 +16,8 @@ Documento de passagem de testemunho. Mantido atualizado no fim de cada sessão. 
 
 - Nível de preenchimento da eGO (percentagem na lista de imóveis) só aponta campos vazios; não deteta idioma trocado, planta em PDF, texto alternativo nem documentos. A lista de imóveis do EGO mostra também oportunidades, site/portais e visitas por imóvel (possível fonte de contactos para o M4). A Andreia não tem permissão para abrir as oportunidades, mas vê a contagem; vai pedir esclarecimento sobre o que conta como oportunidade.
 
+- **Pendências registadas no Sheet para a Sara (21/10):** P0016 (o que conta como oportunidade no eGO) e P0017 a P0021 com as faltas do imóvel piloto (descrição FR, planta em PDF, texto alternativo, documentos, vídeo). Regra nova da Andreia: tudo o que é partilhado com a Janela e todas as pendências ficam no Sheet.
+
 **Próximo passo:** terminar `listarCategorias`, propor as listas à Andreia, aplicar as regras ao Sheet (M0). Depois arrancar o M1.
 
 ## Para que serve a Clara
