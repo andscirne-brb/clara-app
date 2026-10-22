@@ -218,3 +218,5 @@ Internet ou APIs na Clara; editar diretamente nos portais; envios automáticos; 
 
 
 Nomes pedidos pela Andreia: eGO: estado; Idealista: Registar estatísticas; Idealista: ranking dos anúncios. Este último mantém a função de conferência de páginas existente; a renomeação não cria um ranking novo.
+
+Nome final pedido: Idealista: estatísticas.

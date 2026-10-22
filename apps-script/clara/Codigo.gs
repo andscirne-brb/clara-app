@@ -18,7 +18,7 @@ function onOpen() {
   SpreadsheetApp.getUi().createMenu('Clara')
     .addItem('Progresso', 'abrirLista')
     .addItem('eGO: estado', 'abrirPainel')
-    .addItem('Idealista: Registar estatísticas', 'colarLeituraIdealista')
+    .addItem('Idealista: estatísticas', 'colarLeituraIdealista')
     .addItem('Idealista: ranking dos anúncios', 'conferirPaginasIdealista')
     .addItem('Resumo semanal', 'abrirResumo')
     .addItem('Instalar o marcador', 'mostrarMarcador')
@@ -145,7 +145,7 @@ function mostrarMarcador() {
     '<p>Se não der para arrastar: cria um marcador novo, chama-lhe <b>Clara</b> e cola isto no endereço:</p>' +
     '<textarea style="width:100%;height:90px;font-size:11px" onclick="this.select()">' + codigo.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</textarea>' +
     '<p><b>2.</b> No site da Janela ou no Idealista com sessão iniciada, carrega no marcador <b>Clara</b>. Para atualizar um marcador antigo, substitui o seu endereço por este.</p>' +
-    '<p><b>3.</b> Para o Idealista: <b>Clara &gt; Idealista: Registar estatísticas</b>, cola (Ctrl+V), revê e guarda. Para imóveis do site da Janela: <b>Clara &gt; eGO: estado</b>.</p></div>';
+    '<p><b>3.</b> Para o Idealista: <b>Clara &gt; Idealista: estatísticas</b>, cola (Ctrl+V), revê e guarda. Para imóveis do site da Janela: <b>Clara &gt; eGO: estado</b>.</p></div>';
   SpreadsheetApp.getUi().showModalDialog(HtmlService.createHtmlOutput(html).setWidth(520).setHeight(430), 'Instalar o marcador Clara');
 }
 
