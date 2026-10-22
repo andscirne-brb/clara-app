@@ -22,7 +22,7 @@ function recolherIdealista(doc, contexto) {
       const cols=Array.from(r.children), ref=txt(r.querySelector('.exteral-ref')).replace(/^Ref\s+/,'');
       return {id:r.getAttribute('data-key'),ref:ref,metricas:{qualidade:numero(txt(r.querySelector('.quality-info-col svg text')))},publicacao:cols[8]?cols[8].innerText.trim():'',rendimento:cols[10]?cols[10].innerText.trim():'',aviso:Array.from(r.querySelectorAll('[title]')).some(e=>e.getAttribute('title')==='Validação pendente')?'Validação pendente':''};
     });
-  } else if (/\/stats\/rank\/neighborhood/.test(contexto.url) || Array.from(doc.querySelectorAll('h2')).some(e=>/^ranking\s/i.test(txt(e)))) {
+  } else if (/\/stats\/rank\/neighborhood/.test(contexto.url) || Array.from(doc.querySelectorAll('h2')).filter(visivel).some(e=>/^ranking\s/i.test(txt(e)))) {
     out.tipo=/\/stats\/rank\/neighborhood/.test(contexto.url)?'zona':'ranking';
     out.registos=Array.from(doc.querySelectorAll('table tr')).filter(visivel).map(r=>{
       const c=Array.from(r.querySelectorAll('td')); if(c.length!==9)return null;
