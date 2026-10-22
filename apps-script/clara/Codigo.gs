@@ -144,7 +144,7 @@ function mostrarMarcador() {
     '<p>Se não der para arrastar: cria um marcador novo, chama-lhe <b>Clara</b> e cola isto no endereço:</p>' +
     '<textarea style="width:100%;height:90px;font-size:11px" onclick="this.select()">' + codigo.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</textarea>' +
     '<p><b>2.</b> No site da Janela ou no Idealista com sessão iniciada, carrega no marcador <b>Clara</b>. Para atualizar um marcador antigo, substitui o seu endereço por este.</p>' +
-    '<p><b>3.</b> Aqui no Sheet: <b>Clara &gt; Recolher informação</b> e cola (Ctrl+V).</p></div>';
+    '<p><b>3.</b> Para o Idealista: <b>Clara &gt; Colar leitura Idealista</b>, cola (Ctrl+V), revê e guarda. Para imóveis do site da Janela: <b>Clara &gt; Recolher informação</b>.</p></div>';
   SpreadsheetApp.getUi().showModalDialog(HtmlService.createHtmlOutput(html).setWidth(520).setHeight(430), 'Instalar o marcador Clara');
 }
 
