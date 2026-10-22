@@ -8,7 +8,7 @@
   const out = { v: 1, origem: 'site', lido: new Date().toISOString(), url: location.href.split('?')[0], ref: null, textos: {} };
   let p = null;
   const u = performance.getEntriesByType('resource').map(e => e.name).find(n => /websiteapi\.egorealestate\.com\/v1\/Properties\/\d+\?.*propertyid=/.test(n));
-  if (u) { try { p = await (await fetch(u)).json(); } catch (e) {} }
+  if (u) { try { p = await (await fetch(u, { cache: 'no-store' })).json(); } catch (e) {} }
   if (p && p.Reference) {
     const I = p.Images || [];
     Object.assign(out, {
@@ -34,7 +34,7 @@
   for (const l of document.querySelectorAll('link[rel=alternate][hreflang]')) {
     if (l.hreflang === 'x-default') continue;
     const k = l.hreflang.slice(0, 2).toUpperCase();
-    try { const j = ld(new DOMParser().parseFromString(await (await fetch(l.href)).text(), 'text/html')) || {}; out.textos[k] = { titulo: j.name || '', descricao: j.description || '' }; }
+    try { const j = ld(new DOMParser().parseFromString(await (await fetch(l.href, { cache: 'no-store' })).text(), 'text/html')) || {}; out.textos[k] = { titulo: j.name || '', descricao: j.description || '' }; }
     catch (e) { out.textos[k] = { erro: true }; }
   }
   if (!out.textos.PT) out.textos.PT = { titulo: me.name || '', descricao: me.description || '' };
