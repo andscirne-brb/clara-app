@@ -17,7 +17,10 @@ function recolherIdealista(doc, contexto) {
     out.filtros=Array.from(doc.querySelectorAll('a.icon-arrow-dropdown')).filter(visivel).map(txt).filter(Boolean);
     const pesquisa=doc.querySelector('input[placeholder="Referência, rua, localidade, etc..."]');if(pesquisa&&pesquisa.value.trim())out.filtros.push('Pesquisa: '+pesquisa.value.trim());
     if(!out.filtros.length)out.filtros=['Filtros da lista não identificados'];
-    const pagina=new URL(contexto.url).searchParams.get('CurrentPage');if(pagina&&/^\d+$/.test(pagina))out.cobertura+=' · página '+pagina;
+    const params=new URL(contexto.url).searchParams;
+    const pagina=params.get('CurrentPage');
+    const total=/Imóveis ativos\s*\(([\d .]+)\)/i.exec(body);
+    out.paginacao={pagina:Number(pagina)||1,porPagina:Number(params.get('ItemsPerPage'))||20,totalAtivos:total?numero(total[1]):null,ordem:(params.get('OrderedBy')||'')+' '+(params.get('OrderedType')||'')};if(pagina&&/^\d+$/.test(pagina))out.cobertura+=' · página '+pagina;
     out.registos=Array.from(doc.querySelectorAll('ul.row[data-key]')).filter(visivel).map(r=>{
       const cols=Array.from(r.children), ref=txt(r.querySelector('.exteral-ref')).replace(/^Ref\s+/,'');
       return {id:r.getAttribute('data-key'),ref:ref,metricas:{qualidade:numero(txt(r.querySelector('.quality-info-col svg text')))},publicacao:cols[8]?cols[8].innerText.trim():'',rendimento:cols[10]?cols[10].innerText.trim():'',aviso:Array.from(r.querySelectorAll('[title]')).some(e=>e.getAttribute('title')==='Validação pendente')?'Validação pendente':''};

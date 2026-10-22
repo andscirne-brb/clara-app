@@ -28,3 +28,15 @@ doc.body.innerText='de 01/10/2026 até 21/10/2026\n1 000 impactos (Soma\n5 conta
 const geral=cc.recolherIdealista(doc,{url:'https://www.idealista.pt/webtool/stats/loadImpactStats',lido:p.lido});assert.equal(geral.registos[0].metricas.contactos,5);assert.equal(geral.registos[0].metricas.angariacao,0);assert.equal(geral.registos[0].metricas.visitasListas,900);
 console.log('PASS coletor: score SVG, desconhecido sem zero, números portugueses, período, ranking, comparativo e contactos separados de impactos.');
 let relative=structuredClone(p);relative.tipo='zona';relative.periodo={inicio:null,fim:null,etiqueta:'30 dias'};assert.equal(ctx.analisar(enc(relative),{}).periodo.etiqueta,'30 dias');relative.tipo='ranking';assert.throws(()=>ctx.analisar(enc(relative),{}),/período/);
+const history=(page,ids,total=4,filter='[]',batch='p'+page)=>ids.map(id=>['2026-10-22','lista','','',filter,'TESTE',id,'qualidade','75','',batch,`https://www.idealista.pt/tools/listadostarter?CurrentPage=${page}&ItemsPerPage=2&OrderedBy=date&OrderedType=DESC`,total?'PAGINACAO:'+JSON.stringify({pagina:page,porPagina:2,totalAtivos:total}):'']);
+const summary=x=>ctx.resumoPaginasIdealista_(x);
+assert.match(summary([...history(1,['a','b']),...history(2,['c','d'])]),/Recolha completa confirmada/);
+assert.match(summary(history(2,['c','d'])),/Páginas em falta: 1/);
+assert.match(summary([...history(1,['a','b']),...history(2,['b','d'])]),/repetidos entre páginas/);
+assert.doesNotMatch(summary([...history(1,['a','b']),...history(2,['c','d'],4,'["Venda"]')]),/completa confirmada/);
+assert.match(summary([...history(1,['a','b']),...history(1,['a','x'],4,'[]','p1b'),...history(2,['c','d'])]),/Conteúdo diferente/);
+assert.match(summary([...history(1,['a','b']),...history(1,['a','b'],4,'[]','p1b'),...history(2,['c','d'])]),/Imóveis únicos: 4/);
+assert.match(summary([...history(1,['a','b'],null),...history(2,['c','d'],null)]),/não guardou o total/);
+assert.doesNotMatch(summary([...history(1,['a','b']),...history(2,['c'],4)]),/completa confirmada/);
+assert.match(summary([...history(1,['a','b']),...history(2,['c','d'],5)]),/total de ativos mudou/);
+console.log('PASS cobertura: páginas em falta, duplicados, sobreposição, alterações, filtros, total desconhecido e tamanho da última página.');

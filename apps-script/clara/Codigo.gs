@@ -19,6 +19,7 @@ function onOpen() {
     .addItem('Progresso', 'abrirLista')
     .addItem('Recolher informação', 'abrirPainel')
     .addItem('Colar leitura Idealista', 'colarLeituraIdealista')
+    .addItem('Conferir páginas Idealista', 'conferirPaginasIdealista')
     .addItem('Resumo semanal', 'abrirResumo')
     .addItem('Instalar o marcador', 'mostrarMarcador')
     .addToUi();

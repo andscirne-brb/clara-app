@@ -187,3 +187,11 @@ Internet ou APIs na Clara; editar diretamente nos portais; envios automáticos; 
 - Validação real concluída pelo menu nativo: colagem, pré-visualização, confirmação e gravação de uma página real da lista, explicitamente parcial. Confirmada criação da fonte Idealista - recolhas e mensagem de sucesso. O painel lateral recebeu a leitura mas a chamada de análise devolveu PERMISSION_DENIED; usar Colar leitura Idealista neste contexto. A limitação da sidebar não foi resolvida nem mascarada.
 - Os resultados reais, referências, URLs privadas, capturas e exportações permanecem locais/no Sheet. O repositório contém apenas código e testes fictícios. Esta implementação não faz recolha agendada em segundo plano: exige a sessão e a página abertas no browser.
 - Teste real de repetição confirmou a mensagem «Esta recolha já está guardada. Não foi duplicada.». Leitura posterior da folha confirmou as linhas guardadas e todos os scores numéricos do lote. Texto acentuado foi conferido diretamente na célula (a clipboard da ferramenta altera alguns caracteres na leitura TSV).
+
+### Controlo de páginas Idealista
+- Menu Clara > Conferir páginas Idealista: resume a data mais recente com páginas guardadas/em falta, imóveis únicos e páginas repetidas.
+- Deteta sobreposição entre páginas, conteúdo diferente numa repetição, filtros/ordenação diferentes e mudança no total de ativos. Não apaga histórico nem altera o levantamento eGO.
+- O marcador passa a recolher paginação, tamanho de página e total de ativos visível; a metadata fica na coluna Observação com prefixo PAGINACAO, sem mudar os cabeçalhos existentes.
+- Recolhas antigas são utilizáveis para contar páginas e imóveis, mas não confirmam a última página esperada por não terem guardado o total. Não se inventa esse total retroativamente.
+- A mensagem Recolha completa confirmada exige total e tamanhos coerentes, todas as páginas, IDs únicos iguais ao total, mesmos filtros e ordenação, sem sobreposições ou alterações detetadas. É uma conferência das capturas, não uma garantia de que o portal ficou imutável.
+- Atualizar o marcador uma vez em Clara > Instalar o marcador. Testes fictícios cobrem falhas de cobertura e repetições.
