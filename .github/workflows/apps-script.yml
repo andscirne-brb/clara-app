@@ -4,6 +4,7 @@ on:
     paths:
       - 'apps-script/clara/**'
       - 'scripts/testar-clara-apps.mjs'
+      - 'scripts/testar-idealista.mjs'
       - 'scripts/construir-clara.py'
       - '.github/workflows/apps-script.yml'
   workflow_dispatch:
@@ -21,5 +22,6 @@ jobs:
         with:
           python-version: '3.x'
       - run: node scripts/testar-clara-apps.mjs
+      - run: node scripts/testar-idealista.mjs
       - run: python scripts/construir-clara.py
       - run: git diff --exit-code -- apps-script/clara/Clara-completo.gs

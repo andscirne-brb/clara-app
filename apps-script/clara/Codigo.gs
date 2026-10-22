@@ -17,7 +17,8 @@ const DOCS = [
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Clara')
     .addItem('Progresso', 'abrirLista')
-    .addItem('Analisar imóvel', 'abrirPainel')
+    .addItem('Recolher informação', 'abrirPainel')
+    .addItem('Colar leitura Idealista', 'colarLeituraIdealista')
     .addItem('Resumo semanal', 'abrirResumo')
     .addItem('Instalar o marcador', 'mostrarMarcador')
     .addToUi();
@@ -142,8 +143,8 @@ function mostrarMarcador() {
     '<p style="text-align:center"><a href="' + codigo + '" style="display:inline-block;padding:8px 18px;background:#1a73e8;color:#fff;border-radius:6px;text-decoration:none;font-weight:bold">Clara</a></p>' +
     '<p>Se não der para arrastar: cria um marcador novo, chama-lhe <b>Clara</b> e cola isto no endereço:</p>' +
     '<textarea style="width:100%;height:90px;font-size:11px" onclick="this.select()">' + codigo.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</textarea>' +
-    '<p><b>2.</b> Na página pública do imóvel no site da Janela, carrega no marcador <b>Clara</b>.</p>' +
-    '<p><b>3.</b> Aqui no Sheet: <b>Clara &gt; Analisar imóvel</b> e cola (Ctrl+V).</p></div>';
+    '<p><b>2.</b> No site da Janela ou no Idealista com sessão iniciada, carrega no marcador <b>Clara</b>. Para atualizar um marcador antigo, substitui o seu endereço por este.</p>' +
+    '<p><b>3.</b> Aqui no Sheet: <b>Clara &gt; Recolher informação</b> e cola (Ctrl+V).</p></div>';
   SpreadsheetApp.getUi().showModalDialog(HtmlService.createHtmlOutput(html).setWidth(520).setHeight(430), 'Instalar o marcador Clara');
 }
 
@@ -167,6 +168,7 @@ function linhaDoImovel_(sh, c, ref) {
 /* ---------- análise (não grava nada) ---------- */
 function analisar(texto, docs) {
   texto = String(texto || '').trim();
+  if(texto.indexOf('CLARA2:')===0)return analisarIdealista(texto);
   if (texto.indexOf('CLARA1:') !== 0) throw new Error('Isto não é uma leitura da Clara. Carrega no marcador Clara na página do imóvel e cola outra vez.');
   const d = JSON.parse(texto.slice(7));
   const ref = String(d.ref || '').trim().toUpperCase();
@@ -323,6 +325,7 @@ function textoHistorico_(v) {
   return v == null ? '' : String(v);
 }
 function gravar(texto, docs) {
+  if(String(texto||'').trim().indexOf('CLARA2:')===0)return gravarIdealista(texto);
   const lock = LockService.getDocumentLock();
   if (!lock.tryLock(30000)) throw new Error('Há outra gravação da Clara em curso. Tenta novamente.');
   let aplicados = [], plano = [];

@@ -1,6 +1,10 @@
 (async () => {
-  const fim = (txt, ref) => { navigator.clipboard.writeText(txt).then(() => alert('Clara: ' + (ref || 'imóvel') + ' lido. No Sheet: Clara > Analisar imóvel e cola (Ctrl+V).'), () => prompt('Clara: copia este texto (Ctrl+C) e cola no painel da Clara no Sheet:', txt)); };
-  if (!/janela-imobiliaria\.com$/.test(location.hostname)) { alert('Clara: abre a página pública do imóvel no site da Janela e carrega outra vez no marcador.'); return; }
+  /* IDEALISTA_COLLECTOR */
+  const fim = (txt, ref) => { navigator.clipboard.writeText(txt).then(() => alert('Clara: ' + (ref || 'imóvel') + ' lido. No Sheet: Clara > Recolher informação e cola (Ctrl+V).'), () => prompt('Clara: copia este texto (Ctrl+C) e cola no painel da Clara no Sheet:', txt)); };
+  if (/^(?:www\.)?idealista\.pt$/.test(location.hostname)) {
+    try { const d=recolherIdealista(document,{url:location.href,lido:new Date().toISOString()}); const t='CLARA2:'+JSON.stringify(d); try {await navigator.clipboard.writeText(t);alert('Clara: '+d.registos.length+' registos recolhidos. '+d.cobertura+'. No Sheet: Clara > Recolher informação e cola.');} catch(e){prompt('Clara: copia este texto e cola no painel do Google Sheets.',t);} } catch(e){alert('Clara: '+e.message);} return;
+  }
+  if (!/^(?:www\.)?janela-imobiliaria\.com$/.test(location.hostname)) { alert('Clara: abre a página pública do imóvel no site da Janela ou a lista/estatísticas no Idealista.'); return; }
   const ld = d => { for (const s of d.querySelectorAll('script[type="application/ld+json"]')) { try { const j = JSON.parse(s.textContent); if (j['@type'] === 'RealEstateListing') return j; } catch (e) {} } return null; };
   const me = ld(document);
   if (!me) { alert('Clara: esta página não parece ser a ficha de um imóvel.'); return; }

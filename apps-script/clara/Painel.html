@@ -20,16 +20,17 @@ td{border-bottom:1px solid #eee;padding:4px 2px;vertical-align:top}
 .muted{color:#5f6368;font-size:12px}
 </style></head>
 <body>
-<div class="muted">1. Na página pública do imóvel, carrega no marcador <b>Clara</b>.<br>2. Cola aqui (Ctrl+V).</div>
+<div class="muted">1. No site da Janela ou no Idealista, carrega no marcador <b>Clara</b>.<br>2. Cola aqui (Ctrl+V), revê e guarda.</div>
 <textarea id="txt" placeholder="Cola aqui a leitura da Clara"></textarea>
-<h3>Documentos na ficha do EGO</h3>
+<section id="blocoDocs"><h3>Documentos na ficha do EGO</h3>
 <div class="muted">Vê o bloco "Documentos" na ficha do imóvel no EGO. "Está noutra categoria": o ficheiro existe mas foi carregado no sítio errado (por exemplo, em Outros documentos).</div>
-<div id="docs"></div>
+<div id="docs"></div></section>
 <button id="analisar" onclick="analisar()">Analisar</button>
 <div id="erro" class="erro"></div>
 <div id="res"></div>
 <script>
 const DOCS=[['caderneta','Caderneta Predial'],['certificado','Certificado Energético'],['contrato','Contrato de Mediação'],['licenca','Licença de Habitação']];
+document.getElementById('txt').addEventListener('input',()=>{document.getElementById('blocoDocs').hidden=document.getElementById('txt').value.trim().startsWith('CLARA2:');document.getElementById('res').innerHTML='';});
 document.getElementById('docs').innerHTML=DOCS.map(d=>'<div class="doc"><span>'+d[1]+'</span><select id="d_'+d[0]+'"><option value="">Não vi</option><option value="sim">Tem ficheiro</option><option value="categoria">Está noutra categoria</option><option value="nao">Em falta</option><option value="na">Não se aplica</option></select></div>').join('');
 function docs(){const o={};DOCS.forEach(d=>o[d[0]]=document.getElementById('d_'+d[0]).value);return o;}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;');}
@@ -41,6 +42,13 @@ function analisar(){
 }
 function mostrar(a){
   document.getElementById('analisar').disabled=false;
+  if(a.origem==='idealista'){
+    document.getElementById('blocoDocs').hidden=true;
+    let h='<h3>Idealista · '+esc(a.tipo)+'</h3><p>'+esc(a.quantidade)+' registos · '+esc(a.indicadores)+' indicadores</p><p>'+esc(a.periodo.inicio||a.periodo.etiqueta||'Sem período: fotografia do estado atual')+(a.periodo.fim?' a '+esc(a.periodo.fim):'')+'</p><p><b>'+esc(a.cobertura)+'</b></p><p class="muted">'+(a.filtros||[]).map(esc).join(' · ')+'</p>';
+    h+='<div class="muted">'+a.amostra.map(r=>esc(r.ref||r.id)+': '+esc(JSON.stringify(r.metricas))).join('<br>')+'</div>';
+    h+=a.duplicada?'<p>Esta recolha já está guardada. Não será duplicada.</p>':'<p class="muted">Guarda no histórico «Idealista - recolhas». Uma página parcial não substitui a carteira completa. Scores de anúncios não alteram o score do perfil.</p><button onclick="gravar()">Confirmar e guardar</button>';
+    document.getElementById('res').innerHTML=h;return;
+  }
   let h='<h3>'+esc(a.ref)+' · linha '+a.linha+' do Levantamento</h3>';
   h+='<table>'+a.campos.map(c=>{const m=String(c.atual)!==String(c.novo);const cls=/Em falta|Formato errado|Categoria errada/.test(c.novo)?'falta':(c.novo==='Preenchido'?'ok':'');return '<tr class="'+(m?'muda':'')+'"><td>'+esc(c.coluna)+'</td><td>'+(m?'<s class="muted">'+esc(c.atual||'vazio')+'</s> ':'')+'<span class="'+cls+'">'+esc(c.novo)+'</span><div class="muted">'+esc(c.motivo)+'</div></td></tr>';}).join('')+'</table>';
   const novas=a.pendencias.filter(p=>!p.jaExiste), ja=a.pendencias.filter(p=>p.jaExiste&&!p.reabrir), reabertas=a.pendencias.filter(p=>p.reabrir);
@@ -55,7 +63,7 @@ function mostrar(a){
 }
 function gravar(){
   document.querySelectorAll('button').forEach(b=>b.disabled=true);
-  google.script.run.withSuccessHandler(r=>{document.getElementById('res').innerHTML='<p class="ok"><b>Gravado.</b> '+esc(r.ref)+': '+r.escritos+' campos atualizados; '+r.textos+' idiomas registados; '+r.historico+' alterações no histórico'+(r.reabertas&&r.reabertas.length?'; reabertas: '+r.reabertas.map(esc).join(', '):'')+(r.criadas.length?'; pendências criadas: '+r.criadas.map(esc).join(', '):'; nenhuma pendência nova')+(r.confirmadas&&r.confirmadas.length?'; correções confirmadas: '+r.confirmadas.map(esc).join(', '):'')+'.</p>';document.getElementById('txt').value='';document.querySelectorAll('button').forEach(b=>b.disabled=false);}).withFailureHandler(falhou).gravar(document.getElementById('txt').value,docs());
+  google.script.run.withSuccessHandler(r=>{if(r.origem==='idealista'){document.getElementById('res').innerHTML='<p class="ok">'+(r.duplicada?'Esta recolha já estava guardada.':'Gravado: '+esc(r.quantidade)+' registos e '+esc(r.escritos)+' indicadores.')+'</p><p>'+esc(r.cobertura||'')+'</p>';}else{document.getElementById('res').innerHTML='<p class="ok"><b>Gravado.</b> '+esc(r.ref)+': '+r.escritos+' campos atualizados; '+r.textos+' idiomas registados; '+r.historico+' alterações no histórico'+(r.reabertas&&r.reabertas.length?'; reabertas: '+r.reabertas.map(esc).join(', '):'')+(r.criadas.length?'; pendências criadas: '+r.criadas.map(esc).join(', '):'; nenhuma pendência nova')+(r.confirmadas&&r.confirmadas.length?'; correções confirmadas: '+r.confirmadas.map(esc).join(', '):'')+'.</p>';}document.getElementById('txt').value='';document.querySelectorAll('button').forEach(b=>b.disabled=false);}).withFailureHandler(falhou).gravar(document.getElementById('txt').value,docs());
 }
 </script>
 </body></html>
