@@ -1,0 +1,25 @@
+<!doctype html>
+<html><head><base target="_top"><meta charset="utf-8">
+<style>
+body{font-family:Arial,sans-serif;font-size:13px;color:#202124;margin:0;padding:12px}
+label{display:block;font-size:12px;color:#5f6368;margin-top:8px}
+input,select{width:100%;box-sizing:border-box;font-size:13px;padding:4px}
+button{background:#1a73e8;color:#fff;border:0;border-radius:6px;padding:8px 14px;font-size:13px;cursor:pointer;margin-top:10px}
+button:disabled{opacity:.5}
+#prev{border:1px solid #dadce0;border-radius:6px;padding:8px;margin-top:10px;font-size:12px;max-height:420px;overflow:auto}
+.ok{color:#188038;margin-top:8px}.erro{color:#c5221f;margin-top:8px}
+</style></head>
+<body>
+<label>Período</label>
+<select id="dias" onchange="ver()"><option value="7">Últimos 7 dias</option><option value="14">Últimos 14 dias</option><option value="30">Últimos 30 dias</option></select>
+<label>Para (Sara)</label><input id="para" placeholder="email da Sara">
+<label>Cc (Júlia)</label><input id="cc" placeholder="email da Júlia">
+<div id="prev">A preparar…</div>
+<button id="b" onclick="criar()">Criar rascunho no Gmail</button>
+<div id="msg"></div>
+<script>
+function ver(){document.getElementById('prev').textContent='A preparar…';google.script.run.withSuccessHandler(r=>{document.getElementById('prev').innerHTML=r.html;if(!document.getElementById('para').value)document.getElementById('para').value=r.para;if(!document.getElementById('cc').value)document.getElementById('cc').value=r.cc;}).withFailureHandler(e=>document.getElementById('prev').textContent=e.message).previewResumo(+document.getElementById('dias').value);}
+function criar(){const b=document.getElementById('b');b.disabled=true;document.getElementById('msg').textContent='';google.script.run.withSuccessHandler(m=>{b.disabled=false;document.getElementById('msg').className='ok';document.getElementById('msg').textContent=m;}).withFailureHandler(e=>{b.disabled=false;document.getElementById('msg').className='erro';document.getElementById('msg').textContent=e.message;}).criarRascunho(+document.getElementById('dias').value,document.getElementById('para').value.trim(),document.getElementById('cc').value.trim());}
+ver();
+</script>
+</body></html>
