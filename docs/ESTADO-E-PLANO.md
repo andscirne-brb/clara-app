@@ -222,8 +222,10 @@ Nomes pedidos pela Andreia: eGO: estado; Idealista: Registar estatísticas; Idea
 Nome final pedido: Idealista: estatísticas.
 
 ### Dashboard Idealista
-- Bloco reservado Dashboard!A67:E92, abaixo do conteúdo existente; não altera a seleção de datas nem os indicadores anteriores.
+- Bloco reservado Dashboard!A96:E121 (ou primeira linha livre posterior, detetada com proteção do conteúdo existente), abaixo do conteúdo existente; não altera a seleção de datas nem os indicadores anteriores.
 - Mostra até quatro combinações período/filtros mais recentemente recolhidas, usando a última leitura de cada combinação; nunca soma janelas sobrepostas.
 - Inclui os 15 indicadores, período, filtros, data da recolha e notas de âmbito. Ausente não se converte em zero.
 - Atualiza após novas recolhas gerais. Se o bloco falhar, a recolha permanece guardada e o aviso indica que o dashboard não atualizou.
 - Função interna atualizarDashboardIdealista permite gerar a vista inicial sem criar novas entradas de menu.
+
+A área A67 contém o bloco de pendências existente, preservado. As suas fórmulas já apresentavam erros antes da nova vista; não corrigidas nesta alteração. Atalho para estatísticas em A6 quando livre.
