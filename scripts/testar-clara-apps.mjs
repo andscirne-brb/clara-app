@@ -27,11 +27,12 @@ class Range {
  getValue(){return this.sh.cells.get(`${this.r},${this.c}`)??''}
  getFormula(){return this.sh.forms.get(`${this.r},${this.c}`)??''}
  getA1Notation(){return `${this.r}:${this.c}`}
+ getSheet(){return this.sh}
  getValues(){return Array.from({length:this.n},(_,i)=>Array.from({length:this.m},(_,j)=>this.sh.cells.get(`${this.r+i},${this.c+j}`)??''))}
  getDisplayValues(){return this.getValues().map(r=>r.map(v=>v instanceof Date?'22/10/2026':String(v)))}
  getFormulas(){return Array.from({length:this.n},(_,i)=>Array.from({length:this.m},(_,j)=>this.sh.forms.get(`${this.r+i},${this.c+j}`)??''))}
- setValue(v){if(typeof v==='string'&&v.startsWith('='))throw Error('Unsafe formula');this.sh.cells.set(`${this.r},${this.c}`,v);return this}
- setRichTextValue(v){this.sh.cells.set(`${this.r},${this.c}`,v.text);return this}
+ setValue(v){if(typeof v==='string'&&v.startsWith('='))throw Error('Unsafe formula');if(typeof v==='string'&&/^\d+$/.test(v))v=Number(v);this.sh.cells.set(`${this.r},${this.c}`,v);return this}
+ setRichTextValue(v){this.sh.cells.set(`${this.r},${this.c}`,v.text.replace(/\r\n?/g,'\n'));return this}
 }
 const docs={caderneta:'sim',certificado:'sim',contrato:'sim',licenca:'sim'};
 function payload(){return {ref:'TESTE-001',url:'https://example.invalid/imovel',fotos:3,fotosComAlt:3,fotosComLegenda:3,caracteristicas:2,videos:1,plantas:['jpg'],folhetos:1,textos:Object.fromEntries(['PT','EN','FR','DE','ES'].map(k=>[k,{titulo:`Título ${k}`,descricao:`Descrição ${k}`}]))}}
@@ -77,3 +78,11 @@ new vm.Script(fs.readFileSync(new URL('../apps-script/clara/Painel.html',import.
 console.log('PASS: leitura parcial, idioma inacessível, documentos incompletos, reabertura, vagas intercaladas, cinco idiomas, histórico antes/depois, repetição, texto literal, rollback, bloqueio e fórmulas protegidas.');
 
 { const f=fixture(); assert.equal(f.context.dataDe_('2026-10-21').getDate(),21);assert.equal(f.context.dataDe_('21/10/2026').getDate(),21);assert.equal(f.context.dataDe_('2026-10-21 17:33:00').getMonth(),9);assert.equal(f.context.dataDe_('sem data'),null);console.log('PASS: resumo semanal aceita datas ISO e antigas, com ou sem horas.'); }
+
+f=fixture();d=payload();d.textos.PT.titulo='00123';d.textos.PT.descricao='Linha 1\r\nLinha 2';save(f,d);
+assert.equal(get(f.tx,6,3),'00123');assert.equal(get(f.tx,6,4),'Linha 1\nLinha 2');
+assert.equal(f.context.mesmoValor_(22,'22'),false,'não desliga a conferência de tipos');
+assert.equal(f.context.mesmoValor_('Texto A','Texto B'),false);
+assert.equal(f.context.mesmoValor_('A\r\nB','A\nB'),true);
+assert([...f.hist.cells.values()].some(v=>v==='00123'),'histórico conserva números como texto literal');
+console.log('PASS gravação: texto numérico e zeros iniciais preservados, CRLF normalizado, tipos e conteúdo divergentes continuam rejeitados.');

@@ -201,3 +201,10 @@ Internet ou APIs na Clara; editar diretamente nos portais; envios automáticos; 
 - Pré-visualização nativa e painel mostram nomes e valores dos 15 campos esperados; ausentes aparecem como Não recolhido e zero permanece zero.
 - Distingue totais do período, anúncios ativos no momento da leitura e dados por imóvel/dia, que esta captura geral não contém. Não extrai séries dos gráficos.
 - Necessário atualizar o marcador para usar o coletor corrigido. Código validado com dados fictícios; comparação visual dos totais feita na página real, sem publicar valores privados no repositório.
+
+### Correção da conferência de gravação (Recolher informação)
+- Falha reproduzida com o código anterior e simulação de conversão automática de texto numérico pelo Sheets e normalização de CRLF.
+- Escreve strings não vazias como texto literal rico, preservando valores numéricos/data em campos de histórico, zeros iniciais e conteúdo que começa por =. Números e datas reais continuam tipados.
+- Comparação só normaliza quebras de linha CRLF/CR para LF; não relaxa tipos nem diferenças no conteúdo.
+- Falhas de leitura indicam folha e célula sem revelar o conteúdo. A recuperação passa também a conferir os valores repostos antes de afirmar que as células foram repostas.
+- Testes sintéticos passam; não considerar a gravação do imóvel real confirmada sem repetir a recolha e obter sucesso na interface.
