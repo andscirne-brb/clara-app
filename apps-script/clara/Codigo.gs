@@ -16,6 +16,7 @@ const DOCS = [
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Clara')
+    .addItem('Próximos imóveis', 'abrirLista')
     .addItem('Analisar imóvel', 'abrirPainel')
     .addItem('Instalar o marcador', 'mostrarMarcador')
     .addToUi();
@@ -23,6 +24,51 @@ function onOpen() {
 
 function abrirPainel() {
   SpreadsheetApp.getUi().showSidebar(HtmlService.createHtmlOutput(PAINEL_HTML).setTitle('Clara'));
+}
+
+function abrirLista() {
+  SpreadsheetApp.getUi().showSidebar(HtmlService.createHtmlOutput(LISTA_HTML).setTitle('Clara · próximos imóveis'));
+}
+
+/* ---------- lista de trabalho ---------- */
+function listaTrabalho() {
+  const ss = SpreadsheetApp.getActive();
+  const lev = ss.getSheetByName(LEV.nome);
+  const c = colunas_(lev, LEV.titulos);
+  const n = lev.getLastRow() - LEV.titulos;
+  const v = lev.getRange(LEV.titulos + 1, 1, n, c.titulos.length).getDisplayValues();
+  const k = function (nome) { return c.col(nome) - 1; };
+  const iRef = k('Referência EGO'), iNat = k('Natureza'), iCon = k('Concelho'), iPri = k('Prioridade'), iEst = k('Estado da verificação'), iUrl = k('Página pública'), iFal = k('Categorias com faltas');
+  const imoveis = {};
+  let total = 0, verificados = 0;
+  const porVerificar = { 'Prioritária': [], 'Alta': [] }, contagem = { 'Prioritária': [0, 0], 'Alta': [0, 0], 'Normal': [0, 0] };
+  v.forEach(function (r, i) {
+    const ref = r[iRef]; if (!ref) return;
+    total++;
+    const ok = r[iEst] === 'Verificado'; if (ok) verificados++;
+    const pr = r[iPri] || 'Normal';
+    if (contagem[pr]) { contagem[pr][1]++; if (ok) contagem[pr][0]++; }
+    const im = { ref: ref, natureza: r[iNat], concelho: r[iCon], prioridade: pr, estado: r[iEst], url: iUrl >= 0 ? r[iUrl] : '', faltas: iFal >= 0 ? r[iFal] : '', linha: LEV.titulos + 1 + i };
+    imoveis[ref] = im;
+    if (!ok && porVerificar[pr]) porVerificar[pr].push(im);
+  });
+  const ps = ss.getSheetByName(PEND.nome);
+  const minhas = {}, sara = [];
+  ps.getRange(PEND.titulos + 1, 1, 300, 17).getDisplayValues().forEach(function (r, i) {
+    if (!r[1] || r[8] === 'Concluído' || r[8] === 'Não aplicável') return;
+    const p = { id: r[0], ref: r[1], tema: r[2], assunto: r[3], acao: r[5], estado: r[8], linha: PEND.titulos + 1 + i };
+    if (r[6] === 'Andreia') { (minhas[r[1]] = minhas[r[1]] || []).push(p); }
+    else if (r[16] === 'Sara') sara.push(p);
+  });
+  const minhasLista = Object.keys(minhas).map(function (ref) { const im = imoveis[ref] || { ref: ref }; return { ref: ref, url: im.url || '', prioridade: im.prioridade || '', natureza: im.natureza || '', pendencias: minhas[ref] }; });
+  const ordem = { 'Prioritária': 0, 'Alta': 1, 'Normal': 2 };
+  minhasLista.sort(function (a, b) { return (ordem[a.prioridade] || 3) - (ordem[b.prioridade] || 3) || b.pendencias.length - a.pendencias.length; });
+  return { total: total, verificados: verificados, contagem: contagem, prioritarios: porVerificar['Prioritária'], alta: porVerificar['Alta'].slice(0, 15), altaTotal: porVerificar['Alta'].length, minhas: minhasLista, sara: sara };
+}
+
+function irPara(separador, linha) {
+  const sh = SpreadsheetApp.getActive().getSheetByName(separador);
+  sh.activate(); sh.setActiveRange(sh.getRange(linha, 1, 1, Math.min(sh.getLastColumn(), 6)));
 }
 
 function mostrarMarcador() {
