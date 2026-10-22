@@ -559,7 +559,8 @@ function gravarIdealista(texto) {
     const seguro=p.linhas.map(function(r){return r.map(function(v){return typeof v==='string'&&/^[=+@-]/.test(v)?"'"+v:v;});});
     try {sh.getRange(inicio,1,n,13).setValues(seguro);sh.getRange(inicio,1,n,1).setNumberFormat('yyyy-mm-dd');SpreadsheetApp.flush();const a=sh.getRange(inicio,11,n,1).getValues();if(a.some(function(r){return r[0]!==p.hash;}))throw new Error('Conferência da gravação falhou.');}
     catch(e){sh.getRange(inicio,1,n,13).clearContent();throw e;}
-    return{origem:'idealista',duplicada:false,escritos:n,quantidade:p.d.registos.length,cobertura:p.d.cobertura};
+    let aviso='';if(p.d.tipo==='geral')try{atualizarDashboardIdealista_(ss);}catch(e){aviso=' A recolha ficou guardada, mas o Dashboard não foi atualizado: '+e.message;}
+    return{origem:'idealista',duplicada:false,escritos:n,quantidade:p.d.registos.length,cobertura:p.d.cobertura+(aviso||'')};
   } finally {lock.releaseLock();}
 }
 
@@ -607,6 +608,43 @@ function estatisticasIdealista_(m){
 function resumoEstatisticasIdealista_(a){
   const formato=function(v){return v===null?'Não recolhido':String(v).replace(/\B(?=(\d{3})+(?!\d))/g,' ');};
   return 'Estatísticas da carteira\nPeríodo: '+a.periodo.inicio+' a '+a.periodo.fim+'\nFiltros: '+(a.filtros||[]).join(' · ')+'\n\n'+a.estatisticas.map(function(x){return x.nome+': '+formato(x.valor);}).join('\n')+'\n\nTotais do período, não dados por imóvel ou por dia. Os anúncios ativos são o valor atual. Os últimos 2 dias podem sofrer ajustes.\nGuardar no histórico Idealista - recolhas?';
+}
+
+// Bloco independente: não soma períodos sobrepostos nem altera os filtros existentes.
+function dadosDashboardIdealista_(linhas){
+  const lotes={};
+  linhas.forEach(function(r,i){if(r[1]!=='geral'||!r[10])return;const id=String(r[10]);let b=lotes[id];if(!b)b=lotes[id]={inicio:String(r[2]),fim:String(r[3]),filtros:String(r[4]),data:r[0],ultima:i,metricas:{}};b.ultima=i;if(typeof r[8]==='number'&&Number.isFinite(r[8]))b.metricas[String(r[7])]=r[8];});
+  const periodos={};Object.values(lotes).forEach(function(b){const key=JSON.stringify([b.inicio,b.fim,b.filtros]);if(!periodos[key]||periodos[key].ultima<b.ultima)periodos[key]=b;});
+  return Object.values(periodos).sort(function(a,b){return b.ultima-a.ultima;}).slice(0,4);
+}
+function atualizarDashboardIdealista(){return atualizarDashboardIdealista_(SpreadsheetApp.getActive());}
+function atualizarDashboardIdealista_(ss){
+  const sh=ss.getSheetByName('Dashboard'),origem=ss.getSheetByName('Idealista - recolhas');
+  if(!sh||!origem)return;
+  const rg=sh.getRange(67,1,26,5),marca='Idealista: estatísticas';
+  const valores=rg.getValues(),formulas=rg.getFormulas();
+  if(valores[0][0]!==marca&&(valores.some(function(r){return r.some(function(v){return v!=='';});})||formulas.some(function(r){return r.some(Boolean);})))throw new Error('O espaço do bloco Idealista está ocupado. Não alterei o Dashboard.');
+  const linhas=origem.getLastRow()>1?origem.getRange(2,1,origem.getLastRow()-1,13).getValues():[],periodos=dadosDashboardIdealista_(linhas);
+  const out=Array.from({length:26},function(){return Array(5).fill('');});
+  out[0][0]=marca;
+  out[1][0]='Até 4 períodos mais recentes. Cada coluna é independente; não somar períodos sobrepostos.';
+  out[2][0]='Período';out[3][0]='Recolhido em';out[4][0]='Filtros';
+  const nomes=estatisticasIdealista_({});nomes.forEach(function(x,i){out[i+6][0]=x.nome;});
+  periodos.forEach(function(p,j){const c=j+1;out[2][c]=p.inicio+' a '+p.fim;out[3][c]=p.data;let f=[];try{f=JSON.parse(p.filtros);}catch(e){f=[p.filtros];}out[4][c]=f.join(' · ');estatisticasIdealista_(p.metricas).forEach(function(x,i){out[i+6][c]=x.valor===null?'Não recolhido':x.valor;});});
+  if(!periodos.length)out[2][1]='Ainda sem recolhas gerais';
+  out[22][0]='Contactos recebidos incluem clientes e angariação. Emails/mensagens e chamadas detalham os contactos de clientes.';
+  out[23][0]='Anúncios ativos: valor no momento da leitura. Não é a média do período nem o inventário completo do eGO.';
+  out[24][0]='Os últimos 2 dias podem sofrer ajustes. Séries diárias e evolução face a um período anterior ainda não disponíveis.';
+  out[25][0]='Histórico: Idealista - recolhas. Uma nova leitura do mesmo período atualiza esta vista e preserva a anterior no histórico.';
+  // Só o bloco reservado é atualizado. Valores históricos permanecem intactos.
+  rg.setValues(out).setFontFamily('Arial').setFontSize(10).setVerticalAlignment('middle').setWrap(true);
+  sh.getRange(67,1,1,5).setBackground('#155c53').setFontColor('#ffffff').setFontWeight('bold');
+  sh.getRange(69,1,3,5).setBackground('#e9f0ee').setFontWeight('bold');
+  sh.getRange(73,2,15,4).setNumberFormat('#,##0');sh.getRange(70,2,1,4).setNumberFormat('yyyy-mm-dd');
+  sh.getRange(68,1,1,5).mergeAcross();sh.getRange(89,1,4,5).mergeAcross();
+  sh.setRowHeight(67,28);sh.setRowHeight(68,34);sh.setRowHeights(69,3,42);sh.setRowHeights(73,15,30);sh.setRowHeights(89,4,34);
+  SpreadsheetApp.flush();if(sh.getRange(67,1).getValue()!==marca)throw new Error('Não foi possível conferir o bloco Idealista.');
+  return{periodos:periodos.length};
 }
 
 /* ---------- gerado por scripts/construir-clara.py: não editar à mão ---------- */

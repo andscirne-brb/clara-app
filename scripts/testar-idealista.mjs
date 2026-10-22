@@ -47,3 +47,17 @@ assert.equal(spacing.registos[0].metricas.impactos,496409);assert.equal(spacing.
 const preview=ctx.analisarIdealista(enc(spacing));assert.equal(preview.estatisticas.length,15);assert.equal(preview.estatisticas.find(x=>x.nome==='Favoritos').valor,null);
 const review=ctx.resumoEstatisticasIdealista_(preview);assert.match(review,/Impactos: 496 409/);assert.match(review,/Favoritos: Não recolhido/);assert.match(review,/Envios a amigos: 0/);assert.match(review,/não dados por imóvel ou por dia/);
 console.log('PASS estatísticas: espaços duplicados e não separáveis, totais de visitas e ações, revisão legível e ausentes distintos de zero.');
+
+vm.runInContext(fs.readFileSync(new URL('../apps-script/clara/DashboardIdealista.gs',import.meta.url),'utf8'),ctx);
+const stat=(id,begin,end,key,val,filters='["Venda"]')=>['2026-10-23','geral',begin,end,filters,'','carteira',key,val,'',id,'',''];
+const dashboard=ctx.dadosDashboardIdealista_([
+ stat('old','2026-09-22','2026-10-21','contactos',10),
+ stat('90','2026-07-24','2026-10-21','contactos',50),
+ stat('new','2026-09-22','2026-10-21','contactos',12),
+ stat('new','2026-09-22','2026-10-21','partilhas',0),
+ stat('rent','2026-09-22','2026-10-21','contactos',3,'["Arrendamento"]')]);
+assert.equal(dashboard.length,3);assert.equal(dashboard.find(x=>x.filtros==='["Venda"]'&&x.inicio==='2026-09-22').metricas.contactos,12);
+assert.equal(dashboard.find(x=>x.inicio==='2026-07-24').metricas.contactos,50);
+assert.equal(dashboard.find(x=>x.inicio==='2026-09-22'&&x.filtros==='["Venda"]').metricas.partilhas,0);
+assert.equal(dashboard[0].metricas.favoritos,undefined);
+console.log('PASS Dashboard: períodos e filtros separados, última recolha do período, zero distinto de ausente e sem somar janelas sobrepostas.');

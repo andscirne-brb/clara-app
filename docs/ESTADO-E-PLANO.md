@@ -220,3 +220,10 @@ Internet ou APIs na Clara; editar diretamente nos portais; envios automáticos; 
 Nomes pedidos pela Andreia: eGO: estado; Idealista: Registar estatísticas; Idealista: ranking dos anúncios. Este último mantém a função de conferência de páginas existente; a renomeação não cria um ranking novo.
 
 Nome final pedido: Idealista: estatísticas.
+
+### Dashboard Idealista
+- Bloco reservado Dashboard!A67:E92, abaixo do conteúdo existente; não altera a seleção de datas nem os indicadores anteriores.
+- Mostra até quatro combinações período/filtros mais recentemente recolhidas, usando a última leitura de cada combinação; nunca soma janelas sobrepostas.
+- Inclui os 15 indicadores, período, filtros, data da recolha e notas de âmbito. Ausente não se converte em zero.
+- Atualiza após novas recolhas gerais. Se o bloco falhar, a recolha permanece guardada e o aviso indica que o dashboard não atualizou.
+- Função interna atualizarDashboardIdealista permite gerar a vista inicial sem criar novas entradas de menu.
