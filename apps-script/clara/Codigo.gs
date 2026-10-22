@@ -65,7 +65,18 @@ function listaTrabalho() {
   const ordem = { 'Prioritária': 0, 'Alta': 1, 'Normal': 2 };
   const o = function (x) { return x.prioridade in ordem ? ordem[x.prioridade] : 3; };
   minhasLista.sort(function (a, b) { return o(a) - o(b) || b.pendencias.length - a.pendencias.length; });
-  return { total: total, verificados: verificados, contagem: contagem, prioritarios: porVerificar['Prioritária'], alta: porVerificar['Alta'].slice(0, 15), altaTotal: porVerificar['Alta'].length, minhas: minhasLista, sara: sara };
+  // Tarefas abertas dos perfis dos portais (separador escondido, mas mostrado aqui)
+  const perfis = [];
+  const pf = ss.getSheetByName('Perfis dos portais');
+  if (pf && pf.getLastRow() > 1) {
+    const h = pf.getRange(1, 1, 1, pf.getLastColumn()).getDisplayValues()[0];
+    const iP = h.indexOf('Portal'), iA = h.indexOf('Assunto'), iO = h.indexOf('Ação / observação'), iE = h.indexOf('Estado'), iL = h.indexOf('Ligação');
+    pf.getRange(2, 1, pf.getLastRow() - 1, h.length).getDisplayValues().forEach(function (r, i) {
+      if (!r[iP] || r[iE] === 'Concluído' || r[iE] === 'Fonte' || !/Ajustar|Por verificar|Em curso|Pendente/.test(r[iE])) return;
+      perfis.push({ portal: r[iP], assunto: r[iA], acao: r[iO], estado: r[iE], url: iL >= 0 ? r[iL] : '', linha: i + 2 });
+    });
+  }
+  return { perfis: perfis, total: total, verificados: verificados, contagem: contagem, prioritarios: porVerificar['Prioritária'], alta: porVerificar['Alta'].slice(0, 15), altaTotal: porVerificar['Alta'].length, minhas: minhasLista, sara: sara };
 }
 
 /* ---------- resumo semanal: a Clara prepara, a Andreia copia para o webmail da Janela e envia ---------- */

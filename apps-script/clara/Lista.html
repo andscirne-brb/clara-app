@@ -29,6 +29,8 @@ function mostrar(d){
   h+=d.minhas.length?d.minhas.map(im=>'<div class="item"><b onclick="ir(\'Pendências da equipa\','+im.pendencias[0].linha+')">'+esc(im.ref)+'</b> '+(im.prioridade==='Prioritária'?'· prioritário':'')+liga(im.url)+'<ul>'+im.pendencias.map(p=>'<li>'+esc(p.assunto)+'<div class="muted">'+esc(p.acao)+'</div></li>').join('')+'</ul></div>').join(''):'<div class="muted">Nenhuma.</div>';
   h+='<h3>3. À espera da Sara ('+d.sara.length+')</h3>';
   h+=d.sara.length?d.sara.map(p=>'<div class="item sara"><b onclick="ir(\'Pendências da equipa\','+p.linha+')">'+esc(p.ref)+'</b> · '+esc(p.assunto)+'</div>').join(''):'<div class="muted">Nenhuma.</div>';
+  h+='<h3>4. Perfis dos portais ('+d.perfis.length+')</h3>';
+  h+=d.perfis.length?d.perfis.map(p=>'<div class="item"><b onclick="ir(\'Perfis dos portais\','+p.linha+')">'+esc(p.portal)+'</b> · '+esc(p.assunto)+(p.url?' · <a href="'+esc(p.url)+'" target="_blank">perfil</a>':'')+'<div class="muted">'+esc(p.estado)+': '+esc(p.acao)+'</div></div>').join(''):'<div class="muted">Nada em aberto.</div>';
   if(!d.prioritarios.length&&d.altaTotal)h+='<h3>Depois: prioridade Alta por verificar ('+d.altaTotal+')</h3>'+d.alta.map(im=>'<div class="item"><b onclick="ir(\'Levantamento\','+im.linha+')">'+esc(im.ref)+'</b> · '+esc(im.natureza)+' · '+esc(im.concelho)+liga(im.url)+'</div>').join('');
   h+='<p class="muted">Carrega numa referência para ir à linha no Sheet.</p>';
   document.getElementById('out').innerHTML=h;
