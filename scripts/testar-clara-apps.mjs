@@ -45,7 +45,7 @@ const snapshot=f=>JSON.stringify([...f.sheets].map(([n,s])=>[n,[...s.cells], [..
 let f=fixture(),d=payload();
 assert.equal(analyse(f,d).completa,true);
 d.parcial=true;assert.equal(analyse(f,d).campos.find(p=>p.coluna==='Estado da verificação').novo,'Em curso');
-delete d.parcial;delete d.textos.FR;assert.equal(analyse(f,d).campos.find(p=>p.coluna==='Descrição FR').novo,'Não foi possível verificar');assert.equal(analyse(f,d).completa,false);
+delete d.parcial;delete d.textos.FR;assert.equal(analyse(f,d).campos.find(p=>p.coluna==='Descrição FR').novo,'Por verificar');assert.equal(analyse(f,d).completa,false);
 assert.equal(analyse(f,payload(),{...docs,licenca:''}).completa,false);
 f=fixture();d=payload();d.textos.FR.descricao=d.textos.EN.descricao;
 f.pend.seed(6,['P0001','TESTE-001','Textos','Descrição em francês em falta','','','Andreia','Alta','Concluído','21/10/2026','21/10/2026','Resolvida','21/10/2026','','Confirmado']);
@@ -61,6 +61,7 @@ f=fixture();const before=snapshot(f);f.fail();assert.throws(()=>save(f,payload()
 // Blank writes may leave empty cells; compare meaningful content rather than map storage.
 const clean=s=>[...s.cells].filter(([,v])=>v!=='');const baseline=fixture();assert.deepEqual([...f.sheets].map(([n,s])=>[n,clean(s)]),[...baseline.sheets].map(([n,s])=>[n,clean(s)]));assert.equal(f.releases(),1);
 f=fixture();f.busy();assert.throws(()=>save(f,payload()),/outra gravação/);assert.equal(f.releases(),0);
+f=fixture();d=payload();d.parcial=true;const statusCol=headers.indexOf('Estado da verificação')+1;f.lev.forms.set('10,'+statusCol,'=FORMULA_EXISTENTE()');save(f,d);assert.equal(f.lev.forms.get('10,'+statusCol),'=FORMULA_EXISTENTE()');assert.equal(get(f.lev,10,headers.indexOf('Alt-text')+1),'Por verificar');assert.equal(get(f.lev,10,headers.indexOf('Características')+1),'Por verificar');
 f=fixture();f.lev.forms.set('10,2','=1');assert.throws(()=>save(f,payload()),/fórmula/);assert.equal(get(f.tx,6,4),'Texto antigo PT');
 new vm.Script(fs.readFileSync(new URL('../apps-script/clara/Painel.html',import.meta.url),'utf8').match(/<script>([\s\S]*)<\/script>/)[1]);
 console.log('PASS: leitura parcial, idioma inacessível, documentos incompletos, reabertura, vagas intercaladas, cinco idiomas, histórico antes/depois, repetição, texto literal, rollback, bloqueio e fórmulas protegidas.');

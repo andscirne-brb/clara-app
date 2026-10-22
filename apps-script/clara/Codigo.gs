@@ -177,7 +177,9 @@ function analisar(texto, docs) {
   const campos = [], pend = [], notas = [];
   const prop = function (coluna, valor, motivo) {
     const k = c.col(coluna); if (!k) { notas.push('Coluna "' + coluna + '" não encontrada; ignorada.'); return; }
-    campos.push({ coluna: coluna, col: k, atual: atual[k - 1], novo: valor, motivo: motivo || '' });
+    const existente = campos.find(function (x) { return x.col === k; });
+    if (existente) { existente.novo = valor; existente.motivo = motivo || ''; }
+    else campos.push({ coluna: coluna, col: k, atual: atual[k - 1], novo: valor, motivo: motivo || '' });
   };
   const nova = function (tema, assunto, evidencia, acao, ondeCorrigir, sara) {
     pend.push({ tema: tema, assunto: assunto, evidencia: evidencia, acao: acao, onde: ondeCorrigir || 'eGO', sara: !!sara });
@@ -205,7 +207,7 @@ function analisar(texto, docs) {
     else if (!String(t.descricao || '').trim()) falta = 'descrição vazia';
     else if (k !== 'EN' && k !== 'PT' && T.EN && t.descricao === T.EN.descricao) falta = 'a página em ' + IDIOMAS[k] + ' mostra o texto inglês';
     else if (k === 'EN' && T.PT && t.descricao === T.PT.descricao) falta = 'a página em inglês mostra o texto português';
-    if (!t || t.erro) { prop('Descrição ' + k, 'Não foi possível verificar', falta); return; }
+    if (!t || t.erro) { prop('Descrição ' + k, 'Por verificar', falta); return; }
     prop('Descrição ' + k, falta ? 'Em falta' : 'Preenchido', falta || (t.descricao.length + ' caracteres'));
     if (falta) {
       const nome = { PT: 'português', EN: 'inglês', FR: 'francês', DE: 'alemão', ES: 'espanhol' }[k];
@@ -226,7 +228,7 @@ function analisar(texto, docs) {
     const pdf = d.plantas.filter(function (e) { return e === 'pdf'; }).length;
     if (!d.plantas.length) { prop('Planta', 'Em falta', 'sem planta'); nova('Plantas', 'Imóvel sem planta', 'O site não mostra planta' + fonte + '.', 'Carregar a planta em imagem (JPG) no eGO.'); }
     else if (!img && pdf) { prop('Planta', 'Formato errado', pdf + ' planta(s) só em PDF: não são exportadas para os portais'); nova('Plantas', 'Planta só em PDF', 'O site mostra ' + pdf + ' planta(s) em PDF' + fonte + '. Plantas em PDF não são exportadas para os portais.', 'Converter a planta em imagem (JPG) e carregar no eGO.'); }
-    else if (!img) prop('Planta', 'Não foi possível verificar', 'formato da planta não reconhecido');
+    else if (!img) prop('Planta', 'Por verificar', 'formato da planta não reconhecido');
     else prop('Planta', 'Preenchido', img + ' planta(s) em imagem' + (pdf ? ' e ' + pdf + ' em PDF' : ''));
   }
   if (d.folhetos != null) prop('Folheto', d.folhetos > 0 ? 'Preenchido' : 'Em falta', d.folhetos + ' folhetos');
@@ -241,6 +243,16 @@ function analisar(texto, docs) {
   });
   if (emFalta.length) nova('Documentos', 'Documentos obrigatórios sem ficheiro no eGO', 'Na ficha do eGO sem ficheiro: ' + emFalta.join(', ') + ' (' + hoje + ').', 'Verificar no dossier do escritório e carregar no eGO. Só os que não estiverem no dossier passam a pergunta à Sara.');
   if (noutra.length) nova('Documentos', 'Documentos na categoria errada no eGO', 'Na ficha do eGO, carregados noutra categoria: ' + noutra.join(', ') + ' (' + hoje + ').', 'Mover cada ficheiro para a categoria certa no bloco Documentos do eGO.');
+  // A folha calcula o estado global a partir de vazios/Por verificar.
+  // Registar o desconhecido mantém a fórmula válida, sem fabricar uma ausência.
+  const desconhecido = function (coluna) { prop(coluna, 'Por verificar', 'Este bloco não foi verificado nesta leitura.'); };
+  if (d.fotos == null) desconhecido('Imagens');
+  if (d.fotosComAlt == null || d.parcial) desconhecido('Alt-text');
+  if (d.caracteristicas == null || d.parcial) desconhecido('Características');
+  if (d.videos == null) desconhecido('Vídeo');
+  if (!Array.isArray(d.plantas)) desconhecido('Planta');
+  if (d.folhetos == null) desconhecido('Folheto');
+  DOCS.forEach(function (x) { if (!docs || ['sim', 'nao', 'categoria', 'na'].indexOf(docs[x[0]]) < 0) desconhecido(x[1]); });
   if (d.url && c.col('Página pública')) prop('Página pública', d.url, 'ligação ao anúncio no site');
   if (c.col('Data da verificação')) prop('Data da verificação', hoje, '');
   const docsCompletos = DOCS.every(function (x) { return docs && ['sim', 'nao', 'categoria', 'na'].indexOf(docs[x[0]]) >= 0; });
@@ -345,7 +357,12 @@ function gravar(texto, docs) {
       if (livres.length !== quantidade) throw new Error('Sem linhas livres em ' + sh.getName() + '. Não gravei alterações.');
       return livres;
     }
-    a.campos.forEach(function (x) { agendar(lev, a.linha, x.col, x.coluna === 'Data da verificação' ? hoje : x.novo, x.coluna); });
+    a.campos.forEach(function (x) {
+      // Estado da verificação é calculado em algumas folhas. Os blocos por verificar
+      // acima alimentam essa fórmula; a Clara nunca a substitui por texto.
+      if (x.coluna === 'Estado da verificação' && lev.getRange(a.linha, x.col).getFormula()) return;
+      agendar(lev, a.linha, x.col, x.coluna === 'Data da verificação' ? hoje : x.novo, x.coluna);
+    });
     // Só atualiza idiomas efetivamente lidos; nunca apaga um idioma inacessível.
     const tv = tx.sh.getRange(tx.linha + 1, 1, Math.max(1, tx.sh.getLastRow() - tx.linha), tx.sh.getLastColumn()).getDisplayValues();
     const novosIdiomas = a.textos.filter(function (t) { return !tv.some(function (r) { return r[tx.col('Referência EGO') - 1] === a.ref && r[tx.col('Idioma') - 1] === t.idioma; }); });
