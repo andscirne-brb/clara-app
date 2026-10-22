@@ -215,3 +215,6 @@ Internet ou APIs na Clara; editar diretamente nos portais; envios automáticos; 
 - Registar Estatísticas Idealista (antes Colar leitura Idealista); mantém também a importação da lista de imóveis.
 - Ver páginas recolhidas no Idealista (antes Conferir páginas Idealista): páginas guardadas/em falta, repetições e imóveis únicos.
 - Instruções e mensagens do marcador atualizadas para os mesmos nomes. Funções e dados preservados.
+
+
+Nomes pedidos pela Andreia: eGO: estado; Idealista: Registar estatísticas; Idealista: ranking dos anúncios. Este último mantém a função de conferência de páginas existente; a renomeação não cria um ranking novo.
