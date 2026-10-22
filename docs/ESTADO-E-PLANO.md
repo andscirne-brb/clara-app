@@ -14,6 +14,12 @@ Aprovado pela Andreia ("gosto da ideia de ter tudo num só lugar"). A aplicaçã
 - Perde-se a cifra local; aceite porque o levantamento já vive no Google da Janela.
 - Se no fim do M1 faltar algo que só uma aplicação local resolva, reavalia-se.
 
+## Comparação descrição e características (22 outubro 2026, verificação pedida pela Andreia)
+
+**Ainda não implementada no Apps Script.** Confirmado em Codigo.gs e marcador.js: o marcador transmite apenas a contagem de Features/Childs; o analisador considera Características preenchido quando a contagem é positiva. Não há nomes dos itens, comparação com o texto, sinónimos ou negações. O algoritmo limitado da antiga app desktop não foi portado e não deve ser apresentado como função da app Sheets.
+
+Requisito pedido: comparar descrição e características assinaladas nos dois sentidos, apresentar diferenças e sugestões para revisão. Distinguir Coerente, Há diferenças a rever e Não foi possível verificar. Para implementar, preservar os nomes/identificadores dos itens na leitura, mostrar o excerto de suporte e tratar sinónimos, negações e hipóteses (sem garagem, possibilidade de piscina). Contagem positiva não demonstra completude nem coerência. Usar inicialmente PT se não houver regras validadas para os restantes idiomas; não declarar os cinco verificados por extrapolação. Não alterar o eGO automaticamente. Esta passagem foi de verificação e registo do requisito; a função continua pendente.
+
 ## Ponto atual para continuar (22 outubro 2026, Codex)
 
 Andreia autorizou consolidar a Clara Apps Script e pediu os menus **Progresso** e **Resumo semanal**. Pediu explicitamente que todas as alterações e pendências de execução fiquem no repositório para continuar no Claude.
