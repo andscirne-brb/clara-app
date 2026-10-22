@@ -208,3 +208,10 @@ Internet ou APIs na Clara; editar diretamente nos portais; envios automáticos; 
 - Comparação só normaliza quebras de linha CRLF/CR para LF; não relaxa tipos nem diferenças no conteúdo.
 - Falhas de leitura indicam folha e célula sem revelar o conteúdo. A recuperação passa também a conferir os valores repostos antes de afirmar que as células foram repostas.
 - Testes sintéticos passam; não considerar a gravação do imóvel real confirmada sem repetir a recolha e obter sucesso na interface.
+
+
+### Nomes do menu Clara
+- Registar eGO (antes Recolher informação).
+- Registar Estatísticas Idealista (antes Colar leitura Idealista); mantém também a importação da lista de imóveis.
+- Ver páginas recolhidas no Idealista (antes Conferir páginas Idealista): páginas guardadas/em falta, repetições e imóveis únicos.
+- Instruções e mensagens do marcador atualizadas para os mesmos nomes. Funções e dados preservados.
