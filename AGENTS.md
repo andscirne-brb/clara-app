@@ -28,7 +28,8 @@ A Clara passou a viver **dentro do Google Sheet** (Apps Script, menu "Clara", pa
 8. **Visita virtual foi descontinuada:** não avaliar nem criar pendências sobre ela.
 9. **Prioritários** = imóveis com a etiqueta "melhora" no eGO (22 em 22/10/2026), marcados "Prioritária" no Levantamento.
 10. **Documentos podem estar na categoria errada** no eGO (ex.: em Outros documentos): estado "Categoria errada", pendência operacional para a Andreia mover o ficheiro. Também existe "Não se aplica".
-11. **Datas no Sheet só com dia, nunca com horas** (pedido da Andreia). Usar a data do dia no fuso do Sheet (`Utilities.parseDate(formatDate(..., 'yyyy-MM-dd'))`), nunca `new Date()` direto.
+11. **Email da Janela é o webmail (janela.pt/webmail), não o Gmail.** A Clara prepara o texto para copiar e colar; nunca usar GmailApp nem enviar emails.
+12. **Datas no Sheet só com dia, nunca com horas** (pedido da Andreia). Usar a data do dia no fuso do Sheet (`Utilities.parseDate(formatDate(..., 'yyyy-MM-dd'))`), nunca `new Date()` direto.
 
 ## Como se trabalha
 

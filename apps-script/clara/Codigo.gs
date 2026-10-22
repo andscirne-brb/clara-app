@@ -68,7 +68,7 @@ function listaTrabalho() {
   return { total: total, verificados: verificados, contagem: contagem, prioritarios: porVerificar['Prioritária'], alta: porVerificar['Alta'].slice(0, 15), altaTotal: porVerificar['Alta'].length, minhas: minhasLista, sara: sara };
 }
 
-/* ---------- resumo semanal (rascunho no Gmail, nunca enviado pela Clara) ---------- */
+/* ---------- resumo semanal: a Clara prepara, a Andreia copia para o webmail da Janela e envia ---------- */
 function abrirResumo() {
   SpreadsheetApp.getUi().showSidebar(HtmlService.createHtmlOutput(RESUMO_HTML).setTitle('Clara · resumo semanal'));
 }
@@ -103,8 +103,7 @@ function resumoSemanal(dias) {
     if (r[1] && dentro(r[0])) im(r[1]).trabalho.push('Alterado (' + r[4] + '): ' + r[5] + (r[7] ? ': ' + r[7] : '') + '.');
   });
   const linhas = Object.keys(por).map(function (k) { return por[k]; }).sort(function (a, b) { return b.pendente.length - a.pendente.length || a.ref.localeCompare(b.ref); });
-  const props = PropertiesService.getDocumentProperties();
-  return { de: fmt(de), ate: fmt(hoje), linhas: linhas, corrigidas: corrigidas, novas: novas, aSara: aSara, para: props.getProperty('resumo_para') || '', cc: props.getProperty('resumo_cc') || '' };
+  return { de: fmt(de), ate: fmt(hoje), linhas: linhas, corrigidas: corrigidas, novas: novas, aSara: aSara };
 }
 function htmlResumo_(r) {
   const e = function (s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
@@ -116,15 +115,7 @@ function htmlResumo_(r) {
     r.linhas.map(function (l) { return '<tr><th scope="row" style="' + td + '">' + e(l.ref) + '</th><td style="' + td + '">' + cel(l.trabalho, 'Sem trabalho neste período.') + '</td><td style="' + td + '">' + cel(l.pendente, 'Nada pendente.') + '</td></tr>'; }).join('') +
     '</tbody></table><p>O detalhe está no separador Pendências da equipa do levantamento.</p><p>Obrigada,<br>Andreia</p></div>';
 }
-function previewResumo(dias) { const r = resumoSemanal(dias); r.html = htmlResumo_(r); return r; }
-function criarRascunho(dias, para, cc) {
-  const props = PropertiesService.getDocumentProperties();
-  props.setProperty('resumo_para', para || ''); props.setProperty('resumo_cc', cc || '');
-  const r = resumoSemanal(dias);
-  const opcoes = { htmlBody: htmlResumo_(r) }; if (cc) opcoes.cc = cc;
-  GmailApp.createDraft(para || '', 'Anúncios: ponto de situação de ' + r.de + ' a ' + r.ate, 'Ponto de situação em anexo (versão HTML).', opcoes);
-  return 'Rascunho criado no Gmail (Rascunhos). Revê e envia tu.';
-}
+function previewResumo(dias) { const r = resumoSemanal(dias); r.html = htmlResumo_(r); r.assunto = 'Anúncios: ponto de situação de ' + r.de + ' a ' + r.ate; return r; }
 
 function irPara(separador, linha) {
   const sh = SpreadsheetApp.getActive().getSheetByName(separador);
