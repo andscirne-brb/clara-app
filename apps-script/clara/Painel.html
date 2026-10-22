@@ -43,17 +43,19 @@ function mostrar(a){
   document.getElementById('analisar').disabled=false;
   let h='<h3>'+esc(a.ref)+' · linha '+a.linha+' do Levantamento</h3>';
   h+='<table>'+a.campos.map(c=>{const m=String(c.atual)!==String(c.novo);const cls=/Em falta|Formato errado|Categoria errada/.test(c.novo)?'falta':(c.novo==='Preenchido'?'ok':'');return '<tr class="'+(m?'muda':'')+'"><td>'+esc(c.coluna)+'</td><td>'+(m?'<s class="muted">'+esc(c.atual||'vazio')+'</s> ':'')+'<span class="'+cls+'">'+esc(c.novo)+'</span><div class="muted">'+esc(c.motivo)+'</div></td></tr>';}).join('')+'</table>';
-  const novas=a.pendencias.filter(p=>!p.jaExiste), ja=a.pendencias.filter(p=>p.jaExiste);
+  const novas=a.pendencias.filter(p=>!p.jaExiste), ja=a.pendencias.filter(p=>p.jaExiste&&!p.reabrir), reabertas=a.pendencias.filter(p=>p.reabrir);
   h+='<h3>Pendências novas ('+novas.length+')</h3>'+(novas.length?novas.map(p=>'<div class="p '+(p.sara?'sara':'')+'"><b>'+esc(p.assunto)+'</b><div class="muted">'+(p.sara?'Pergunta para a Sara':'Para ti (operacional)')+' · '+esc(p.acao)+'</div></div>').join(''):'<div class="muted">Nenhuma.</div>');
+  if(reabertas.length)h+='<h3>Falhas que reapareceram ('+reabertas.length+')</h3>'+reabertas.map(p=>'<div class="p"><b>'+esc(p.jaExiste+' '+p.assunto)+'</b><div class="muted">Reabrir a mesma pendência; a resolução anterior fica no histórico.</div></div>').join('');
   if(a.resolvidas&&a.resolvidas.length)h+='<h3>Correções confirmadas ('+a.resolvidas.length+')</h3>'+a.resolvidas.map(r=>'<div class="p" style="border-left-color:#188038"><b>'+esc(r.id+' '+r.assunto)+'</b><div class="muted">Já não aparece no site: passa a Concluído e Confirmado.</div></div>').join('');
   if(ja.length)h+='<div class="muted">Já registadas: '+ja.map(p=>esc(p.jaExiste+' '+p.assunto)).join('; ')+'</div>';
   if(a.notas.length)h+='<div class="muted">'+a.notas.map(esc).join('<br>')+'</div>';
+  h+='<p class="muted">'+(a.completa?'Levantamento completo.':'Leitura incompleta: o imóvel fica em curso.')+' Textos e alterações ficam registados no Sheet.</p>';
   h+='<button onclick="gravar()">Confirmar e gravar no Sheet</button> <button class="sec" onclick="document.getElementById(\'res\').innerHTML=\'\'">Cancelar</button>';
   document.getElementById('res').innerHTML=h;
 }
 function gravar(){
   document.querySelectorAll('button').forEach(b=>b.disabled=true);
-  google.script.run.withSuccessHandler(r=>{document.getElementById('res').innerHTML='<p class="ok"><b>Gravado.</b> '+esc(r.ref)+': '+r.escritos+' campos atualizados'+(r.criadas.length?'; pendências criadas: '+r.criadas.map(esc).join(', '):'; nenhuma pendência nova')+(r.confirmadas&&r.confirmadas.length?'; correções confirmadas: '+r.confirmadas.map(esc).join(', '):'')+'.</p>';document.getElementById('txt').value='';document.querySelectorAll('button').forEach(b=>b.disabled=false);}).withFailureHandler(falhou).gravar(document.getElementById('txt').value,docs());
+  google.script.run.withSuccessHandler(r=>{document.getElementById('res').innerHTML='<p class="ok"><b>Gravado.</b> '+esc(r.ref)+': '+r.escritos+' campos atualizados; '+r.textos+' idiomas registados; '+r.historico+' alterações no histórico'+(r.reabertas&&r.reabertas.length?'; reabertas: '+r.reabertas.map(esc).join(', '):'')+(r.criadas.length?'; pendências criadas: '+r.criadas.map(esc).join(', '):'; nenhuma pendência nova')+(r.confirmadas&&r.confirmadas.length?'; correções confirmadas: '+r.confirmadas.map(esc).join(', '):'')+'.</p>';document.getElementById('txt').value='';document.querySelectorAll('button').forEach(b=>b.disabled=false);}).withFailureHandler(falhou).gravar(document.getElementById('txt').value,docs());
 }
 </script>
 </body></html>

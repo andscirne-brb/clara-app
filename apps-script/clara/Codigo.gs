@@ -16,9 +16,9 @@ const DOCS = [
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Clara')
-    .addItem('Próximos imóveis', 'abrirLista')
+    .addItem('Progresso', 'abrirLista')
     .addItem('Analisar imóvel', 'abrirPainel')
-    .addItem('Resumo semanal para a Sara', 'abrirResumo')
+    .addItem('Resumo semanal', 'abrirResumo')
     .addItem('Instalar o marcador', 'mostrarMarcador')
     .addToUi();
 }
@@ -28,7 +28,7 @@ function abrirPainel() {
 }
 
 function abrirLista() {
-  SpreadsheetApp.getUi().showSidebar(HtmlService.createHtmlOutput(LISTA_HTML).setTitle('Clara · próximos imóveis'));
+  SpreadsheetApp.getUi().showSidebar(HtmlService.createHtmlOutput(LISTA_HTML).setTitle('Clara · progresso'));
 }
 
 /* ---------- lista de trabalho ---------- */
@@ -55,7 +55,7 @@ function listaTrabalho() {
   });
   const ps = ss.getSheetByName(PEND.nome);
   const minhas = {}, sara = [];
-  ps.getRange(PEND.titulos + 1, 1, 300, 17).getDisplayValues().forEach(function (r, i) {
+  ps.getRange(PEND.titulos + 1, 1, Math.max(1, ps.getLastRow() - PEND.titulos), 17).getDisplayValues().forEach(function (r, i) {
     if (!r[1] || r[8] === 'Concluído' || r[8] === 'Não aplicável') return;
     const p = { id: r[0], ref: r[1], tema: r[2], assunto: r[3], acao: r[5], estado: r[8], linha: PEND.titulos + 1 + i };
     if (r[6] === 'Andreia') { (minhas[r[1]] = minhas[r[1]] || []).push(p); }
@@ -97,14 +97,14 @@ function resumoSemanal(dias) {
   const lev = ss.getSheetByName(LEV.nome); const c = colunas_(lev, LEV.titulos);
   const iRef = c.col('Referência EGO') - 1, iData = c.col('Data da verificação') - 1;
   lev.getRange(LEV.titulos + 1, 1, lev.getLastRow() - LEV.titulos, c.titulos.length).getDisplayValues().forEach(function (r) {
-    if (r[iRef] && iData >= 0 && dentro(r[iData])) im(r[iRef]).trabalho.push('Anúncio verificado (' + r[iData] + ').');
+    if (r[iRef] && iData >= 0 && dentro(r[iData])) im(r[iRef]).trabalho.push((r[c.col('Estado da verificação') - 1] === 'Verificado' ? 'Anúncio verificado (' : 'Leitura parcial, por concluir (') + r[iData] + ').');
   });
   // Pendências
   let corrigidas = 0, novas = 0, aSara = 0;
-  ss.getSheetByName(PEND.nome).getRange(PEND.titulos + 1, 1, 300, 17).getDisplayValues().forEach(function (r) {
+  ss.getSheetByName(PEND.nome).getRange(PEND.titulos + 1, 1, Math.max(1, ss.getSheetByName(PEND.nome).getLastRow() - PEND.titulos), 17).getDisplayValues().forEach(function (r) {
     if (!r[1]) return;
     const fechada = r[8] === 'Concluído' || r[8] === 'Não aplicável';
-    if (fechada && dentro(r[12])) { im(r[1]).trabalho.push((r[8] === 'Concluído' ? 'Corrigido: ' : 'Não aplicável: ') + r[3] + '.'); corrigidas++; }
+    if (r[8] === 'Concluído' && r[14] === 'Confirmado' && dentro(r[12])) { im(r[1]).trabalho.push((r[8] === 'Concluído' ? 'Corrigido: ' : 'Não aplicável: ') + r[3] + '.'); corrigidas++; }
     else if (!fechada && r[16] === 'Sara') { im(r[1]).pendente.push(r[3] + (r[5] ? ' ' + r[5] : '')); aSara++; }
     else if (!fechada && r[6] === 'Andreia' && dentro(r[9])) { im(r[1]).trabalho.push('Identificado, a tratar: ' + r[3] + '.'); novas++; }
   });
@@ -205,7 +205,7 @@ function analisar(texto, docs) {
     else if (!String(t.descricao || '').trim()) falta = 'descrição vazia';
     else if (k !== 'EN' && k !== 'PT' && T.EN && t.descricao === T.EN.descricao) falta = 'a página em ' + IDIOMAS[k] + ' mostra o texto inglês';
     else if (k === 'EN' && T.PT && t.descricao === T.PT.descricao) falta = 'a página em inglês mostra o texto português';
-    if (t && t.erro) { prop('Descrição ' + k, 'Não foi possível verificar', falta); return; }
+    if (!t || t.erro) { prop('Descrição ' + k, 'Não foi possível verificar', falta); return; }
     prop('Descrição ' + k, falta ? 'Em falta' : 'Preenchido', falta || (t.descricao.length + ' caracteres'));
     if (falta) {
       const nome = { PT: 'português', EN: 'inglês', FR: 'francês', DE: 'alemão', ES: 'espanhol' }[k];
@@ -226,6 +226,7 @@ function analisar(texto, docs) {
     const pdf = d.plantas.filter(function (e) { return e === 'pdf'; }).length;
     if (!d.plantas.length) { prop('Planta', 'Em falta', 'sem planta'); nova('Plantas', 'Imóvel sem planta', 'O site não mostra planta' + fonte + '.', 'Carregar a planta em imagem (JPG) no eGO.'); }
     else if (!img && pdf) { prop('Planta', 'Formato errado', pdf + ' planta(s) só em PDF: não são exportadas para os portais'); nova('Plantas', 'Planta só em PDF', 'O site mostra ' + pdf + ' planta(s) em PDF' + fonte + '. Plantas em PDF não são exportadas para os portais.', 'Converter a planta em imagem (JPG) e carregar no eGO.'); }
+    else if (!img) prop('Planta', 'Não foi possível verificar', 'formato da planta não reconhecido');
     else prop('Planta', 'Preenchido', img + ' planta(s) em imagem' + (pdf ? ' e ' + pdf + ' em PDF' : ''));
   }
   if (d.folhetos != null) prop('Folheto', d.folhetos > 0 ? 'Preenchido' : 'Em falta', d.folhetos + ' folhetos');
@@ -242,7 +243,12 @@ function analisar(texto, docs) {
   if (noutra.length) nova('Documentos', 'Documentos na categoria errada no eGO', 'Na ficha do eGO, carregados noutra categoria: ' + noutra.join(', ') + ' (' + hoje + ').', 'Mover cada ficheiro para a categoria certa no bloco Documentos do eGO.');
   if (d.url && c.col('Página pública')) prop('Página pública', d.url, 'ligação ao anúncio no site');
   if (c.col('Data da verificação')) prop('Data da verificação', hoje, '');
-  if (c.col('Estado da verificação')) prop('Estado da verificação', 'Verificado', '');
+  const docsCompletos = DOCS.every(function (x) { return docs && ['sim', 'nao', 'categoria', 'na'].indexOf(docs[x[0]]) >= 0; });
+  const textosCompletos = Object.keys(IDIOMAS).every(function (k) { return T[k] && !T[k].erro && typeof T[k].descricao === 'string' && typeof T[k].titulo === 'string'; });
+  const mediaCompletos = ['fotos', 'fotosComAlt', 'caracteristicas', 'videos', 'folhetos'].every(function (k) { return typeof d[k] === 'number' && isFinite(d[k]) && d[k] >= 0; }) && Array.isArray(d.plantas) && d.plantas.every(function (ext) { return /^(jpg|jpeg|png|webp|gif|pdf)$/.test(ext); });
+  const completa = !d.parcial && docsCompletos && textosCompletos && mediaCompletos;
+  if (c.col('Estado da verificação')) prop('Estado da verificação', completa ? 'Verificado' : 'Em curso', completa ? 'Todos os blocos foram revistos.' : 'Há blocos por verificar; esta leitura não conclui o levantamento.');
+  if (!completa) notas.push('Levantamento em curso: confirma os quatro documentos, os cinco idiomas e os dados de imagens, planta, vídeo e folheto.');
   if (d.parcial) notas.push('Leitura parcial: o site não devolveu todos os dados; texto alternativo e características não foram verificados.');
 
   // Assuntos que esta leitura consegue verificar (para confirmar correções)
@@ -256,8 +262,8 @@ function analisar(texto, docs) {
     if (k !== 'PT' && k !== 'EN') pode('Título em ' + IDIOMAS[k] + ' em falta');
   });
   if (d.videos != null) pode('Existe vídeo do imóvel?');
-  if (d.plantas) { pode('Imóvel sem planta'); pode('Planta só em PDF'); }
-  const todosVistos = docs && DOCS.every(function (x) { return !!docs[x[0]]; });
+  if (Array.isArray(d.plantas) && d.plantas.every(function (e) { return /^(jpg|jpeg|png|webp|gif|pdf)$/.test(e); })) { pode('Imóvel sem planta'); pode('Planta só em PDF'); }
+  const todosVistos = docs && DOCS.every(function (x) { return ['sim', 'nao', 'categoria', 'na'].indexOf(docs[x[0]]) >= 0; });
   if (todosVistos && emFalta.length === 0) pode('Documentos obrigatórios sem ficheiro no eGO');
   if (todosVistos && noutra.length === 0) pode('Documentos na categoria errada no eGO');
   const detetados = {}; pend.forEach(function (p) { detetados[p.assunto] = true; });
@@ -265,52 +271,137 @@ function analisar(texto, docs) {
   // Pendências já existentes: não duplicar e confirmar as que foram corrigidas
   const ps = SpreadsheetApp.getActive().getSheetByName(PEND.nome);
   const existentes = {}, resolvidas = [];
-  ps.getRange(PEND.titulos + 1, 1, 300, 9).getDisplayValues().forEach(function (r, i) {
+  ps.getRange(PEND.titulos + 1, 1, Math.max(1, ps.getLastRow() - PEND.titulos), 9).getDisplayValues().forEach(function (r, i) {
     if (!r[1] || r[1].toUpperCase() !== ref) return;
-    existentes[r[1].toUpperCase() + '|' + r[3]] = r[0];
+    const key = r[1].toUpperCase() + '|' + r[3];
+    const registro = { id: r[0], linha: PEND.titulos + 1 + i, estado: r[8] };
+    if (!existentes[key] || existentes[key].estado === 'Concluído') existentes[key] = registro;
     const aberta = r[8] !== 'Concluído' && r[8] !== 'Não aplicável';
     if (aberta && verificaveis[r[3]] && !detetados[r[3]]) resolvidas.push({ id: r[0], assunto: r[3], linha: PEND.titulos + 1 + i });
   });
-  pend.forEach(function (p) { p.jaExiste = existentes[ref + '|' + p.assunto] || ''; });
+  pend.forEach(function (p) {
+    const ex = existentes[ref + '|' + p.assunto];
+    p.jaExiste = ex ? ex.id : ''; p.linhaExistente = ex ? ex.linha : 0;
+    p.reabrir = !!ex && ex.estado === 'Concluído';
+  });
   const mudam = campos.filter(function (x) { return String(x.atual) !== String(x.novo); }).length;
-  return { ref: ref, linha: linha, campos: campos, pendencias: pend, resolvidas: resolvidas, notas: notas, mudam: mudam, url: d.url || '', hoje: hoje };
+  return { ref: ref, linha: linha, campos: campos, pendencias: pend, resolvidas: resolvidas, notas: notas, mudam: mudam, url: d.url || '', hoje: hoje, completa: completa, textos: Object.keys(IDIOMAS).filter(function (k) { return T[k] && !T[k].erro && typeof T[k].descricao === 'string' && typeof T[k].titulo === 'string'; }).map(function (k) { return { idioma: k, titulo: T[k].titulo, descricao: T[k].descricao }; }) };
 }
 
-/* ---------- gravar (só depois de a Andreia confirmar) ---------- */
+/* ---------- gravação e histórico (só depois de confirmar) ---------- */
+// O bloqueio protege as gravações da Clara; edições manuais são reconferidas
+// antes de escrever. A recuperação repõe só as células já escritas nesta operação.
+function estrutura_(ss, nome, obrigatorias) {
+  const sh = ss.getSheetByName(nome);
+  if (!sh) throw new Error('Falta o separador ' + nome + '. Não gravei alterações.');
+  const n = Math.min(12, sh.getLastRow());
+  const linhas = sh.getRange(1, 1, n, sh.getLastColumn()).getDisplayValues();
+  for (let i = 0; i < linhas.length; i++) {
+    const mapa = {}; linhas[i].forEach(function (v, j) { if (v) mapa[norm_(v)] = j + 1; });
+    if (obrigatorias.every(function (h) { return !!mapa[norm_(h)]; })) return { sh: sh, linha: i + 1, col: function (h) { return mapa[norm_(h)] || 0; } };
+  }
+  throw new Error('Os títulos de ' + nome + ' mudaram. Não gravei alterações.');
+}
+function celVazia_(v) { return v === '' || v == null; }
+function mesmoValor_(a, b) { return a instanceof Date && b instanceof Date ? a.getTime() === b.getTime() : a === b; }
+function textoHistorico_(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, SpreadsheetApp.getActive().getSpreadsheetTimeZone(), 'dd/MM/yyyy');
+  return v == null ? '' : String(v);
+}
 function gravar(texto, docs) {
-  const a = analisar(texto, docs);
-  const sh = SpreadsheetApp.getActive().getSheetByName(LEV.nome);
-  let escritos = 0;
-  a.campos.forEach(function (x) {
-    const cel = sh.getRange(a.linha, x.col);
-    if (cel.getFormula()) return; // nunca escrever por cima de fórmulas
-    if (String(x.atual) === String(x.novo)) return;
-    cel.setValue(x.coluna === 'Data da verificação' ? dataHoje_() : x.novo); escritos++;
-  });
-  const ps = SpreadsheetApp.getActive().getSheetByName(PEND.nome);
-  const v = ps.getRange(PEND.titulos + 1, 1, 300, 4).getDisplayValues();
-  let maxId = 0, livre = -1;
-  v.forEach(function (r, i) { const m = /^P(\d+)$/.exec(r[0]); if (m) maxId = Math.max(maxId, +m[1]); if (livre < 0 && !r[0] && !r[1] && !r[3]) livre = i; });
-  const criadas = [];
-  let linha = PEND.titulos + 1 + livre;
-  a.pendencias.forEach(function (p) {
-    if (p.jaExiste) return;
-    if (livre < 0) throw new Error('Sem linhas livres em Pendências da equipa.');
-    maxId++; const id = 'P' + ('000' + maxId).slice(-4); const hoje = dataHoje_();
-    ps.getRange(linha, 1, 1, 15).setValues([[id, a.ref, p.tema, p.assunto, p.evidencia, p.acao, p.sara ? 'Por atribuir' : 'Andreia', 'Normal', p.sara ? 'A aguardar esclarecimento' : 'Por tratar', hoje, hoje, '', '', p.onde, 'Por verificar']]);
-    ps.getRange(linha, 17).setValue(p.sara ? 'Sara' : '');
-    criadas.push(id + ' ' + p.assunto); linha++;
-  });
-  // Confirmar correções: Concluído + Confirmado, com data (a coluna Conferência exige resposta, data e confirmação)
-  const confirmadas = [];
-  a.resolvidas.forEach(function (r) {
-    const hoje = dataHoje_();
-    ps.getRange(r.linha, 9).setValue('Concluído');
-    ps.getRange(r.linha, 11).setValue(hoje);
-    ps.getRange(r.linha, 12).setValue('Corrigido: confirmado pela Clara na leitura do site de ' + a.hoje + '.');
-    ps.getRange(r.linha, 13).setValue(hoje);
-    ps.getRange(r.linha, 15).setValue('Confirmado');
-    confirmadas.push(r.id + ' ' + r.assunto);
-  });
-  return { ref: a.ref, escritos: escritos, criadas: criadas, confirmadas: confirmadas };
+  const lock = LockService.getDocumentLock();
+  if (!lock.tryLock(30000)) throw new Error('Há outra gravação da Clara em curso. Tenta novamente.');
+  let aplicados = [], plano = [];
+  try {
+    const a = analisar(texto, docs), ss = SpreadsheetApp.getActive(), hoje = dataHoje_();
+    const lev = ss.getSheetByName(LEV.nome), ps = ss.getSheetByName(PEND.nome);
+    const tx = estrutura_(ss, 'Textos por idioma', ['Referência EGO', 'Idioma', 'Título original', 'Descrição original', 'Origem / evidência', 'Data de recolha', 'Estado da recolha']);
+    const hs = estrutura_(ss, 'Registo de alterações', ['Data da alteração', 'Referência EGO', 'Autor', 'Onde foi alterado', 'Campo / assunto', 'Antes', 'Depois / alteração realizada', 'Motivo / fonte', 'Resultado da verificação']);
+    const vistos = {}, historico = [], idOperacao = Utilities.getUuid();
+    function agendar(sh, linha, col, novo, campo, pendencia, semHistorico) {
+      if (!col || linha > sh.getMaxRows()) throw new Error('Sem espaço ou coluna em ' + sh.getName() + '. Não gravei alterações.');
+      if (typeof novo === 'string' && novo.length > 50000) throw new Error('O texto excede o limite de uma célula. Não gravei alterações.');
+      const cel = sh.getRange(linha, col);
+      if (cel.getFormula()) throw new Error('A célula ' + sh.getName() + '!' + cel.getA1Notation() + ' tem uma fórmula. Não gravei alterações.');
+      const antes = cel.getValue();
+      if (mesmoValor_(antes, novo)) return;
+      const key = sh.getName() + '|' + linha + '|' + col;
+      if (vistos[key]) throw new Error('Alterações repetidas na mesma célula. Não gravei alterações.');
+      vistos[key] = true;
+      plano.push({ cel: cel, antes: antes, depois: novo });
+      if (!semHistorico) historico.push({ onde: sh.getName(), campo: campo, antes: textoHistorico_(antes), depois: textoHistorico_(novo), pendencia: pendencia || '' });
+    }
+    function vagas(sh, inicio, quantidade) {
+      if (!quantidade) return [];
+      const n = sh.getMaxRows() - inicio + 1;
+      if (n < quantidade) throw new Error('Sem linhas livres em ' + sh.getName() + '. Não gravei alterações.');
+      const rg = sh.getRange(inicio, 1, n, sh.getLastColumn()), values = rg.getValues(), formulas = rg.getFormulas(), livres = [];
+      for (let i = 0; i < n && livres.length < quantidade; i++) {
+        // Uma linha com fórmulas de conferência pode estar livre para uma pendência.
+        const ocupada = values[i].some(function (v, j) { return !celVazia_(v) && !(sh.getName() === PEND.nome && j === 15 && formulas[i][j]); });
+        const formula = formulas[i].some(function (v, j) { return !!v && !(sh.getName() === PEND.nome && j === 15); });
+        if (!ocupada && !formula) livres.push(inicio + i);
+      }
+      if (livres.length !== quantidade) throw new Error('Sem linhas livres em ' + sh.getName() + '. Não gravei alterações.');
+      return livres;
+    }
+    a.campos.forEach(function (x) { agendar(lev, a.linha, x.col, x.coluna === 'Data da verificação' ? hoje : x.novo, x.coluna); });
+    // Só atualiza idiomas efetivamente lidos; nunca apaga um idioma inacessível.
+    const tv = tx.sh.getRange(tx.linha + 1, 1, Math.max(1, tx.sh.getLastRow() - tx.linha), tx.sh.getLastColumn()).getDisplayValues();
+    const novosIdiomas = a.textos.filter(function (t) { return !tv.some(function (r) { return r[tx.col('Referência EGO') - 1] === a.ref && r[tx.col('Idioma') - 1] === t.idioma; }); });
+    const livresTx = vagas(tx.sh, tx.linha + 1, novosIdiomas.length); let proximaTx = 0;
+    a.textos.forEach(function (t) {
+      const achadas = [];
+      tv.forEach(function (r, i) { if (r[tx.col('Referência EGO') - 1] === a.ref && r[tx.col('Idioma') - 1] === t.idioma) achadas.push(tx.linha + 1 + i); });
+      if (achadas.length > 1) throw new Error('Há linhas repetidas para ' + t.idioma + '. Não gravei alterações.');
+      const linha = achadas.length ? achadas[0] : livresTx[proximaTx++];
+      const dados = { 'Referência EGO': a.ref, 'Idioma': t.idioma, 'Título original': t.titulo, 'Descrição original': t.descricao, 'Origem / evidência': a.url ? 'Página pública: ' + a.url : 'Leitura da Clara', 'Data de recolha': hoje, 'Estado da recolha': 'Revisto' };
+      Object.keys(dados).forEach(function (h) { agendar(tx.sh, linha, tx.col(h), dados[h], t.idioma + ' · ' + h); });
+    });
+    const novas = a.pendencias.filter(function (p) { return !p.jaExiste; }), livresP = vagas(ps, PEND.titulos + 1, novas.length);
+    const ids = ps.getRange(PEND.titulos + 1, 1, Math.max(1, ps.getLastRow() - PEND.titulos), 1).getDisplayValues();
+    let maxId = 0, ip = 0;
+    ids.forEach(function (r) { const m = /^P(\d+)$/.exec(r[0]); if (m) maxId = Math.max(maxId, +m[1]); });
+    const criadas = [], reabertas = [], confirmadas = [];
+    a.pendencias.forEach(function (p) {
+      if (p.jaExiste && !p.reabrir) return;
+      const linha = p.reabrir ? p.linhaExistente : livresP[ip++], id = p.reabrir ? p.jaExiste : 'P' + String(++maxId).padStart(4, '0');
+      if (p.reabrir) {
+        // Mantém a criação, responsável e prioridade; o histórico conserva a resolução anterior.
+        [[5, p.evidencia], [6, p.acao], [9, p.sara ? 'A aguardar esclarecimento' : 'Por tratar'], [11, hoje], [12, ''], [13, ''], [15, 'Por verificar']].forEach(function (v) { agendar(ps, linha, v[0], v[1], p.assunto + ' · reabertura (coluna ' + v[0] + ')', id); });
+        reabertas.push(id + ' ' + p.assunto);
+      } else {
+        const values = [id, a.ref, p.tema, p.assunto, p.evidencia, p.acao, p.sara ? 'Por atribuir' : 'Andreia', 'Normal', p.sara ? 'A aguardar esclarecimento' : 'Por tratar', hoje, hoje, '', '', p.onde, 'Por verificar'];
+        values.forEach(function (v, i) { agendar(ps, linha, i + 1, v, p.assunto + ' · coluna ' + (i + 1), id); });
+        agendar(ps, linha, 17, p.sara ? 'Sara' : '', p.assunto + ' · aguarda análise', id);
+        criadas.push(id + ' ' + p.assunto);
+      }
+    });
+    a.resolvidas.forEach(function (r) {
+      [[9, 'Concluído'], [11, hoje], [12, 'Corrigido: confirmado na leitura do site de ' + a.hoje + '.'], [13, hoje], [15, 'Confirmado']].forEach(function (v) { agendar(ps, r.linha, v[0], v[1], r.assunto + ' · confirmação (coluna ' + v[0] + ')', r.id); });
+      confirmadas.push(r.id + ' ' + r.assunto);
+    });
+    const lugares = vagas(hs.sh, hs.linha + 1, historico.length);
+    historico.forEach(function (h, i) {
+      const dados = { 'Data da alteração': hoje, 'Referência EGO': a.ref, 'ID da pendência': h.pendencia, 'Autor': 'Andreia', 'Onde foi alterado': 'Levantamento', 'Campo / assunto': h.onde + ' · ' + h.campo, 'Antes': h.antes, 'Depois / alteração realizada': h.depois, 'Motivo / fonte': (a.url || 'Leitura da Clara') + ' · operação ' + idOperacao, 'Resultado da verificação': 'Por verificar' };
+      Object.keys(dados).forEach(function (nome) { if (hs.col(nome)) agendar(hs.sh, lugares[i], hs.col(nome), dados[nome], '', '', true); });
+    });
+    // Reconferir todas as células antes da primeira escrita, incluindo vagas e histórico.
+    plano.forEach(function (p) { if (p.cel.getFormula() || !mesmoValor_(p.cel.getValue(), p.antes)) throw new Error('Uma célula mudou entretanto. Analisa novamente antes de gravar.'); });
+    function escrever(cel, valor) {
+      if (typeof valor === 'string' && valor.charAt(0) === '=') cel.setRichTextValue(SpreadsheetApp.newRichTextValue().setText(valor).build());
+      else cel.setValue(valor);
+    }
+    try {
+      plano.forEach(function (p) { aplicados.push(p); escrever(p.cel, p.depois); });
+      SpreadsheetApp.flush();
+      plano.forEach(function (p) { if (p.cel.getFormula() || !mesmoValor_(p.cel.getValue(), p.depois)) throw new Error('A leitura após gravação não corresponde ao valor previsto.'); });
+    } catch (err) {
+      let falhou = false;
+      aplicados.reverse().forEach(function (p) { try { escrever(p.cel, p.antes); } catch (e) { falhou = true; } });
+      try { SpreadsheetApp.flush(); } catch (e) { falhou = true; }
+      throw new Error(falhou ? 'A gravação falhou e a recuperação ficou incompleta. Confere o histórico de versões do Sheets antes de repetir.' : 'A gravação falhou e as células foram repostas. ' + err.message);
+    }
+    return { ref: a.ref, escritos: a.campos.filter(function (x) { return String(x.atual) !== String(x.novo); }).length, textos: a.textos.length, historico: historico.length, criadas: criadas, reabertas: reabertas, confirmadas: confirmadas };
+  } finally { lock.releaseLock(); }
 }

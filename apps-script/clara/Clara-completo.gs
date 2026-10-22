@@ -16,9 +16,9 @@ const DOCS = [
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Clara')
-    .addItem('Próximos imóveis', 'abrirLista')
+    .addItem('Progresso', 'abrirLista')
     .addItem('Analisar imóvel', 'abrirPainel')
-    .addItem('Resumo semanal para a Sara', 'abrirResumo')
+    .addItem('Resumo semanal', 'abrirResumo')
     .addItem('Instalar o marcador', 'mostrarMarcador')
     .addToUi();
 }
@@ -28,7 +28,7 @@ function abrirPainel() {
 }
 
 function abrirLista() {
-  SpreadsheetApp.getUi().showSidebar(HtmlService.createHtmlOutput(LISTA_HTML).setTitle('Clara · próximos imóveis'));
+  SpreadsheetApp.getUi().showSidebar(HtmlService.createHtmlOutput(LISTA_HTML).setTitle('Clara · progresso'));
 }
 
 /* ---------- lista de trabalho ---------- */
@@ -55,7 +55,7 @@ function listaTrabalho() {
   });
   const ps = ss.getSheetByName(PEND.nome);
   const minhas = {}, sara = [];
-  ps.getRange(PEND.titulos + 1, 1, 300, 17).getDisplayValues().forEach(function (r, i) {
+  ps.getRange(PEND.titulos + 1, 1, Math.max(1, ps.getLastRow() - PEND.titulos), 17).getDisplayValues().forEach(function (r, i) {
     if (!r[1] || r[8] === 'Concluído' || r[8] === 'Não aplicável') return;
     const p = { id: r[0], ref: r[1], tema: r[2], assunto: r[3], acao: r[5], estado: r[8], linha: PEND.titulos + 1 + i };
     if (r[6] === 'Andreia') { (minhas[r[1]] = minhas[r[1]] || []).push(p); }
@@ -97,14 +97,14 @@ function resumoSemanal(dias) {
   const lev = ss.getSheetByName(LEV.nome); const c = colunas_(lev, LEV.titulos);
   const iRef = c.col('Referência EGO') - 1, iData = c.col('Data da verificação') - 1;
   lev.getRange(LEV.titulos + 1, 1, lev.getLastRow() - LEV.titulos, c.titulos.length).getDisplayValues().forEach(function (r) {
-    if (r[iRef] && iData >= 0 && dentro(r[iData])) im(r[iRef]).trabalho.push('Anúncio verificado (' + r[iData] + ').');
+    if (r[iRef] && iData >= 0 && dentro(r[iData])) im(r[iRef]).trabalho.push((r[c.col('Estado da verificação') - 1] === 'Verificado' ? 'Anúncio verificado (' : 'Leitura parcial, por concluir (') + r[iData] + ').');
   });
   // Pendências
   let corrigidas = 0, novas = 0, aSara = 0;
-  ss.getSheetByName(PEND.nome).getRange(PEND.titulos + 1, 1, 300, 17).getDisplayValues().forEach(function (r) {
+  ss.getSheetByName(PEND.nome).getRange(PEND.titulos + 1, 1, Math.max(1, ss.getSheetByName(PEND.nome).getLastRow() - PEND.titulos), 17).getDisplayValues().forEach(function (r) {
     if (!r[1]) return;
     const fechada = r[8] === 'Concluído' || r[8] === 'Não aplicável';
-    if (fechada && dentro(r[12])) { im(r[1]).trabalho.push((r[8] === 'Concluído' ? 'Corrigido: ' : 'Não aplicável: ') + r[3] + '.'); corrigidas++; }
+    if (r[8] === 'Concluído' && r[14] === 'Confirmado' && dentro(r[12])) { im(r[1]).trabalho.push((r[8] === 'Concluído' ? 'Corrigido: ' : 'Não aplicável: ') + r[3] + '.'); corrigidas++; }
     else if (!fechada && r[16] === 'Sara') { im(r[1]).pendente.push(r[3] + (r[5] ? ' ' + r[5] : '')); aSara++; }
     else if (!fechada && r[6] === 'Andreia' && dentro(r[9])) { im(r[1]).trabalho.push('Identificado, a tratar: ' + r[3] + '.'); novas++; }
   });
@@ -205,7 +205,7 @@ function analisar(texto, docs) {
     else if (!String(t.descricao || '').trim()) falta = 'descrição vazia';
     else if (k !== 'EN' && k !== 'PT' && T.EN && t.descricao === T.EN.descricao) falta = 'a página em ' + IDIOMAS[k] + ' mostra o texto inglês';
     else if (k === 'EN' && T.PT && t.descricao === T.PT.descricao) falta = 'a página em inglês mostra o texto português';
-    if (t && t.erro) { prop('Descrição ' + k, 'Não foi possível verificar', falta); return; }
+    if (!t || t.erro) { prop('Descrição ' + k, 'Não foi possível verificar', falta); return; }
     prop('Descrição ' + k, falta ? 'Em falta' : 'Preenchido', falta || (t.descricao.length + ' caracteres'));
     if (falta) {
       const nome = { PT: 'português', EN: 'inglês', FR: 'francês', DE: 'alemão', ES: 'espanhol' }[k];
@@ -226,6 +226,7 @@ function analisar(texto, docs) {
     const pdf = d.plantas.filter(function (e) { return e === 'pdf'; }).length;
     if (!d.plantas.length) { prop('Planta', 'Em falta', 'sem planta'); nova('Plantas', 'Imóvel sem planta', 'O site não mostra planta' + fonte + '.', 'Carregar a planta em imagem (JPG) no eGO.'); }
     else if (!img && pdf) { prop('Planta', 'Formato errado', pdf + ' planta(s) só em PDF: não são exportadas para os portais'); nova('Plantas', 'Planta só em PDF', 'O site mostra ' + pdf + ' planta(s) em PDF' + fonte + '. Plantas em PDF não são exportadas para os portais.', 'Converter a planta em imagem (JPG) e carregar no eGO.'); }
+    else if (!img) prop('Planta', 'Não foi possível verificar', 'formato da planta não reconhecido');
     else prop('Planta', 'Preenchido', img + ' planta(s) em imagem' + (pdf ? ' e ' + pdf + ' em PDF' : ''));
   }
   if (d.folhetos != null) prop('Folheto', d.folhetos > 0 ? 'Preenchido' : 'Em falta', d.folhetos + ' folhetos');
@@ -242,7 +243,12 @@ function analisar(texto, docs) {
   if (noutra.length) nova('Documentos', 'Documentos na categoria errada no eGO', 'Na ficha do eGO, carregados noutra categoria: ' + noutra.join(', ') + ' (' + hoje + ').', 'Mover cada ficheiro para a categoria certa no bloco Documentos do eGO.');
   if (d.url && c.col('Página pública')) prop('Página pública', d.url, 'ligação ao anúncio no site');
   if (c.col('Data da verificação')) prop('Data da verificação', hoje, '');
-  if (c.col('Estado da verificação')) prop('Estado da verificação', 'Verificado', '');
+  const docsCompletos = DOCS.every(function (x) { return docs && ['sim', 'nao', 'categoria', 'na'].indexOf(docs[x[0]]) >= 0; });
+  const textosCompletos = Object.keys(IDIOMAS).every(function (k) { return T[k] && !T[k].erro && typeof T[k].descricao === 'string' && typeof T[k].titulo === 'string'; });
+  const mediaCompletos = ['fotos', 'fotosComAlt', 'caracteristicas', 'videos', 'folhetos'].every(function (k) { return typeof d[k] === 'number' && isFinite(d[k]) && d[k] >= 0; }) && Array.isArray(d.plantas) && d.plantas.every(function (ext) { return /^(jpg|jpeg|png|webp|gif|pdf)$/.test(ext); });
+  const completa = !d.parcial && docsCompletos && textosCompletos && mediaCompletos;
+  if (c.col('Estado da verificação')) prop('Estado da verificação', completa ? 'Verificado' : 'Em curso', completa ? 'Todos os blocos foram revistos.' : 'Há blocos por verificar; esta leitura não conclui o levantamento.');
+  if (!completa) notas.push('Levantamento em curso: confirma os quatro documentos, os cinco idiomas e os dados de imagens, planta, vídeo e folheto.');
   if (d.parcial) notas.push('Leitura parcial: o site não devolveu todos os dados; texto alternativo e características não foram verificados.');
 
   // Assuntos que esta leitura consegue verificar (para confirmar correções)
@@ -256,8 +262,8 @@ function analisar(texto, docs) {
     if (k !== 'PT' && k !== 'EN') pode('Título em ' + IDIOMAS[k] + ' em falta');
   });
   if (d.videos != null) pode('Existe vídeo do imóvel?');
-  if (d.plantas) { pode('Imóvel sem planta'); pode('Planta só em PDF'); }
-  const todosVistos = docs && DOCS.every(function (x) { return !!docs[x[0]]; });
+  if (Array.isArray(d.plantas) && d.plantas.every(function (e) { return /^(jpg|jpeg|png|webp|gif|pdf)$/.test(e); })) { pode('Imóvel sem planta'); pode('Planta só em PDF'); }
+  const todosVistos = docs && DOCS.every(function (x) { return ['sim', 'nao', 'categoria', 'na'].indexOf(docs[x[0]]) >= 0; });
   if (todosVistos && emFalta.length === 0) pode('Documentos obrigatórios sem ficheiro no eGO');
   if (todosVistos && noutra.length === 0) pode('Documentos na categoria errada no eGO');
   const detetados = {}; pend.forEach(function (p) { detetados[p.assunto] = true; });
@@ -265,58 +271,143 @@ function analisar(texto, docs) {
   // Pendências já existentes: não duplicar e confirmar as que foram corrigidas
   const ps = SpreadsheetApp.getActive().getSheetByName(PEND.nome);
   const existentes = {}, resolvidas = [];
-  ps.getRange(PEND.titulos + 1, 1, 300, 9).getDisplayValues().forEach(function (r, i) {
+  ps.getRange(PEND.titulos + 1, 1, Math.max(1, ps.getLastRow() - PEND.titulos), 9).getDisplayValues().forEach(function (r, i) {
     if (!r[1] || r[1].toUpperCase() !== ref) return;
-    existentes[r[1].toUpperCase() + '|' + r[3]] = r[0];
+    const key = r[1].toUpperCase() + '|' + r[3];
+    const registro = { id: r[0], linha: PEND.titulos + 1 + i, estado: r[8] };
+    if (!existentes[key] || existentes[key].estado === 'Concluído') existentes[key] = registro;
     const aberta = r[8] !== 'Concluído' && r[8] !== 'Não aplicável';
     if (aberta && verificaveis[r[3]] && !detetados[r[3]]) resolvidas.push({ id: r[0], assunto: r[3], linha: PEND.titulos + 1 + i });
   });
-  pend.forEach(function (p) { p.jaExiste = existentes[ref + '|' + p.assunto] || ''; });
+  pend.forEach(function (p) {
+    const ex = existentes[ref + '|' + p.assunto];
+    p.jaExiste = ex ? ex.id : ''; p.linhaExistente = ex ? ex.linha : 0;
+    p.reabrir = !!ex && ex.estado === 'Concluído';
+  });
   const mudam = campos.filter(function (x) { return String(x.atual) !== String(x.novo); }).length;
-  return { ref: ref, linha: linha, campos: campos, pendencias: pend, resolvidas: resolvidas, notas: notas, mudam: mudam, url: d.url || '', hoje: hoje };
+  return { ref: ref, linha: linha, campos: campos, pendencias: pend, resolvidas: resolvidas, notas: notas, mudam: mudam, url: d.url || '', hoje: hoje, completa: completa, textos: Object.keys(IDIOMAS).filter(function (k) { return T[k] && !T[k].erro && typeof T[k].descricao === 'string' && typeof T[k].titulo === 'string'; }).map(function (k) { return { idioma: k, titulo: T[k].titulo, descricao: T[k].descricao }; }) };
 }
 
-/* ---------- gravar (só depois de a Andreia confirmar) ---------- */
+/* ---------- gravação e histórico (só depois de confirmar) ---------- */
+// O bloqueio protege as gravações da Clara; edições manuais são reconferidas
+// antes de escrever. A recuperação repõe só as células já escritas nesta operação.
+function estrutura_(ss, nome, obrigatorias) {
+  const sh = ss.getSheetByName(nome);
+  if (!sh) throw new Error('Falta o separador ' + nome + '. Não gravei alterações.');
+  const n = Math.min(12, sh.getLastRow());
+  const linhas = sh.getRange(1, 1, n, sh.getLastColumn()).getDisplayValues();
+  for (let i = 0; i < linhas.length; i++) {
+    const mapa = {}; linhas[i].forEach(function (v, j) { if (v) mapa[norm_(v)] = j + 1; });
+    if (obrigatorias.every(function (h) { return !!mapa[norm_(h)]; })) return { sh: sh, linha: i + 1, col: function (h) { return mapa[norm_(h)] || 0; } };
+  }
+  throw new Error('Os títulos de ' + nome + ' mudaram. Não gravei alterações.');
+}
+function celVazia_(v) { return v === '' || v == null; }
+function mesmoValor_(a, b) { return a instanceof Date && b instanceof Date ? a.getTime() === b.getTime() : a === b; }
+function textoHistorico_(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, SpreadsheetApp.getActive().getSpreadsheetTimeZone(), 'dd/MM/yyyy');
+  return v == null ? '' : String(v);
+}
 function gravar(texto, docs) {
-  const a = analisar(texto, docs);
-  const sh = SpreadsheetApp.getActive().getSheetByName(LEV.nome);
-  let escritos = 0;
-  a.campos.forEach(function (x) {
-    const cel = sh.getRange(a.linha, x.col);
-    if (cel.getFormula()) return; // nunca escrever por cima de fórmulas
-    if (String(x.atual) === String(x.novo)) return;
-    cel.setValue(x.coluna === 'Data da verificação' ? dataHoje_() : x.novo); escritos++;
-  });
-  const ps = SpreadsheetApp.getActive().getSheetByName(PEND.nome);
-  const v = ps.getRange(PEND.titulos + 1, 1, 300, 4).getDisplayValues();
-  let maxId = 0, livre = -1;
-  v.forEach(function (r, i) { const m = /^P(\d+)$/.exec(r[0]); if (m) maxId = Math.max(maxId, +m[1]); if (livre < 0 && !r[0] && !r[1] && !r[3]) livre = i; });
-  const criadas = [];
-  let linha = PEND.titulos + 1 + livre;
-  a.pendencias.forEach(function (p) {
-    if (p.jaExiste) return;
-    if (livre < 0) throw new Error('Sem linhas livres em Pendências da equipa.');
-    maxId++; const id = 'P' + ('000' + maxId).slice(-4); const hoje = dataHoje_();
-    ps.getRange(linha, 1, 1, 15).setValues([[id, a.ref, p.tema, p.assunto, p.evidencia, p.acao, p.sara ? 'Por atribuir' : 'Andreia', 'Normal', p.sara ? 'A aguardar esclarecimento' : 'Por tratar', hoje, hoje, '', '', p.onde, 'Por verificar']]);
-    ps.getRange(linha, 17).setValue(p.sara ? 'Sara' : '');
-    criadas.push(id + ' ' + p.assunto); linha++;
-  });
-  // Confirmar correções: Concluído + Confirmado, com data (a coluna Conferência exige resposta, data e confirmação)
-  const confirmadas = [];
-  a.resolvidas.forEach(function (r) {
-    const hoje = dataHoje_();
-    ps.getRange(r.linha, 9).setValue('Concluído');
-    ps.getRange(r.linha, 11).setValue(hoje);
-    ps.getRange(r.linha, 12).setValue('Corrigido: confirmado pela Clara na leitura do site de ' + a.hoje + '.');
-    ps.getRange(r.linha, 13).setValue(hoje);
-    ps.getRange(r.linha, 15).setValue('Confirmado');
-    confirmadas.push(r.id + ' ' + r.assunto);
-  });
-  return { ref: a.ref, escritos: escritos, criadas: criadas, confirmadas: confirmadas };
+  const lock = LockService.getDocumentLock();
+  if (!lock.tryLock(30000)) throw new Error('Há outra gravação da Clara em curso. Tenta novamente.');
+  let aplicados = [], plano = [];
+  try {
+    const a = analisar(texto, docs), ss = SpreadsheetApp.getActive(), hoje = dataHoje_();
+    const lev = ss.getSheetByName(LEV.nome), ps = ss.getSheetByName(PEND.nome);
+    const tx = estrutura_(ss, 'Textos por idioma', ['Referência EGO', 'Idioma', 'Título original', 'Descrição original', 'Origem / evidência', 'Data de recolha', 'Estado da recolha']);
+    const hs = estrutura_(ss, 'Registo de alterações', ['Data da alteração', 'Referência EGO', 'Autor', 'Onde foi alterado', 'Campo / assunto', 'Antes', 'Depois / alteração realizada', 'Motivo / fonte', 'Resultado da verificação']);
+    const vistos = {}, historico = [], idOperacao = Utilities.getUuid();
+    function agendar(sh, linha, col, novo, campo, pendencia, semHistorico) {
+      if (!col || linha > sh.getMaxRows()) throw new Error('Sem espaço ou coluna em ' + sh.getName() + '. Não gravei alterações.');
+      if (typeof novo === 'string' && novo.length > 50000) throw new Error('O texto excede o limite de uma célula. Não gravei alterações.');
+      const cel = sh.getRange(linha, col);
+      if (cel.getFormula()) throw new Error('A célula ' + sh.getName() + '!' + cel.getA1Notation() + ' tem uma fórmula. Não gravei alterações.');
+      const antes = cel.getValue();
+      if (mesmoValor_(antes, novo)) return;
+      const key = sh.getName() + '|' + linha + '|' + col;
+      if (vistos[key]) throw new Error('Alterações repetidas na mesma célula. Não gravei alterações.');
+      vistos[key] = true;
+      plano.push({ cel: cel, antes: antes, depois: novo });
+      if (!semHistorico) historico.push({ onde: sh.getName(), campo: campo, antes: textoHistorico_(antes), depois: textoHistorico_(novo), pendencia: pendencia || '' });
+    }
+    function vagas(sh, inicio, quantidade) {
+      if (!quantidade) return [];
+      const n = sh.getMaxRows() - inicio + 1;
+      if (n < quantidade) throw new Error('Sem linhas livres em ' + sh.getName() + '. Não gravei alterações.');
+      const rg = sh.getRange(inicio, 1, n, sh.getLastColumn()), values = rg.getValues(), formulas = rg.getFormulas(), livres = [];
+      for (let i = 0; i < n && livres.length < quantidade; i++) {
+        // Uma linha com fórmulas de conferência pode estar livre para uma pendência.
+        const ocupada = values[i].some(function (v, j) { return !celVazia_(v) && !(sh.getName() === PEND.nome && j === 15 && formulas[i][j]); });
+        const formula = formulas[i].some(function (v, j) { return !!v && !(sh.getName() === PEND.nome && j === 15); });
+        if (!ocupada && !formula) livres.push(inicio + i);
+      }
+      if (livres.length !== quantidade) throw new Error('Sem linhas livres em ' + sh.getName() + '. Não gravei alterações.');
+      return livres;
+    }
+    a.campos.forEach(function (x) { agendar(lev, a.linha, x.col, x.coluna === 'Data da verificação' ? hoje : x.novo, x.coluna); });
+    // Só atualiza idiomas efetivamente lidos; nunca apaga um idioma inacessível.
+    const tv = tx.sh.getRange(tx.linha + 1, 1, Math.max(1, tx.sh.getLastRow() - tx.linha), tx.sh.getLastColumn()).getDisplayValues();
+    const novosIdiomas = a.textos.filter(function (t) { return !tv.some(function (r) { return r[tx.col('Referência EGO') - 1] === a.ref && r[tx.col('Idioma') - 1] === t.idioma; }); });
+    const livresTx = vagas(tx.sh, tx.linha + 1, novosIdiomas.length); let proximaTx = 0;
+    a.textos.forEach(function (t) {
+      const achadas = [];
+      tv.forEach(function (r, i) { if (r[tx.col('Referência EGO') - 1] === a.ref && r[tx.col('Idioma') - 1] === t.idioma) achadas.push(tx.linha + 1 + i); });
+      if (achadas.length > 1) throw new Error('Há linhas repetidas para ' + t.idioma + '. Não gravei alterações.');
+      const linha = achadas.length ? achadas[0] : livresTx[proximaTx++];
+      const dados = { 'Referência EGO': a.ref, 'Idioma': t.idioma, 'Título original': t.titulo, 'Descrição original': t.descricao, 'Origem / evidência': a.url ? 'Página pública: ' + a.url : 'Leitura da Clara', 'Data de recolha': hoje, 'Estado da recolha': 'Revisto' };
+      Object.keys(dados).forEach(function (h) { agendar(tx.sh, linha, tx.col(h), dados[h], t.idioma + ' · ' + h); });
+    });
+    const novas = a.pendencias.filter(function (p) { return !p.jaExiste; }), livresP = vagas(ps, PEND.titulos + 1, novas.length);
+    const ids = ps.getRange(PEND.titulos + 1, 1, Math.max(1, ps.getLastRow() - PEND.titulos), 1).getDisplayValues();
+    let maxId = 0, ip = 0;
+    ids.forEach(function (r) { const m = /^P(\d+)$/.exec(r[0]); if (m) maxId = Math.max(maxId, +m[1]); });
+    const criadas = [], reabertas = [], confirmadas = [];
+    a.pendencias.forEach(function (p) {
+      if (p.jaExiste && !p.reabrir) return;
+      const linha = p.reabrir ? p.linhaExistente : livresP[ip++], id = p.reabrir ? p.jaExiste : 'P' + String(++maxId).padStart(4, '0');
+      if (p.reabrir) {
+        // Mantém a criação, responsável e prioridade; o histórico conserva a resolução anterior.
+        [[5, p.evidencia], [6, p.acao], [9, p.sara ? 'A aguardar esclarecimento' : 'Por tratar'], [11, hoje], [12, ''], [13, ''], [15, 'Por verificar']].forEach(function (v) { agendar(ps, linha, v[0], v[1], p.assunto + ' · reabertura (coluna ' + v[0] + ')', id); });
+        reabertas.push(id + ' ' + p.assunto);
+      } else {
+        const values = [id, a.ref, p.tema, p.assunto, p.evidencia, p.acao, p.sara ? 'Por atribuir' : 'Andreia', 'Normal', p.sara ? 'A aguardar esclarecimento' : 'Por tratar', hoje, hoje, '', '', p.onde, 'Por verificar'];
+        values.forEach(function (v, i) { agendar(ps, linha, i + 1, v, p.assunto + ' · coluna ' + (i + 1), id); });
+        agendar(ps, linha, 17, p.sara ? 'Sara' : '', p.assunto + ' · aguarda análise', id);
+        criadas.push(id + ' ' + p.assunto);
+      }
+    });
+    a.resolvidas.forEach(function (r) {
+      [[9, 'Concluído'], [11, hoje], [12, 'Corrigido: confirmado na leitura do site de ' + a.hoje + '.'], [13, hoje], [15, 'Confirmado']].forEach(function (v) { agendar(ps, r.linha, v[0], v[1], r.assunto + ' · confirmação (coluna ' + v[0] + ')', r.id); });
+      confirmadas.push(r.id + ' ' + r.assunto);
+    });
+    const lugares = vagas(hs.sh, hs.linha + 1, historico.length);
+    historico.forEach(function (h, i) {
+      const dados = { 'Data da alteração': hoje, 'Referência EGO': a.ref, 'ID da pendência': h.pendencia, 'Autor': 'Andreia', 'Onde foi alterado': 'Levantamento', 'Campo / assunto': h.onde + ' · ' + h.campo, 'Antes': h.antes, 'Depois / alteração realizada': h.depois, 'Motivo / fonte': (a.url || 'Leitura da Clara') + ' · operação ' + idOperacao, 'Resultado da verificação': 'Por verificar' };
+      Object.keys(dados).forEach(function (nome) { if (hs.col(nome)) agendar(hs.sh, lugares[i], hs.col(nome), dados[nome], '', '', true); });
+    });
+    // Reconferir todas as células antes da primeira escrita, incluindo vagas e histórico.
+    plano.forEach(function (p) { if (p.cel.getFormula() || !mesmoValor_(p.cel.getValue(), p.antes)) throw new Error('Uma célula mudou entretanto. Analisa novamente antes de gravar.'); });
+    function escrever(cel, valor) {
+      if (typeof valor === 'string' && valor.charAt(0) === '=') cel.setRichTextValue(SpreadsheetApp.newRichTextValue().setText(valor).build());
+      else cel.setValue(valor);
+    }
+    try {
+      plano.forEach(function (p) { aplicados.push(p); escrever(p.cel, p.depois); });
+      SpreadsheetApp.flush();
+      plano.forEach(function (p) { if (p.cel.getFormula() || !mesmoValor_(p.cel.getValue(), p.depois)) throw new Error('A leitura após gravação não corresponde ao valor previsto.'); });
+    } catch (err) {
+      let falhou = false;
+      aplicados.reverse().forEach(function (p) { try { escrever(p.cel, p.antes); } catch (e) { falhou = true; } });
+      try { SpreadsheetApp.flush(); } catch (e) { falhou = true; }
+      throw new Error(falhou ? 'A gravação falhou e a recuperação ficou incompleta. Confere o histórico de versões do Sheets antes de repetir.' : 'A gravação falhou e as células foram repostas. ' + err.message);
+    }
+    return { ref: a.ref, escritos: a.campos.filter(function (x) { return String(x.atual) !== String(x.novo); }).length, textos: a.textos.length, historico: historico.length, criadas: criadas, reabertas: reabertas, confirmadas: confirmadas };
+  } finally { lock.releaseLock(); }
 }
 
 /* ---------- gerado por scripts/construir-clara.py: não editar à mão ---------- */
-const PAINEL_HTML = "<!doctype html>\n<html><head><base target=\"_top\"><meta charset=\"utf-8\">\n<style>\nbody{font-family:Arial,sans-serif;font-size:13px;color:#202124;margin:0;padding:12px}\nh3{font-size:14px;margin:14px 0 6px}\ntextarea{width:100%;height:70px;box-sizing:border-box;font-size:11px}\nselect{font-size:12px;width:100%}\n.doc{display:grid;grid-template-columns:1fr 120px;gap:4px;align-items:center;margin:3px 0}\nbutton{background:#1a73e8;color:#fff;border:0;border-radius:6px;padding:8px 14px;font-size:13px;cursor:pointer;margin-top:8px}\nbutton.sec{background:#fff;color:#1a73e8;border:1px solid #dadce0}\nbutton:disabled{opacity:.5}\ntable{border-collapse:collapse;width:100%;font-size:12px}\ntd{border-bottom:1px solid #eee;padding:4px 2px;vertical-align:top}\n.muda{background:#fff8e1}\n.falta{color:#c5221f;font-weight:bold}\n.ok{color:#188038}\n.p{border-left:3px solid #1a73e8;padding:4px 8px;margin:6px 0;background:#f8f9fa}\n.sara{border-left-color:#f9ab00}\n.erro{color:#c5221f;margin-top:8px}\n.muted{color:#5f6368;font-size:12px}\n</style></head>\n<body>\n<div class=\"muted\">1. Na página pública do imóvel, carrega no marcador <b>Clara</b>.<br>2. Cola aqui (Ctrl+V).</div>\n<textarea id=\"txt\" placeholder=\"Cola aqui a leitura da Clara\"></textarea>\n<h3>Documentos na ficha do EGO</h3>\n<div class=\"muted\">Vê o bloco \"Documentos\" na ficha do imóvel no EGO. \"Está noutra categoria\": o ficheiro existe mas foi carregado no sítio errado (por exemplo, em Outros documentos).</div>\n<div id=\"docs\"></div>\n<button id=\"analisar\" onclick=\"analisar()\">Analisar</button>\n<div id=\"erro\" class=\"erro\"></div>\n<div id=\"res\"></div>\n<script>\nconst DOCS=[['caderneta','Caderneta Predial'],['certificado','Certificado Energético'],['contrato','Contrato de Mediação'],['licenca','Licença de Habitação']];\ndocument.getElementById('docs').innerHTML=DOCS.map(d=>'<div class=\"doc\"><span>'+d[1]+'</span><select id=\"d_'+d[0]+'\"><option value=\"\">Não vi</option><option value=\"sim\">Tem ficheiro</option><option value=\"categoria\">Está noutra categoria</option><option value=\"nao\">Em falta</option><option value=\"na\">Não se aplica</option></select></div>').join('');\nfunction docs(){const o={};DOCS.forEach(d=>o[d[0]]=document.getElementById('d_'+d[0]).value);return o;}\nfunction esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;');}\nfunction falhou(e){document.getElementById('erro').textContent=(e&&e.message)||String(e);document.querySelectorAll('button').forEach(b=>b.disabled=false);}\nfunction analisar(){\n  document.getElementById('erro').textContent='';document.getElementById('res').innerHTML='A analisar…';\n  document.getElementById('analisar').disabled=true;\n  google.script.run.withSuccessHandler(mostrar).withFailureHandler(falhou).analisar(document.getElementById('txt').value,docs());\n}\nfunction mostrar(a){\n  document.getElementById('analisar').disabled=false;\n  let h='<h3>'+esc(a.ref)+' · linha '+a.linha+' do Levantamento</h3>';\n  h+='<table>'+a.campos.map(c=>{const m=String(c.atual)!==String(c.novo);const cls=/Em falta|Formato errado|Categoria errada/.test(c.novo)?'falta':(c.novo==='Preenchido'?'ok':'');return '<tr class=\"'+(m?'muda':'')+'\"><td>'+esc(c.coluna)+'</td><td>'+(m?'<s class=\"muted\">'+esc(c.atual||'vazio')+'</s> ':'')+'<span class=\"'+cls+'\">'+esc(c.novo)+'</span><div class=\"muted\">'+esc(c.motivo)+'</div></td></tr>';}).join('')+'</table>';\n  const novas=a.pendencias.filter(p=>!p.jaExiste), ja=a.pendencias.filter(p=>p.jaExiste);\n  h+='<h3>Pendências novas ('+novas.length+')</h3>'+(novas.length?novas.map(p=>'<div class=\"p '+(p.sara?'sara':'')+'\"><b>'+esc(p.assunto)+'</b><div class=\"muted\">'+(p.sara?'Pergunta para a Sara':'Para ti (operacional)')+' · '+esc(p.acao)+'</div></div>').join(''):'<div class=\"muted\">Nenhuma.</div>');\n  if(a.resolvidas&&a.resolvidas.length)h+='<h3>Correções confirmadas ('+a.resolvidas.length+')</h3>'+a.resolvidas.map(r=>'<div class=\"p\" style=\"border-left-color:#188038\"><b>'+esc(r.id+' '+r.assunto)+'</b><div class=\"muted\">Já não aparece no site: passa a Concluído e Confirmado.</div></div>').join('');\n  if(ja.length)h+='<div class=\"muted\">Já registadas: '+ja.map(p=>esc(p.jaExiste+' '+p.assunto)).join('; ')+'</div>';\n  if(a.notas.length)h+='<div class=\"muted\">'+a.notas.map(esc).join('<br>')+'</div>';\n  h+='<button onclick=\"gravar()\">Confirmar e gravar no Sheet</button> <button class=\"sec\" onclick=\"document.getElementById(\\'res\\').innerHTML=\\'\\'\">Cancelar</button>';\n  document.getElementById('res').innerHTML=h;\n}\nfunction gravar(){\n  document.querySelectorAll('button').forEach(b=>b.disabled=true);\n  google.script.run.withSuccessHandler(r=>{document.getElementById('res').innerHTML='<p class=\"ok\"><b>Gravado.</b> '+esc(r.ref)+': '+r.escritos+' campos atualizados'+(r.criadas.length?'; pendências criadas: '+r.criadas.map(esc).join(', '):'; nenhuma pendência nova')+(r.confirmadas&&r.confirmadas.length?'; correções confirmadas: '+r.confirmadas.map(esc).join(', '):'')+'.</p>';document.getElementById('txt').value='';document.querySelectorAll('button').forEach(b=>b.disabled=false);}).withFailureHandler(falhou).gravar(document.getElementById('txt').value,docs());\n}\n</script>\n</body></html>\n";
+const PAINEL_HTML = "<!doctype html>\n<html><head><base target=\"_top\"><meta charset=\"utf-8\">\n<style>\nbody{font-family:Arial,sans-serif;font-size:13px;color:#202124;margin:0;padding:12px}\nh3{font-size:14px;margin:14px 0 6px}\ntextarea{width:100%;height:70px;box-sizing:border-box;font-size:11px}\nselect{font-size:12px;width:100%}\n.doc{display:grid;grid-template-columns:1fr 120px;gap:4px;align-items:center;margin:3px 0}\nbutton{background:#1a73e8;color:#fff;border:0;border-radius:6px;padding:8px 14px;font-size:13px;cursor:pointer;margin-top:8px}\nbutton.sec{background:#fff;color:#1a73e8;border:1px solid #dadce0}\nbutton:disabled{opacity:.5}\ntable{border-collapse:collapse;width:100%;font-size:12px}\ntd{border-bottom:1px solid #eee;padding:4px 2px;vertical-align:top}\n.muda{background:#fff8e1}\n.falta{color:#c5221f;font-weight:bold}\n.ok{color:#188038}\n.p{border-left:3px solid #1a73e8;padding:4px 8px;margin:6px 0;background:#f8f9fa}\n.sara{border-left-color:#f9ab00}\n.erro{color:#c5221f;margin-top:8px}\n.muted{color:#5f6368;font-size:12px}\n</style></head>\n<body>\n<div class=\"muted\">1. Na página pública do imóvel, carrega no marcador <b>Clara</b>.<br>2. Cola aqui (Ctrl+V).</div>\n<textarea id=\"txt\" placeholder=\"Cola aqui a leitura da Clara\"></textarea>\n<h3>Documentos na ficha do EGO</h3>\n<div class=\"muted\">Vê o bloco \"Documentos\" na ficha do imóvel no EGO. \"Está noutra categoria\": o ficheiro existe mas foi carregado no sítio errado (por exemplo, em Outros documentos).</div>\n<div id=\"docs\"></div>\n<button id=\"analisar\" onclick=\"analisar()\">Analisar</button>\n<div id=\"erro\" class=\"erro\"></div>\n<div id=\"res\"></div>\n<script>\nconst DOCS=[['caderneta','Caderneta Predial'],['certificado','Certificado Energético'],['contrato','Contrato de Mediação'],['licenca','Licença de Habitação']];\ndocument.getElementById('docs').innerHTML=DOCS.map(d=>'<div class=\"doc\"><span>'+d[1]+'</span><select id=\"d_'+d[0]+'\"><option value=\"\">Não vi</option><option value=\"sim\">Tem ficheiro</option><option value=\"categoria\">Está noutra categoria</option><option value=\"nao\">Em falta</option><option value=\"na\">Não se aplica</option></select></div>').join('');\nfunction docs(){const o={};DOCS.forEach(d=>o[d[0]]=document.getElementById('d_'+d[0]).value);return o;}\nfunction esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;');}\nfunction falhou(e){document.getElementById('erro').textContent=(e&&e.message)||String(e);document.querySelectorAll('button').forEach(b=>b.disabled=false);}\nfunction analisar(){\n  document.getElementById('erro').textContent='';document.getElementById('res').innerHTML='A analisar…';\n  document.getElementById('analisar').disabled=true;\n  google.script.run.withSuccessHandler(mostrar).withFailureHandler(falhou).analisar(document.getElementById('txt').value,docs());\n}\nfunction mostrar(a){\n  document.getElementById('analisar').disabled=false;\n  let h='<h3>'+esc(a.ref)+' · linha '+a.linha+' do Levantamento</h3>';\n  h+='<table>'+a.campos.map(c=>{const m=String(c.atual)!==String(c.novo);const cls=/Em falta|Formato errado|Categoria errada/.test(c.novo)?'falta':(c.novo==='Preenchido'?'ok':'');return '<tr class=\"'+(m?'muda':'')+'\"><td>'+esc(c.coluna)+'</td><td>'+(m?'<s class=\"muted\">'+esc(c.atual||'vazio')+'</s> ':'')+'<span class=\"'+cls+'\">'+esc(c.novo)+'</span><div class=\"muted\">'+esc(c.motivo)+'</div></td></tr>';}).join('')+'</table>';\n  const novas=a.pendencias.filter(p=>!p.jaExiste), ja=a.pendencias.filter(p=>p.jaExiste&&!p.reabrir), reabertas=a.pendencias.filter(p=>p.reabrir);\n  h+='<h3>Pendências novas ('+novas.length+')</h3>'+(novas.length?novas.map(p=>'<div class=\"p '+(p.sara?'sara':'')+'\"><b>'+esc(p.assunto)+'</b><div class=\"muted\">'+(p.sara?'Pergunta para a Sara':'Para ti (operacional)')+' · '+esc(p.acao)+'</div></div>').join(''):'<div class=\"muted\">Nenhuma.</div>');\n  if(reabertas.length)h+='<h3>Falhas que reapareceram ('+reabertas.length+')</h3>'+reabertas.map(p=>'<div class=\"p\"><b>'+esc(p.jaExiste+' '+p.assunto)+'</b><div class=\"muted\">Reabrir a mesma pendência; a resolução anterior fica no histórico.</div></div>').join('');\n  if(a.resolvidas&&a.resolvidas.length)h+='<h3>Correções confirmadas ('+a.resolvidas.length+')</h3>'+a.resolvidas.map(r=>'<div class=\"p\" style=\"border-left-color:#188038\"><b>'+esc(r.id+' '+r.assunto)+'</b><div class=\"muted\">Já não aparece no site: passa a Concluído e Confirmado.</div></div>').join('');\n  if(ja.length)h+='<div class=\"muted\">Já registadas: '+ja.map(p=>esc(p.jaExiste+' '+p.assunto)).join('; ')+'</div>';\n  if(a.notas.length)h+='<div class=\"muted\">'+a.notas.map(esc).join('<br>')+'</div>';\n  h+='<p class=\"muted\">'+(a.completa?'Levantamento completo.':'Leitura incompleta: o imóvel fica em curso.')+' Textos e alterações ficam registados no Sheet.</p>';\n  h+='<button onclick=\"gravar()\">Confirmar e gravar no Sheet</button> <button class=\"sec\" onclick=\"document.getElementById(\\'res\\').innerHTML=\\'\\'\">Cancelar</button>';\n  document.getElementById('res').innerHTML=h;\n}\nfunction gravar(){\n  document.querySelectorAll('button').forEach(b=>b.disabled=true);\n  google.script.run.withSuccessHandler(r=>{document.getElementById('res').innerHTML='<p class=\"ok\"><b>Gravado.</b> '+esc(r.ref)+': '+r.escritos+' campos atualizados; '+r.textos+' idiomas registados; '+r.historico+' alterações no histórico'+(r.reabertas&&r.reabertas.length?'; reabertas: '+r.reabertas.map(esc).join(', '):'')+(r.criadas.length?'; pendências criadas: '+r.criadas.map(esc).join(', '):'; nenhuma pendência nova')+(r.confirmadas&&r.confirmadas.length?'; correções confirmadas: '+r.confirmadas.map(esc).join(', '):'')+'.</p>';document.getElementById('txt').value='';document.querySelectorAll('button').forEach(b=>b.disabled=false);}).withFailureHandler(falhou).gravar(document.getElementById('txt').value,docs());\n}\n</script>\n</body></html>\n";
 const LISTA_HTML = "<!doctype html>\n<html><head><base target=\"_top\"><meta charset=\"utf-8\">\n<style>\nbody{font-family:Arial,sans-serif;font-size:13px;color:#202124;margin:0;padding:12px}\nh3{font-size:14px;margin:16px 0 6px}\n.muted{color:#5f6368;font-size:12px}\n.barra{background:#e8eaed;border-radius:4px;height:8px;margin:4px 0 2px}\n.barra div{background:#188038;height:8px;border-radius:4px}\n.item{border-left:3px solid #1a73e8;background:#f8f9fa;padding:6px 8px;margin:6px 0}\n.item.sara{border-left-color:#f9ab00}\n.item b{cursor:pointer;color:#1a73e8}\n.item ul{margin:4px 0 0 16px;padding:0}\na{color:#1a73e8}\nbutton{background:#fff;color:#1a73e8;border:1px solid #dadce0;border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;margin-top:8px}\n</style></head>\n<body>\n<div id=\"out\">A carregar…</div>\n<button onclick=\"carregar()\">Atualizar</button>\n<script>\nfunction esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;');}\nfunction ir(sep,l){google.script.run.irPara(sep,l);}\nfunction liga(u){return u?' · <a href=\"'+esc(u)+'\" target=\"_blank\">página pública</a>':'';}\nfunction barra(a,b,t){const p=b?Math.round(100*a/b):0;return '<div>'+t+': <b>'+a+' de '+b+'</b></div><div class=\"barra\"><div style=\"width:'+p+'%\"></div></div>';}\nfunction mostrar(d){\n  let h='<h3>Progresso</h3>'+barra(d.contagem['Prioritária'][0],d.contagem['Prioritária'][1],'Prioritários verificados')+barra(d.verificados,d.total,'Todos os imóveis verificados');\n  h+='<h3>1. Prioritários por verificar ('+d.prioritarios.length+')</h3>';\n  h+=d.prioritarios.length?d.prioritarios.map(im=>'<div class=\"item\"><b onclick=\"ir(\\'Levantamento\\','+im.linha+')\">'+esc(im.ref)+'</b> · '+esc(im.natureza)+' · '+esc(im.concelho)+liga(im.url)+'</div>').join(''):'<div class=\"muted\">Todos verificados.</div>';\n  h+='<h3>2. As tuas pendências ('+d.minhas.reduce((n,x)=>n+x.pendencias.length,0)+' em '+d.minhas.length+' imóveis)</h3>';\n  h+=d.minhas.length?d.minhas.map(im=>'<div class=\"item\"><b onclick=\"ir(\\'Pendências da equipa\\','+im.pendencias[0].linha+')\">'+esc(im.ref)+'</b> '+(im.prioridade==='Prioritária'?'· prioritário':'')+liga(im.url)+'<ul>'+im.pendencias.map(p=>'<li>'+esc(p.assunto)+'<div class=\"muted\">'+esc(p.acao)+'</div></li>').join('')+'</ul></div>').join(''):'<div class=\"muted\">Nenhuma.</div>';\n  h+='<h3>3. À espera da Sara ('+d.sara.length+')</h3>';\n  h+=d.sara.length?d.sara.map(p=>'<div class=\"item sara\"><b onclick=\"ir(\\'Pendências da equipa\\','+p.linha+')\">'+esc(p.ref)+'</b> · '+esc(p.assunto)+'</div>').join(''):'<div class=\"muted\">Nenhuma.</div>';\n  h+='<h3>4. Perfis dos portais ('+d.perfis.length+')</h3>';\n  h+=d.perfis.length?d.perfis.map(p=>'<div class=\"item\"><b onclick=\"ir(\\'Perfis dos portais\\','+p.linha+')\">'+esc(p.portal)+'</b> · '+esc(p.assunto)+(p.url?' · <a href=\"'+esc(p.url)+'\" target=\"_blank\">perfil</a>':'')+'<div class=\"muted\">'+esc(p.estado)+': '+esc(p.acao)+'</div></div>').join(''):'<div class=\"muted\">Nada em aberto.</div>';\n  if(!d.prioritarios.length&&d.altaTotal)h+='<h3>Depois: prioridade Alta por verificar ('+d.altaTotal+')</h3>'+d.alta.map(im=>'<div class=\"item\"><b onclick=\"ir(\\'Levantamento\\','+im.linha+')\">'+esc(im.ref)+'</b> · '+esc(im.natureza)+' · '+esc(im.concelho)+liga(im.url)+'</div>').join('');\n  h+='<p class=\"muted\">Carrega numa referência para ir à linha no Sheet.</p>';\n  document.getElementById('out').innerHTML=h;\n}\nfunction carregar(){document.getElementById('out').textContent='A carregar…';google.script.run.withSuccessHandler(mostrar).withFailureHandler(e=>document.getElementById('out').textContent=e.message).listaTrabalho();}\ncarregar();\n</script>\n</body></html>\n";
 const RESUMO_HTML = "<!doctype html>\n<html><head><base target=\"_top\"><meta charset=\"utf-8\">\n<style>\nbody{font-family:Arial,sans-serif;font-size:13px;color:#202124;margin:0;padding:12px}\nlabel{display:block;font-size:12px;color:#5f6368;margin-top:8px}\nselect,input{width:100%;box-sizing:border-box;font-size:13px;padding:4px}\nbutton{background:#1a73e8;color:#fff;border:0;border-radius:6px;padding:8px 12px;font-size:13px;cursor:pointer;margin:8px 6px 0 0}\nbutton.sec{background:#fff;color:#1a73e8;border:1px solid #dadce0}\n#prev{border:1px solid #dadce0;border-radius:6px;padding:8px;margin-top:10px;font-size:12px;max-height:420px;overflow:auto;background:#fff}\n.ok{color:#188038;margin-top:8px}.muted{color:#5f6368;font-size:12px}\n</style></head>\n<body>\n<label>Período</label>\n<select id=\"dias\" onchange=\"ver()\"><option value=\"7\">Últimos 7 dias</option><option value=\"14\">Últimos 14 dias</option><option value=\"30\">Últimos 30 dias</option></select>\n<label>Assunto</label><input id=\"assunto\" readonly onclick=\"this.select()\">\n<button class=\"sec\" onclick=\"copiarAssunto()\">Copiar assunto</button><button onclick=\"copiarEmail()\">Copiar email</button>\n<div id=\"msg\" class=\"ok\"></div>\n<div id=\"prev\">A preparar…</div>\n<p class=\"muted\">Abre o webmail da Janela (janela.pt/webmail), cria uma mensagem para a Sara com a Júlia em Cc, cola o assunto e o email (Ctrl+V). Revê e envia tu.</p>\n<script>\nfunction ver(){document.getElementById('prev').textContent='A preparar…';google.script.run.withSuccessHandler(r=>{document.getElementById('prev').innerHTML=r.html;document.getElementById('assunto').value=r.assunto;}).withFailureHandler(e=>document.getElementById('prev').textContent=e.message).previewResumo(+document.getElementById('dias').value);}\nfunction aviso(t){const m=document.getElementById('msg');m.textContent=t;setTimeout(()=>m.textContent='',4000);}\nfunction copiarAssunto(){const i=document.getElementById('assunto');i.select();document.execCommand('copy');aviso('Assunto copiado.');}\nfunction copiarEmail(){const el=document.getElementById('prev');const r=document.createRange();r.selectNodeContents(el);const s=window.getSelection();s.removeAllRanges();s.addRange(r);const ok=document.execCommand('copy');s.removeAllRanges();aviso(ok?'Email copiado, com a tabela. Cola no webmail.':'Não consegui copiar: seleciona o texto acima e usa Ctrl+C.');}\nver();\n</script>\n</body></html>\n";
 const MARCADOR_JS = "(async () => { const fim = (txt, ref) => { navigator.clipboard.writeText(txt).then(() => alert('Clara: ' + (ref || 'imóvel') + ' lido. No Sheet: Clara > Analisar imóvel e cola (Ctrl+V).'), () => prompt('Clara: copia este texto (Ctrl+C) e cola no painel da Clara no Sheet:', txt)); }; if (!/janela-imobiliaria\\.com$/.test(location.hostname)) { alert('Clara: abre a página pública do imóvel no site da Janela e carrega outra vez no marcador.'); return; } const ld = d => { for (const s of d.querySelectorAll('script[type=\"application/ld+json\"]')) { try { const j = JSON.parse(s.textContent); if (j['@type'] === 'RealEstateListing') return j; } catch (e) {} } return null; }; const me = ld(document); if (!me) { alert('Clara: esta página não parece ser a ficha de um imóvel.'); return; } const ext = x => ((JSON.stringify(x).match(/\\.(pdf|jpe?g|png|webp|gif)\\b/i) || [])[1] || '?').toLowerCase().replace('jpeg', 'jpg'); const out = { v: 1, origem: 'site', lido: new Date().toISOString(), url: location.href.split('?')[0], ref: null, textos: {} }; let p = null; const u = performance.getEntriesByType('resource').map(e => e.name).find(n => /websiteapi\\.egorealestate\\.com\\/v1\\/Properties\\/\\d+\\?.*propertyid=/.test(n)); if (u) { try { p = await (await fetch(u, { cache: 'no-store' })).json(); } catch (e) {} } if (p && p.Reference) { const I = p.Images || []; Object.assign(out, { ref: p.Reference, alterado: p.LastModified, fotos: I.length, fotosComAlt: I.filter(i => (i.AlternativeText || '').trim()).length, fotosComLegenda: I.filter(i => (i.Description || '').trim()).length, plantas: (p.BluePrints || []).map(ext), videos: (p.Videos || []).length, visitaVirtual: !!(p.HasVirtualTour || (p.VirtualTours || []).length || (p.ExternalVirtualTours || []).length), fotos360: (p.Photos360 || []).length, folhetos: (p.Brochures || []).length, caracteristicas: (p.Features || []).reduce((n, g) => n + ((g.Childs || []).length), 0), classeEnergetica: p.EnergyCertification || '' }); } else { const html = document.documentElement.outerHTML; const ids = t => new Set(html.match(new RegExp('/T' + t + '/ID[0-9a-f-]+', 'g')) || []).size; const r = (document.querySelector('.detailContainer') || document.body).textContent.match(/Ref\\.\\s*([A-Z]{2,5}\\d+)/); Object.assign(out, { ref: r && r[1], parcial: true, fotos: ids('photo'), fotos360: ids('panoramic'), folhetos: ids('brochure'), plantas: [...new Set(html.match(/\\/Tblueprint\\/ID[0-9a-f-]+\\.\\w+/g) || [])].map(s => s.split('.').pop().toLowerCase()), videos: document.querySelector('#videoTab.propertyMediaDisabled') ? 0 : null }); } for (const l of document.querySelectorAll('link[rel=alternate][hreflang]')) { if (l.hreflang === 'x-default') continue; const k = l.hreflang.slice(0, 2).toUpperCase(); try { const j = ld(new DOMParser().parseFromString(await (await fetch(l.href, { cache: 'no-store' })).text(), 'text/html')) || {}; out.textos[k] = { titulo: j.name || '', descricao: j.description || '' }; } catch (e) { out.textos[k] = { erro: true }; } } if (!out.textos.PT) out.textos.PT = { titulo: me.name || '', descricao: me.description || '' }; fim('CLARA1:' + JSON.stringify(out), out.ref); })();";

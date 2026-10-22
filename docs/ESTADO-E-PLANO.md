@@ -14,7 +14,26 @@ Aprovado pela Andreia ("gosto da ideia de ter tudo num só lugar"). A aplicaçã
 - Perde-se a cifra local; aceite porque o levantamento já vive no Google da Janela.
 - Se no fim do M1 faltar algo que só uma aplicação local resolva, reavalia-se.
 
-## Último ponto de situação (21 out 2026)
+## Ponto atual para continuar (22 outubro 2026, Codex)
+
+Andreia autorizou consolidar a Clara Apps Script e pediu os menus **Progresso** e **Resumo semanal**. Pediu explicitamente que todas as alterações e pendências de execução fiquem no repositório para continuar no Claude.
+
+Implementado e testado com dados sintéticos:
+- Grava títulos e descrições dos idiomas efetivamente lidos em **Textos por idioma**. Um idioma inacessível preserva o texto anterior.
+- **Registo de alterações** recebe antes/depois de cada mudança no levantamento, textos e pendências. Usa as colunas existentes; não altera a estrutura nem escreve na fórmula Conferência.
+- Leitura parcial, idioma não lido, formato desconhecido ou documentos por rever mantém **Em curso**, não Verificado. Ter faltas confirmadas não impede concluir um levantamento completo.
+- Uma falha que reaparece reabre a pendência Concluído com o mesmo ID; Não aplicável continua a ser decisão humana. A resolução anterior é preservada no histórico.
+- Bloqueio de gravações simultâneas da Clara, verificação prévia das células, vagas escolhidas individualmente, proteção de fórmulas e recuperação se a gravação falhar. O bloqueio não impede edições manuais feitas ao mesmo tempo.
+- Resumo semanal separa leitura parcial de anúncio verificado e só conta correções Concluído + Confirmado.
+- Menus/painéis renomeados para Progresso e Resumo semanal.
+
+Validação local: `node scripts/testar-clara-apps.mjs` passou (leitura parcial, idioma inacessível, docs incompletos, reabertura, linhas intercaladas sem sobrescrita, textos, histórico antes/depois, repetição, texto literal, recuperação, bloqueio e fórmulas). `Clara-completo.gs` regenerado pelo gerador oficial. Adicionada CI específica de Apps Script com dados fictícios; isto não equivale a teste de gravação real no Sheets.
+
+**Estado do Google:** código completo colado e guardado no projeto aberto pela Andreia; leitura de volta confirmou igualdade integral. A cópia anterior foi preservada apenas localmente, sem enviar IDs/dados reais ao repositório. Executar onOpen a partir do editor devolveu «Cannot call SpreadsheetApp.getUi() from this context». Falta confirmar que este é o projeto associado ao Sheet e recarregar a folha para validar os nomes/painéis. Não foram corridos testes que gravem dados reais. A ligação Drive do assistente continua sem acesso à conta da Janela; navegador abre a folha, mas o painel tinha PERMISSION_DENIED.
+
+**Próximo passo:** confirmar a associação do projeto ao Sheet; verificar Progresso, Analisar imóvel e Resumo semanal; testar uma gravação real revista pela Andreia e confirmar textos/histórico, sem duplicar pendências. Só declarar conclusão em produção depois desse teste. Não voltar ao desenvolvimento desktop nem criar novo instalador.
+
+## Histórico das sessões anteriores (21 e 22 outubro 2026)
 
 - **Versão instalada no PC da Andreia: 0.7.4.** Inclui tudo o que existia na 0.7.3 (comparação feita função a função) mais a regra dos destinos alimentados pelo EGO.
 - **Google Sheet do levantamento** já existe (conta janela.pt), com 11 separadores: Dashboard, Levantamento (títulos na linha 9, 35 colunas), Origem EGO, Pendências da equipa, Textos por idioma, Registo de alterações, Histórico de indicadores, Leads por período, Perfis dos portais, Histórico dos perfis, Rightmove: anúncios.
@@ -66,7 +85,7 @@ A Clara prepara o levantamento e encontra o que falta. A Andreia só revê dúvi
 | Ficha do EGO | Só os 4 documentos (caderneta, certificado energético, contrato de mediação, licença de habitação) |
 | Apps Script | Releitura diária dos textos por idioma no site (JSON-LD), depois de a ligação estar guardada |
 | Google Sheet | Registo partilhado com a equipa: resultado, pendências, evolução |
-| Clara (PC, sem internet) | Cruza as fontes, deteta faltas, mostra só o que precisa de decisão |
+| Clara (Apps Script, dentro do Sheet) | Analisa a leitura do marcador, propõe estados e pendências, regista alterações após confirmação |
 | Prints do EGO | Último recurso: o OCR só lê texto, não deteta galerias, anexos nem caixas assinaladas |
 
 ## Regras de negócio
@@ -92,9 +111,9 @@ A Clara prepara o levantamento e encontra o que falta. A Andreia só revê dúvi
 | O1 | Menos trabalho manual | Revisão de um imóvel em 5 minutos ou menos (tempo de partida medido no M0) |
 | O2 | Faltas detetadas com a ação certa | "presente", "em falta", "formato errado", "não foi possível verificar", cada um com ação; coincide com a verificação manual no imóvel piloto |
 | O3 | Textos verificados nos cinco idiomas | Idioma trocado assinalado como "vazio no EGO" |
-| O4 | Pedidos à equipa sem trabalho extra | Rascunhos no Gmail, nunca envio automático; seguimento no Sheet |
+| O4 | Pedidos à equipa sem trabalho extra | Resumo para copiar para o webmail, nunca envio automático; seguimento no Sheet |
 | O5 | Indicadores fáceis de consultar | Painel com período à escolha; contactos e qualidade por plataforma (idealista, Green Acres, RightMove, EGO), no total e por imóvel |
-| O6 | Segurança | Clara sem internet, cifrada, backup diário; nenhum dado real fora da Janela |
+| O6 | Segurança | Acesso pelo Google da Janela, histórico no Sheet; nenhum dado real no repositório |
 
 ## Milestones
 
