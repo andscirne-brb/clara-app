@@ -8,7 +8,8 @@ function colarLeituraIdealista() {
     const a=analisarIdealista(texto);
     if(a.duplicada){ui.alert('Esta recolha já está guardada. Não foi duplicada.');return;}
     const periodo=a.periodo.inicio?a.periodo.inicio+' a '+a.periodo.fim:a.periodo.etiqueta||'Estado atual';
-    const resumo=a.tipo+' · '+a.quantidade+' registos · '+a.indicadores+' indicadores\n'+periodo+'\n'+a.cobertura+'\nFiltros: '+(a.filtros||[]).join(' · ')+'\n\nGuardar no histórico Idealista - recolhas?';
+    const resumoBase=a.tipo+' · '+a.quantidade+' registos · '+a.indicadores+' indicadores\n'+periodo+'\n'+a.cobertura+'\nFiltros: '+(a.filtros||[]).join(' · ')+'\n\nGuardar no histórico Idealista - recolhas?';
+    const resumo=a.tipo==='geral'?resumoEstatisticasIdealista_(a):resumoBase;
     if(ui.alert('Rever recolha Idealista',resumo,ui.ButtonSet.OK_CANCEL)!==ui.Button.OK)return;
     const r=gravarIdealista(texto);ui.alert(r.duplicada?'Esta recolha já estava guardada.':'Gravado: '+r.quantidade+' registos e '+r.escritos+' indicadores. '+r.cobertura);
   } catch(e){ui.alert('Não gravei a recolha. '+e.message);}
@@ -44,7 +45,7 @@ function prepararIdealista_(texto, ss) {
 }
 function analisarIdealista(texto) {
   const p=prepararIdealista_(texto,SpreadsheetApp.getActive());
-  return {origem:'idealista',tipo:p.d.tipo,periodo:p.d.periodo,cobertura:p.d.cobertura,filtros:p.d.filtros,quantidade:p.d.registos.length,indicadores:p.linhas.length,duplicada:p.duplicada,amostra:p.d.registos.slice(0,5)};
+  return {origem:'idealista',tipo:p.d.tipo,periodo:p.d.periodo,cobertura:p.d.cobertura,filtros:p.d.filtros,quantidade:p.d.registos.length,indicadores:p.linhas.length,duplicada:p.duplicada,amostra:p.d.registos.slice(0,5),estatisticas:p.d.tipo==='geral'?estatisticasIdealista_(p.d.registos[0].metricas):null};
 }
 function gravarIdealista(texto) {
   const lock=LockService.getDocumentLock();if(!lock.tryLock(30000))throw new Error('Outra gravação em curso.');
@@ -95,4 +96,13 @@ function conferirPaginasIdealista(){
   const ss=SpreadsheetApp.getActive(),sh=ss.getSheetByName('Idealista - recolhas');
   const linhas=sh&&sh.getLastRow()>1?sh.getRange(2,1,sh.getLastRow()-1,13).getDisplayValues():[];
   SpreadsheetApp.getUi().alert('Clara · Páginas Idealista',resumoPaginasIdealista_(linhas),SpreadsheetApp.getUi().ButtonSet.OK);
+}
+
+function estatisticasIdealista_(m){
+  const campos=[['impactos','Impactos'],['visitasTotais','Visitas totais'],['visitasListas','Visitas nas listas'],['visitasDetalhes','Visitas nos detalhes'],['agenciaOnline','Visitas à agência online'],['acoes','Ações nos anúncios'],['alertas','Envios em alertas'],['favoritos','Favoritos'],['partilhas','Envios a amigos'],['contactos','Contactos recebidos'],['clientes','Contactos de clientes'],['mensagens','Emails e mensagens'],['chamadas','Chamadas'],['angariacao','Contactos de angariação'],['anunciosAtivosHoje','Anúncios ativos no momento da leitura']];
+  return campos.map(function(c){return{nome:c[1],valor:m[c[0]]===undefined||m[c[0]]===null?null:m[c[0]]};});
+}
+function resumoEstatisticasIdealista_(a){
+  const formato=function(v){return v===null?'Não recolhido':String(v).replace(/\B(?=(\d{3})+(?!\d))/g,' ');};
+  return 'Estatísticas da carteira\nPeríodo: '+a.periodo.inicio+' a '+a.periodo.fim+'\nFiltros: '+(a.filtros||[]).join(' · ')+'\n\n'+a.estatisticas.map(function(x){return x.nome+': '+formato(x.valor);}).join('\n')+'\n\nTotais do período, não dados por imóvel ou por dia. Os anúncios ativos são o valor atual. Os últimos 2 dias podem sofrer ajustes.\nGuardar no histórico Idealista - recolhas?';
 }

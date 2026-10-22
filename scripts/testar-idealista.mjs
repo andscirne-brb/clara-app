@@ -40,3 +40,10 @@ assert.match(summary([...history(1,['a','b'],null),...history(2,['c','d'],null)]
 assert.doesNotMatch(summary([...history(1,['a','b']),...history(2,['c'],4)]),/completa confirmada/);
 assert.match(summary([...history(1,['a','b']),...history(2,['c','d'],5)]),/total de ativos mudou/);
 console.log('PASS cobertura: páginas em falta, duplicados, sobreposição, alterações, filtros, total desconhecido e tamanho da última página.');
+doc.body.innerText='496\u00a0409  impactos \u00a0(Soma das visitas)\n61  contactos recebidos\n50 anúncios ativos hoje\nde 22/09/2026 até 21/10/2026';
+doc.querySelectorAll=s=>s==='td'?[el('448\u00a0953 visitas totais'),el('47\u00a0456 ações em anúncios'),el('0 enviado aos amigos')]:[];
+const spacing=cc.recolherIdealista(doc,{url:'https://www.idealista.pt/webtool/stats/loadImpactStats',lido:p.lido});
+assert.equal(spacing.registos[0].metricas.impactos,496409);assert.equal(spacing.registos[0].metricas.visitasTotais,448953);assert.equal(spacing.registos[0].metricas.acoes,47456);
+const preview=ctx.analisarIdealista(enc(spacing));assert.equal(preview.estatisticas.length,15);assert.equal(preview.estatisticas.find(x=>x.nome==='Favoritos').valor,null);
+const review=ctx.resumoEstatisticasIdealista_(preview);assert.match(review,/Impactos: 496 409/);assert.match(review,/Favoritos: Não recolhido/);assert.match(review,/Envios a amigos: 0/);assert.match(review,/não dados por imóvel ou por dia/);
+console.log('PASS estatísticas: espaços duplicados e não separáveis, totais de visitas e ações, revisão legível e ausentes distintos de zero.');

@@ -195,3 +195,9 @@ Internet ou APIs na Clara; editar diretamente nos portais; envios automáticos; 
 - Recolhas antigas são utilizáveis para contar páginas e imóveis, mas não confirmam a última página esperada por não terem guardado o total. Não se inventa esse total retroativamente.
 - A mensagem Recolha completa confirmada exige total e tamanhos coerentes, todas as páginas, IDs únicos iguais ao total, mesmos filtros e ordenação, sem sobreposições ou alterações detetadas. É uma conferência das capturas, não uma garantia de que o portal ficou imutável.
 - Atualizar o marcador uma vez em Clara > Instalar o marcador. Testes fictícios cobrem falhas de cobertura e repetições.
+
+### Revisão das estatísticas gerais Idealista
+- Corrige falha de extração do total de impactos causada por espaços duplicados/não separáveis. Inclui totais de visitas e ações, além dos respetivos detalhes.
+- Pré-visualização nativa e painel mostram nomes e valores dos 15 campos esperados; ausentes aparecem como Não recolhido e zero permanece zero.
+- Distingue totais do período, anúncios ativos no momento da leitura e dados por imóvel/dia, que esta captura geral não contém. Não extrai séries dos gráficos.
+- Necessário atualizar o marcador para usar o coletor corrigido. Código validado com dados fictícios; comparação visual dos totais feita na página real, sem publicar valores privados no repositório.

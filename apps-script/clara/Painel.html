@@ -45,7 +45,7 @@ function mostrar(a){
   if(a.origem==='idealista'){
     document.getElementById('blocoDocs').hidden=true;
     let h='<h3>Idealista · '+esc(a.tipo)+'</h3><p>'+esc(a.quantidade)+' registos · '+esc(a.indicadores)+' indicadores</p><p>'+esc(a.periodo.inicio||a.periodo.etiqueta||'Sem período: fotografia do estado atual')+(a.periodo.fim?' a '+esc(a.periodo.fim):'')+'</p><p><b>'+esc(a.cobertura)+'</b></p><p class="muted">'+(a.filtros||[]).map(esc).join(' · ')+'</p>';
-    h+='<div class="muted">'+a.amostra.map(r=>esc(r.ref||r.id)+': '+esc(JSON.stringify(r.metricas))).join('<br>')+'</div>';
+    if(a.estatisticas){h+='<table>'+a.estatisticas.map(x=>'<tr><td>'+esc(x.nome)+'</td><td>'+esc(x.valor===null?'Não recolhido':String(x.valor).replace(/\B(?=(\d{3})+(?!\d))/g,' '))+'</td></tr>').join('')+'</table><p class="muted">Totais do período. Não inclui o detalhe por dia ou por imóvel. Anúncios ativos: valor no momento da leitura.</p>';}else{h+='<div class="muted">'+a.amostra.map(r=>esc(r.ref||r.id)+': '+esc(JSON.stringify(r.metricas))).join('<br>')+'</div>';}
     h+=a.duplicada?'<p>Esta recolha já está guardada. Não será duplicada.</p>':'<p class="muted">Guarda no histórico «Idealista - recolhas». Uma página parcial não substitui a carteira completa. Scores de anúncios não alteram o score do perfil.</p><button onclick="gravar()">Confirmar e guardar</button>';
     document.getElementById('res').innerHTML=h;return;
   }
