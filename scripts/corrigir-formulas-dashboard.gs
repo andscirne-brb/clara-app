@@ -1,0 +1,10 @@
+function separadoresPtClara_(f){let q=false,out='';for(let i=0;i<f.length;i++){const c=f[i];if(c==='"'){if(q&&f[i+1]==='"'){out+='""';i++;continue;}q=!q;}out+=c===','&&!q?';':c;}return out;}
+function corrigirFormulasDashboardClara(){
+ const ss=SpreadsheetApp.getActive(),sh=ss.getSheetByName('Dashboard'),celulas=['B69','B70','B71','B72','B73','B74'],plano=[];
+ celulas.forEach(function(a){const c=sh.getRange(a),f=c.getFormula();if(c.getDisplayValue()==='#ERROR!'&&f&&/COUNTIF|FILTER/.test(f)){const n=separadoresPtClara_(f);if(n!==f)plano.push({a:a,antes:f,depois:n});}});
+ if(!plano.length){console.log('Nenhuma fórmula identificada para corrigir.');return;}
+ let bk=ss.getSheetByName('Clara - fórmulas antes 20261023');if(!bk){bk=ss.insertSheet('Clara - fórmulas antes 20261023');bk.getRange(1,1,1,3).setValues([['Folha','Célula','Fórmula anterior']]);bk.getRange(2,1,plano.length,3).setNumberFormat('@').setValues(plano.map(function(p){return ['Dashboard',p.a,"'"+p.antes];}));bk.hideSheet();}
+ try{plano.forEach(function(p){if(sh.getRange(p.a).getFormula()!==p.antes)throw Error('Fórmula alterada entretanto');sh.getRange(p.a).setFormula(p.depois);});SpreadsheetApp.flush();plano.forEach(function(p){if(/^#/.test(sh.getRange(p.a).getDisplayValue()))throw Error('Fórmula continua com erro em '+p.a);});}catch(e){plano.forEach(function(p){sh.getRange(p.a).setFormula(p.antes);});throw e;}
+ console.log(JSON.stringify({corrigidas:plano.map(function(p){return p.a;}),valores:sh.getRange('A69:B74').getDisplayValues()}));
+}
+function auditarErrosFormulasClara(){const ss=SpreadsheetApp.getActive(),erros=[];ss.getSheets().filter(function(s){return !s.isSheetHidden();}).forEach(function(s){const rg=s.getDataRange(),f=rg.getFormulas(),v=rg.getDisplayValues();f.forEach(function(row,i){row.forEach(function(form,j){if(form&&/^#(?:ERROR!|REF!|VALUE!|NAME\?|DIV\/0!|N\/A|NUM!|ERRO!|VALOR!)/.test(v[i][j]))erros.push({folha:s.getName(),celula:s.getRange(i+1,j+1).getA1Notation(),erro:v[i][j],formula:form});});});});console.log(JSON.stringify({total:erros.length,erros:erros.slice(0,40)}));}

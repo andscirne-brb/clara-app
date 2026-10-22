@@ -351,7 +351,7 @@ function gravar(texto, docs) {
       const key = sh.getName() + '|' + linha + '|' + col;
       if (vistos[key]) throw new Error('Alterações repetidas na mesma célula. Não gravei alterações.');
       vistos[key] = true;
-      plano.push({ cel: cel, antes: antes, depois: novo });
+      plano.push({ cel: cel, antes: antes, depois: novo, antesFormato: cel.getNumberFormat(), depoisFormato: typeof novo==='string'&&novo!==''?'@':cel.getNumberFormat() });
       if (!semHistorico) historico.push({ onde: sh.getName(), campo: campo, antes: textoHistorico_(antes), depois: textoHistorico_(novo), pendencia: pendencia || '' });
     }
     function vagas(sh, inicio, quantidade) {
@@ -415,20 +415,21 @@ function gravar(texto, docs) {
       Object.keys(dados).forEach(function (nome) { if (hs.col(nome)) agendar(hs.sh, lugares[i], hs.col(nome), dados[nome], '', '', true); });
     });
     // Reconferir todas as células antes da primeira escrita, incluindo vagas e histórico.
-    plano.forEach(function (p) { if (p.cel.getFormula() || !mesmoValor_(p.cel.getValue(), p.antes)) throw new Error('Uma célula mudou entretanto. Analisa novamente antes de gravar.'); });
-    function escrever(cel, valor) {
+    plano.forEach(function (p) { if (p.cel.getFormula() || !mesmoValor_(p.cel.getValue(), p.antes) || p.cel.getNumberFormat()!==p.antesFormato) throw new Error('Uma célula mudou entretanto. Analisa novamente antes de gravar.'); });
+    function escrever(cel, valor, formato) {
+      cel.setNumberFormat(formato);
       // Preserva texto literal, incluindo números e datas no histórico.
       if (typeof valor === 'string' && valor !== '') cel.setRichTextValue(SpreadsheetApp.newRichTextValue().setText(valor).build());
       else cel.setValue(valor);
     }
     try {
-      plano.forEach(function (p) { aplicados.push(p); escrever(p.cel, p.depois); });
+      plano.forEach(function (p) { aplicados.push(p); escrever(p.cel, p.depois, p.depoisFormato); });
       SpreadsheetApp.flush();
       plano.forEach(function (p) { if (p.cel.getFormula() || !mesmoValor_(p.cel.getValue(), p.depois)) throw new Error('A leitura após gravação não corresponde ao valor previsto em '+p.cel.getSheet().getName()+'!'+p.cel.getA1Notation()+'.'); });
     } catch (err) {
       let falhou = false;
-      aplicados.reverse().forEach(function (p) { try { escrever(p.cel, p.antes); } catch (e) { falhou = true; } });
-      try { SpreadsheetApp.flush(); aplicados.forEach(function(p){if(p.cel.getFormula()||!mesmoValor_(p.cel.getValue(),p.antes))falhou=true;}); } catch (e) { falhou = true; }
+      aplicados.reverse().forEach(function (p) { try { escrever(p.cel, p.antes, p.antesFormato); } catch (e) { falhou = true; } });
+      try { SpreadsheetApp.flush(); aplicados.forEach(function(p){if(p.cel.getFormula()||!mesmoValor_(p.cel.getValue(),p.antes)||p.cel.getNumberFormat()!==p.antesFormato)falhou=true;}); } catch (e) { falhou = true; }
       throw new Error(falhou ? 'A gravação falhou e a recuperação ficou incompleta. Confere o histórico de versões do Sheets antes de repetir.' : 'A gravação falhou e as células foram repostas. ' + err.message);
     }
     return { ref: a.ref, escritos: a.campos.filter(function (x) { return String(x.atual) !== String(x.novo); }).length, textos: a.textos.length, historico: historico.length, criadas: criadas, reabertas: reabertas, confirmadas: confirmadas };

@@ -229,3 +229,12 @@ Nome final pedido: Idealista: estatísticas.
 - Função interna atualizarDashboardIdealista permite gerar a vista inicial sem criar novas entradas de menu.
 
 A área A67 contém o bloco de pendências existente, preservado. As suas fórmulas já apresentavam erros antes da nova vista; não corrigidas nesta alteração. Atalho para estatísticas em A6 quando livre.
+
+
+### Correção confirmada da falha G31 e fórmulas do Dashboard
+- Teste real em folha técnica oculta com dados fictícios confirmou: setRichTextValue de "14" num formato numérico devolve number; com formato @ devolve string. A correção anterior só com RichText não bastava.
+- Gravação agora define @ antes de escrever strings; guarda e repõe o formato anterior em caso de recuperação. Números e datas reais mantêm os tipos. Reconferência anterior à escrita protege também alterações de formato concorrentes.
+- Seis fórmulas Dashboard!B69:B74 reparadas de separadores vírgula para ponto e vírgula, respeitando locale pt_PT e texto entre aspas. Cópia anterior em folha oculta Clara - fórmulas antes 20261023.
+- Auditoria posterior de erros nas fórmulas de todas as folhas visíveis: zero erros detetados. Backups ocultos excluídos da auditoria operacional.
+- Scripts de manutenção ficam em scripts/corrigir-formulas-dashboard.gs; não adicionar menus. Folha técnica oculta Clara - teste de gravação contém apenas dados fictícios.
+- Gravação completa do imóvel real exige confirmação de sucesso após nova tentativa; o diagnóstico não a executou automaticamente.

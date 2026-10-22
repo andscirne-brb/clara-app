@@ -16,7 +16,7 @@ const headers=['Referência EGO','Imagens','Alt-text','Descrição PT','Descriç
 const txh=['Referência EGO','Idioma','Título original','Descrição original','Origem / evidência','Data de recolha','Estado da recolha'];
 const hish=['Data da alteração','Referência EGO','ID da pendência','Autor','Onde foi alterado','Campo / assunto','Antes','Depois / alteração realizada','Motivo / fonte','Resultado da verificação','Data da verificação','Verificado por'];
 class Sheet {
- constructor(name,width=20){this.name=name;this.width=width;this.cells=new Map();this.forms=new Map();}
+ constructor(name,width=20){this.name=name;this.width=width;this.cells=new Map();this.forms=new Map();this.formats=new Map();}
  getName(){return this.name} getMaxRows(){return 2000} getLastColumn(){return this.width}
  getLastRow(){return Math.max(1,...[...this.cells.keys(),...this.forms.keys()].map(k=>+k.split(',')[0]))}
  getRange(r,c,n=1,m=1){return new Range(this,r,c,n,m)}
@@ -28,11 +28,13 @@ class Range {
  getFormula(){return this.sh.forms.get(`${this.r},${this.c}`)??''}
  getA1Notation(){return `${this.r}:${this.c}`}
  getSheet(){return this.sh}
+ getNumberFormat(){return this.sh.formats.get(`${this.r},${this.c}`)??'0.###############'}
+ setNumberFormat(v){this.sh.formats.set(`${this.r},${this.c}`,v);return this}
  getValues(){return Array.from({length:this.n},(_,i)=>Array.from({length:this.m},(_,j)=>this.sh.cells.get(`${this.r+i},${this.c+j}`)??''))}
  getDisplayValues(){return this.getValues().map(r=>r.map(v=>v instanceof Date?'22/10/2026':String(v)))}
  getFormulas(){return Array.from({length:this.n},(_,i)=>Array.from({length:this.m},(_,j)=>this.sh.forms.get(`${this.r+i},${this.c+j}`)??''))}
  setValue(v){if(typeof v==='string'&&v.startsWith('='))throw Error('Unsafe formula');if(typeof v==='string'&&/^\d+$/.test(v))v=Number(v);this.sh.cells.set(`${this.r},${this.c}`,v);return this}
- setRichTextValue(v){this.sh.cells.set(`${this.r},${this.c}`,v.text.replace(/\r\n?/g,'\n'));return this}
+ setRichTextValue(v){this.sh.cells.set(`${this.r},${this.c}`,this.getNumberFormat()!=='@'&&/^\d+$/.test(v.text)?Number(v.text):v.text.replace(/\r\n?/g,'\n'));return this}
 }
 const docs={caderneta:'sim',certificado:'sim',contrato:'sim',licenca:'sim'};
 function payload(){return {ref:'TESTE-001',url:'https://example.invalid/imovel',fotos:3,fotosComAlt:3,fotosComLegenda:3,caracteristicas:2,videos:1,plantas:['jpg'],folhetos:1,textos:Object.fromEntries(['PT','EN','FR','DE','ES'].map(k=>[k,{titulo:`Título ${k}`,descricao:`Descrição ${k}`}]))}}
@@ -86,3 +88,10 @@ assert.equal(f.context.mesmoValor_('Texto A','Texto B'),false);
 assert.equal(f.context.mesmoValor_('A\r\nB','A\nB'),true);
 assert([...f.hist.cells.values()].some(v=>v==='00123'),'histórico conserva números como texto literal');
 console.log('PASS gravação: texto numérico e zeros iniciais preservados, CRLF normalizado, tipos e conteúdo divergentes continuam rejeitados.');
+
+assert.equal(get(f.tx,6,3),'00123');assert.equal(f.tx.getRange(6,3).getNumberFormat(),'@');console.log('PASS formato literal: simula conversão numérica do RichText pelo Sheets e exige formato @.');
+
+const repairContext=vm.createContext({});vm.runInContext(fs.readFileSync(new URL('./corrigir-formulas-dashboard.gs',import.meta.url),'utf8'),repairContext);
+assert.equal(repairContext.separadoresPtClara_('=IF(A1="a,b",1,0)'),'=IF(A1="a,b";1;0)');
+assert.equal(repairContext.separadoresPtClara_('=IF(A1="a""b,c",1,0)'),'=IF(A1="a""b,c";1;0)');
+console.log('PASS fórmulas PT: separadores corrigidos sem alterar texto entre aspas.');
