@@ -62,7 +62,8 @@ function listaTrabalho() {
   });
   const minhasLista = Object.keys(minhas).map(function (ref) { const im = imoveis[ref] || { ref: ref }; return { ref: ref, url: im.url || '', prioridade: im.prioridade || '', natureza: im.natureza || '', pendencias: minhas[ref] }; });
   const ordem = { 'Prioritária': 0, 'Alta': 1, 'Normal': 2 };
-  minhasLista.sort(function (a, b) { return (ordem[a.prioridade] || 3) - (ordem[b.prioridade] || 3) || b.pendencias.length - a.pendencias.length; });
+  const o = function (x) { return x.prioridade in ordem ? ordem[x.prioridade] : 3; };
+  minhasLista.sort(function (a, b) { return o(a) - o(b) || b.pendencias.length - a.pendencias.length; });
   return { total: total, verificados: verificados, contagem: contagem, prioritarios: porVerificar['Prioritária'], alta: porVerificar['Alta'].slice(0, 15), altaTotal: porVerificar['Alta'].length, minhas: minhasLista, sara: sara };
 }
 
