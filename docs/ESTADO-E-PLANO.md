@@ -159,3 +159,17 @@ A Clara prepara o levantamento e encontra o que falta. A Andreia só revê dúvi
 ## Fora do âmbito (de propósito)
 
 Internet ou APIs na Clara; editar diretamente nos portais; envios automáticos; mais desenvolvimento na leitura de prints.
+
+
+## Organização dos perfis e datas — 22/10/2026
+
+- Aplicado e conferido no Google Sheets: «Perfis dos portais» tem uma linha por portal; as ações estão em «Pendências da equipa». O resumo conta as tarefas abertas por fórmula, excluindo Concluído e Não aplicável.
+- Registos anteriores e situação prévia das pendências preservados em duas cópias de segurança ocultas. Não repetir scripts/organizar-perfis.gs: contém guarda contra repetição. A revisão automática exigiu confirmação específica; Andreia confirmou a reorganização antes da execução.
+- Notas simplificadas na folha, sem repetir responsáveis e estados. Conferência das novas tarefas reconhece os portais e mantém os controlos de IDs repetidos, conclusão e justificação N/A. Os textos reais e os backups não foram enviados ao repositório público.
+- Scores: «Não recolhido» enquanto não houver score oficial; não foi criado um score próprio. Indicadores históricos continuam separados dos perfis. O perfil ainda não levantado está explicitamente marcado como tal; zero tarefas não significa perfil concluído.
+- Datas concluídas: yyyy-mm-dd nas colunas identificadas de registo, verificação, recolha, criação, alteração e resolução, incluindo Última atualização. Fórmulas e valores preservados. Datas textuais antigas convertidas em datas reais. Parser do resumo semanal aceita ISO e o formato anterior.
+- As tabelas Google bloquearam setNumberFormat nas colunas tipadas. Andreia autorizou explicitamente a troca do tipo interno das colunas afetadas por formato personalizado com validação de datas. Alteração feita pela interface; scripts/datas-interface.gs finalizou o formato e a validação DATE_IS_VALID com rejeição de entradas inválidas. Todas as colunas do plano devolveram ok:true. Visibilidade original das folhas restaurada; cópias de segurança permanecem ocultas.
+- Código de Progresso lê as tarefas dos portais da lista única, sem as duplicar nas tarefas de imóveis. Mantém compatibilidade com o formato antigo apenas se a migração não tiver sido feita.
+- Código final aplicado no Apps Script e confirmado por leitura integral, igual a Clara-completo.gs. Funções temporárias de manutenção foram removidas do projeto ativo; scripts de manutenção permanecem no repositório como referência, fora do bundle habitual.
+- Testes locais: regressões de gravação, histórico, bloqueio, proteção de fórmulas, parser de datas e agrupamento sintético das tarefas de perfis. Conferência real: resumo sem erros, contagens numéricas e datas ISO nas pendências. A sidebar continua com a limitação de acesso anteriormente registada; não foi demonstrada uma nova gravação real de imóvel por essa interface.
+- O requisito anterior de comparação entre descrição e características continua por implementar.

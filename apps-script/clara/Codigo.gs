@@ -56,7 +56,7 @@ function listaTrabalho() {
   const ps = ss.getSheetByName(PEND.nome);
   const minhas = {}, sara = [];
   ps.getRange(PEND.titulos + 1, 1, Math.max(1, ps.getLastRow() - PEND.titulos), 17).getDisplayValues().forEach(function (r, i) {
-    if (!r[1] || r[8] === 'Concluído' || r[8] === 'Não aplicável') return;
+    if (!r[1] || r[2] === 'Perfil do portal' || r[8] === 'Concluído' || r[8] === 'Não aplicável') return;
     const p = { id: r[0], ref: r[1], tema: r[2], assunto: r[3], acao: r[5], estado: r[8], linha: PEND.titulos + 1 + i };
     if (r[6] === 'Andreia') { (minhas[r[1]] = minhas[r[1]] || []).push(p); }
     else if (r[16] === 'Sara') sara.push(p);
@@ -65,15 +65,17 @@ function listaTrabalho() {
   const ordem = { 'Prioritária': 0, 'Alta': 1, 'Normal': 2 };
   const o = function (x) { return x.prioridade in ordem ? ordem[x.prioridade] : 3; };
   minhasLista.sort(function (a, b) { return o(a) - o(b) || b.pendencias.length - a.pendencias.length; });
-  // Tarefas abertas dos perfis dos portais (separador escondido, mas mostrado aqui)
+  // As tarefas dos portais usam a mesma lista da equipa.
   const perfis = [];
+  ps.getRange(PEND.titulos + 1, 1, Math.max(1, ps.getLastRow() - PEND.titulos), 17).getDisplayValues().forEach(function (r, i) {
+    if (r[2] !== 'Perfil do portal' || r[8] === 'Concluído' || r[8] === 'Não aplicável') return;
+    perfis.push({ portal: r[1], assunto: r[3], acao: r[5], estado: r[8], url: '', linha: PEND.titulos + 1 + i });
+  });
+  // Compatibilidade enquanto a reorganização ainda aguarda confirmação.
   const pf = ss.getSheetByName('Perfis dos portais');
-  if (pf && pf.getLastRow() > 1) {
-    const h = pf.getRange(1, 1, 1, pf.getLastColumn()).getDisplayValues()[0];
-    const iP = h.indexOf('Portal'), iA = h.indexOf('Assunto'), iO = h.indexOf('Ação / observação'), iE = h.indexOf('Estado'), iL = h.indexOf('Ligação');
-    pf.getRange(2, 1, pf.getLastRow() - 1, h.length).getDisplayValues().forEach(function (r, i) {
-      if (!r[iP] || r[iE] === 'Concluído' || r[iE] === 'Fonte' || !/Ajustar|Por verificar|Em curso|Pendente/.test(r[iE])) return;
-      perfis.push({ portal: r[iP], assunto: r[iA], acao: r[iO], estado: r[iE], url: iL >= 0 ? r[iL] : '', linha: i + 2 });
+  if (!perfis.length && pf && pf.getLastRow() > 1 && pf.getRange(1,2).getValue() === 'Assunto') {
+    pf.getRange(2,1,pf.getLastRow()-1,7).getDisplayValues().forEach(function(r,i) {
+      if (r[0] && /^(Ajustar|Por verificar|Em curso|Pendente)$/.test(r[3])) perfis.push({portal:r[0],assunto:r[1],acao:r[2],estado:r[3],url:r[6],linha:i+2,origem:'Perfis dos portais'});
     });
   }
   return { perfis: perfis, total: total, verificados: verificados, contagem: contagem, prioritarios: porVerificar['Prioritária'], alta: porVerificar['Alta'].slice(0, 15), altaTotal: porVerificar['Alta'].length, minhas: minhasLista, sara: sara };
@@ -83,7 +85,7 @@ function listaTrabalho() {
 function abrirResumo() {
   SpreadsheetApp.getUi().showSidebar(HtmlService.createHtmlOutput(RESUMO_HTML).setTitle('Clara · resumo semanal'));
 }
-function dataDe_(txt) { const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(String(txt || '')); return m ? new Date(+m[3], +m[2] - 1, +m[1]) : null; }
+function dataDe_(txt) { const s = String(txt || ''); let m = /^(\d{4})-(\d{2})-(\d{2})(?:$|[ T])/.exec(s); if (m) return new Date(+m[1], +m[2] - 1, +m[3]); m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(s); return m ? new Date(+m[3], +m[2] - 1, +m[1]) : null; }
 function resumoSemanal(dias) {
   dias = dias || 7;
   const ss = SpreadsheetApp.getActive(), tz = ss.getSpreadsheetTimeZone();
@@ -420,5 +422,70 @@ function gravar(texto, docs) {
       throw new Error(falhou ? 'A gravação falhou e a recuperação ficou incompleta. Confere o histórico de versões do Sheets antes de repetir.' : 'A gravação falhou e as células foram repostas. ' + err.message);
     }
     return { ref: a.ref, escritos: a.campos.filter(function (x) { return String(x.atual) !== String(x.novo); }).length, textos: a.textos.length, historico: historico.length, criadas: criadas, reabertas: reabertas, confirmadas: confirmadas };
+  } finally { lock.releaseLock(); }
+}
+
+/* ---------- apresentação de datas (sem alterar fórmulas) ---------- */
+function planoDatas_(ss) {
+  const plano = [];
+  ss.getSheets().forEach(function (sh) {
+    if (!sh.getLastColumn() || !sh.getLastRow()) return;
+    const linhas = sh.getRange(1, 1, Math.min(12, sh.getLastRow()), sh.getLastColumn()).getDisplayValues();
+    const usadas = {};
+    linhas.forEach(function (r, i) { r.forEach(function (nome, j) {
+      // Apenas títulos de colunas Data..., não períodos nem datas dentro de notas.
+      if (!(/^(?:data(?:\s|$)|última atualização$)/i.test(String(nome).trim())) || String(nome).length > 90 || usadas[j]) return;
+      usadas[j] = true; plano.push({ sh: sh, titulo: String(nome), linha: i + 1, coluna: j + 1 });
+    }); });
+  });
+  return plano;
+}
+function dataTexto_(valor, tz) {
+  const txt = String(valor || '').trim(); let iso = '';
+  let m = /^(\d{4}-\d{2}-\d{2})(?:[ T]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/.exec(txt);
+  if (m) iso = m[1];
+  else { m = /^(\d{2})\/(\d{2})\/(\d{4})(?:\s+\d{2}:\d{2}(?::\d{2})?)?$/.exec(txt); if (m) iso = m[3] + '-' + m[2] + '-' + m[1]; }
+  if (!iso) return null;
+  try { const d = Utilities.parseDate(iso, tz, 'yyyy-MM-dd'); return Utilities.formatDate(d, tz, 'yyyy-MM-dd') === iso ? d : null; } catch (e) { return null; }
+}
+function auditarDatasDoRegisto() {
+  const ss = SpreadsheetApp.getActive(), tz = ss.getSpreadsheetTimeZone();
+  const resultado = planoDatas_(ss).map(function (p) {
+    const n = p.sh.getLastRow() - p.linha;
+    if (!n) return { folha: p.sh.getName(), coluna: p.coluna, titulo: p.titulo, preenchidas: 0 };
+    const rg = p.sh.getRange(p.linha + 1, p.coluna, n, 1), valores = rg.getValues(), formulas = rg.getFormulas();
+    const r = { folha: p.sh.getName(), coluna: p.coluna, titulo: p.titulo, preenchidas: 0, datas: 0, textoConvertivel: 0, formulas: 0, outros: 0 };
+    valores.forEach(function (v, i) { if (v[0] === '') return; r.preenchidas++; if (formulas[i][0]) r.formulas++; else if (v[0] instanceof Date || typeof v[0] === 'number') r.datas++; else if (dataTexto_(v[0], tz)) r.textoConvertivel++; else r.outros++; });
+    return r;
+  });
+  console.log(JSON.stringify(resultado)); return resultado;
+}
+function aplicarDatasSemHoras() {
+  const lock = LockService.getDocumentLock();
+  if (!lock.tryLock(30000)) throw new Error('Há outra operação da Clara em curso. Tenta novamente.');
+  try {
+    const ss = SpreadsheetApp.getActive(), tz = ss.getSpreadsheetTimeZone(), resultado = [];
+    planoDatas_(ss).forEach(function (p) {
+      const r = { folha: p.sh.getName(), coluna: p.coluna, titulo: p.titulo, convertidas: 0, porRever: 0 };
+      try {
+        const n = p.sh.getLastRow() - p.linha;
+        if (n > 0) {
+          const rg = p.sh.getRange(p.linha + 1, p.coluna, n, 1), values = rg.getValues(), formulas = rg.getFormulas();
+          values.forEach(function (v, i) {
+            if (formulas[i][0] || v[0] === '' || v[0] instanceof Date || typeof v[0] === 'number') return;
+            const date = dataTexto_(v[0], tz);
+            if (!date) { r.porRever++; return; }
+            const cel = p.sh.getRange(p.linha + 1 + i, p.coluna);
+            if (cel.getFormula() || cel.getValue() !== v[0]) throw new Error('O valor mudou entretanto; repetir a verificação.');
+            cel.setValue(date); r.convertidas++;
+          });
+        }
+        // Abrange as linhas livres para os próximos registos nesta coluna.
+        p.sh.getRange(p.linha + 1, p.coluna, p.sh.getMaxRows() - p.linha, 1).setNumberFormat('yyyy-mm-dd');
+        SpreadsheetApp.flush(); r.aplicado = true;
+      } catch (e) { r.aplicado = false; r.erro = e.message; }
+      resultado.push(r);
+    });
+    console.log(JSON.stringify(resultado)); return resultado;
   } finally { lock.releaseLock(); }
 }

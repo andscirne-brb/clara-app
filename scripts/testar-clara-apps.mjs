@@ -1,6 +1,16 @@
 import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
+const maintenance=fs.readFileSync(new URL('./organizar-perfis.gs',import.meta.url),'utf8');
+const mc={}; vm.createContext(mc); vm.runInContext(maintenance,mc);
+const portalPlan=mc.planoPerfis_([
+ ['portal-teste','Nome e dados da empresa','Confirmar nome.','Ajustar','Andreia','2026-10-20','https://example.invalid'],
+ ['portal-teste','Logótipo e imagens','Confirmar imagem.','Pendente','Sara','2026-10-20','https://example.invalid'],
+ ['portal-teste','Origem da consulta','Fonte','Fonte'],
+ ['portal-teste','Texto do perfil','Texto preservado.','Concluído'],
+ ['portal-teste','Próxima ação','Rever nome e imagem.','Em curso']
+]);
+assert.equal(portalPlan.length,1); assert.equal(portalPlan[0].sara,true); assert.equal(portalPlan[0].notas.length,2);
 const source=fs.readFileSync(new URL('../apps-script/clara/Codigo.gs',import.meta.url),'utf8');
 const headers=['Referência EGO','Imagens','Alt-text','Descrição PT','Descrição EN','Descrição FR','Descrição DE','Descrição ES','Características','Vídeo','Planta','Folheto','Caderneta Predial (anexo)','Certificado Energético (anexo)','Contrato Mediação (anexo)','Licença Habitação (anexo)','Página pública','Data da verificação','Estado da verificação'];
 const txh=['Referência EGO','Idioma','Título original','Descrição original','Origem / evidência','Data de recolha','Estado da recolha'];
@@ -65,3 +75,5 @@ f=fixture();d=payload();d.parcial=true;const statusCol=headers.indexOf('Estado d
 f=fixture();f.lev.forms.set('10,2','=1');assert.throws(()=>save(f,payload()),/fórmula/);assert.equal(get(f.tx,6,4),'Texto antigo PT');
 new vm.Script(fs.readFileSync(new URL('../apps-script/clara/Painel.html',import.meta.url),'utf8').match(/<script>([\s\S]*)<\/script>/)[1]);
 console.log('PASS: leitura parcial, idioma inacessível, documentos incompletos, reabertura, vagas intercaladas, cinco idiomas, histórico antes/depois, repetição, texto literal, rollback, bloqueio e fórmulas protegidas.');
+
+{ const f=fixture(); assert.equal(f.context.dataDe_('2026-10-21').getDate(),21);assert.equal(f.context.dataDe_('21/10/2026').getDate(),21);assert.equal(f.context.dataDe_('2026-10-21 17:33:00').getMonth(),9);assert.equal(f.context.dataDe_('sem data'),null);console.log('PASS: resumo semanal aceita datas ISO e antigas, com ou sem horas.'); }
