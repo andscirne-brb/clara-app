@@ -1,11 +1,12 @@
 // Bloco independente: não soma períodos sobrepostos nem altera os filtros existentes.
-function dadosDashboardIdealista_(linhas){
+function dadosDashboardIdealista_(linhas,tz){
+  const data=function(v){return v instanceof Date?Utilities.formatDate(v,tz||'Europe/Lisbon','yyyy-MM-dd'):String(v);};
   const lotes={};
-  linhas.forEach(function(r,i){if(r[1]!=='geral'||!r[10])return;const id=String(r[10]);let b=lotes[id];if(!b)b=lotes[id]={inicio:String(r[2]),fim:String(r[3]),filtros:String(r[4]),data:r[0],ultima:i,metricas:{}};b.ultima=i;if(typeof r[8]==='number'&&Number.isFinite(r[8]))b.metricas[String(r[7])]=r[8];});
+  linhas.forEach(function(r,i){if(r[1]!=='geral'||!r[10])return;const id=String(r[10]);let b=lotes[id];if(!b)b=lotes[id]={inicio:data(r[2]),fim:data(r[3]),filtros:String(r[4]),data:r[0],ultima:i,metricas:{}};b.ultima=i;if(typeof r[8]==='number'&&Number.isFinite(r[8]))b.metricas[String(r[7])]=r[8];});
   const periodos={};Object.values(lotes).forEach(function(b){const key=JSON.stringify([b.inicio,b.fim,b.filtros]);if(!periodos[key]||periodos[key].ultima<b.ultima)periodos[key]=b;});
   return Object.values(periodos).sort(function(a,b){return b.ultima-a.ultima;}).slice(0,4);
 }
-function atualizarDashboardIdealista(){return atualizarDashboardIdealista_(SpreadsheetApp.getActive());}
+function atualizarDashboardIdealista(){const r=atualizarDashboardIdealista_(SpreadsheetApp.getActive());console.log(JSON.stringify(r));return r;}
 function atualizarDashboardIdealista_(ss){
   const sh=ss.getSheetByName('Dashboard'),origem=ss.getSheetByName('Idealista - recolhas');
   if(!sh||!origem)return;
@@ -15,7 +16,7 @@ function atualizarDashboardIdealista_(ss){
   const rg=sh.getRange(inicio,1,26,5);
   const valores=rg.getValues(),formulas=rg.getFormulas();
   if(valores[0][0]!==marca&&(valores.some(function(r){return r.some(function(v){return v!=='';});})||formulas.some(function(r){return r.some(Boolean);})))throw new Error('O espaço do bloco Idealista está ocupado. Não alterei o Dashboard.');
-  const linhas=origem.getLastRow()>1?origem.getRange(2,1,origem.getLastRow()-1,13).getValues():[],periodos=dadosDashboardIdealista_(linhas);
+  const linhas=origem.getLastRow()>1?origem.getRange(2,1,origem.getLastRow()-1,13).getValues():[],periodos=dadosDashboardIdealista_(linhas,ss.getSpreadsheetTimeZone());
   const out=Array.from({length:26},function(){return Array(5).fill('');});
   out[0][0]=marca;
   out[1][0]='Até 4 períodos mais recentes. Cada coluna é independente; não somar períodos sobrepostos.';
@@ -28,13 +29,13 @@ function atualizarDashboardIdealista_(ss){
   out[24][0]='Os últimos 2 dias podem sofrer ajustes. Séries diárias e evolução face a um período anterior ainda não disponíveis.';
   out[25][0]='Histórico: Idealista - recolhas. Uma nova leitura do mesmo período atualiza esta vista e preserva a anterior no histórico.';
   // Só o bloco reservado é atualizado. Valores históricos permanecem intactos.
-  rg.setValues(out).setFontFamily('Arial').setFontSize(10).setVerticalAlignment('middle').setWrap(true);
+  rg.setValues(out).setFontWeight('normal').setFontColor('#25373a').setBackground('#ffffff').setFontFamily('Arial').setFontSize(10).setVerticalAlignment('middle').setWrap(true);
   sh.getRange(inicio+0,1,1,5).setBackground('#155c53').setFontColor('#ffffff').setFontWeight('bold');
   sh.getRange(inicio+2,1,3,5).setBackground('#e9f0ee').setFontWeight('bold');
   sh.getRange(inicio+6,2,15,4).setNumberFormat('#,##0');sh.getRange(inicio+3,2,1,4).setNumberFormat('yyyy-mm-dd');
   sh.getRange(inicio+1,1,1,5).mergeAcross();sh.getRange(inicio+22,1,4,5).mergeAcross();
-  sh.setRowHeight(inicio+0,28);sh.setRowHeight(inicio+1,34);sh.setRowHeights(inicio+2,3,42);sh.setRowHeights(inicio+6,15,30);sh.setRowHeights(inicio+22,4,34);
+  sh.setRowHeight(inicio+0,28);sh.setRowHeight(inicio+1,34);sh.setRowHeights(inicio+2,3,42);sh.setRowHeights(inicio+6,15,30);sh.setRowHeights(inicio+22,4,34);sh.setRowHeight(inicio+20,54);
   SpreadsheetApp.flush();if(sh.getRange(inicio+0,1).getValue()!==marca)throw new Error('Não foi possível conferir o bloco Idealista.');
-  const atalho=sh.getRange(6,1);if(!atalho.getValue()||atalho.getValue()==='Idealista: estatísticas ↓')atalho.setFormula('=HYPERLINK("#gid='+sh.getSheetId()+'&range=A'+inicio+'","Idealista: estatísticas ↓")');
+  const atalho=sh.getRange(6,1);if(!atalho.getValue()||atalho.getValue()==='Idealista: estatísticas ↓'||atalho.getFormula().indexOf('Idealista: estatísticas')>=0)atalho.setRichTextValue(SpreadsheetApp.newRichTextValue().setText('Idealista: estatísticas ↓').setLinkUrl(ss.getUrl()+'#gid='+sh.getSheetId()+'&range=A'+inicio).build());
   return{periodos:periodos.length,linha:inicio};
 }
