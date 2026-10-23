@@ -248,7 +248,7 @@ function analisar(texto, docs) {
     else if (v === 'categoria') { prop(x[1], 'Categoria errada', 'o ficheiro existe mas está noutra categoria'); noutra.push(x[2]); }
     else if (v === 'na') prop(x[1], 'Não aplicável', 'não se aplica a este imóvel');
   });
-  if (emFalta.length) nova('Documentos', 'Documentos obrigatórios sem ficheiro no eGO', 'Na ficha do eGO sem ficheiro: ' + emFalta.join(', ') + ' (' + hoje + ').', 'Verificar no dossier do escritório e carregar no eGO. Só os que não estiverem no dossier passam a pergunta à Sara.');
+  if (emFalta.length) nova('Documentos', 'Documentos obrigatórios sem ficheiro no eGO', 'Na ficha do eGO sem ficheiro: ' + emFalta.join(', ') + ' (' + hoje + ').', 'Verificar no dossier do escritório e carregar no eGO: ' + emFalta.join(', ') + '. Se não estiverem no dossier, pedir esclarecimento à Sara.');
   if (noutra.length) nova('Documentos', 'Documentos na categoria errada no eGO', 'Na ficha do eGO, carregados noutra categoria: ' + noutra.join(', ') + ' (' + hoje + ').', 'Mover cada ficheiro para a categoria certa no bloco Documentos do eGO.');
   // A folha calcula o estado global a partir de vazios/Por verificar.
   // Registar o desconhecido mantém a fórmula válida, sem fabricar uma ausência.
