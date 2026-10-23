@@ -152,3 +152,6 @@ f=fixture();const snapshotMeaningful=x=>JSON.stringify([...x.sheets].map(([n,s])
 Range.prototype.setValues=function(vs){if(!injected&&this.n>1){injected=true;new Range(this.sh,this.r,this.c,1,1).setValue(vs[0][0]);throw Error('Falha a meio do bloco');}return originalBatch.call(this,vs);};
 try{assert.throws(()=>save(f,payload()),/células foram repostas/);assert(injected);assert.equal(snapshotMeaningful(f),baseFailure);}finally{Range.prototype.setValues=originalBatch;}
 console.log('PASS recuperação: bloco parcialmente escrito é integralmente reposto.');
+
+f=fixture();a=analyse(f,payload(),{...docs,caderneta:'nao',licenca:'sem_dossier'});assert.equal(a.campos.find(x=>x.coluna==='Caderneta Predial (anexo)').novo,'Em falta no eGO · verificar dossier');assert.equal(a.campos.find(x=>x.coluna==='Licença Habitação (anexo)').novo,'Em falta no eGO e no dossier · aguarda Sara');
+const converted=f.context.formulaEstadosDocumentaisClara_('=IF(O10="Em falta","Caderneta","")&COUNTIFS(O10:R10,"Em falta")');assert.match(converted,/LEFT\(O10,8\)=/);assert.match(converted,/"Em falta\*"/);assert.equal(f.context.formulaEstadosDocumentaisClara_(converted),converted);console.log('PASS estados documentais distintos e fórmulas idempotentes incluem ambos.');
