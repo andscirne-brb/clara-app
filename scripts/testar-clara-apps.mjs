@@ -126,3 +126,10 @@ f=fixture();f.lev.forms.set('10,3','=FORMULA_SEGURA()');
 const ps=[2,4].map(col=>({sh:f.lev,linha:10,col,cel:f.lev.getRange(10,col),antes:'',depois:'Novo',antesFormato:'0.###############'}));
 assert.equal(f.context.lotesGravacaoClara_(ps).length,2);
 console.log('PASS lotes: menos chamadas de escrita; lacunas e fórmulas não incluídas.');
+
+f=fixture();d=payload();const absent={...docs,licenca:'sem_dossier',certificado:'nao'};
+a=analyse(f,d,absent);let dp=a.pendencias.find(p=>p.tema==='Documentos');assert.equal(dp.sara,true);assert.match(dp.acao,/Sara: Licença/);assert.match(dp.acao,/dossier.*Certificado/);save(f,d,absent);assert.equal(get(f.pend,6,17),'Sara');assert.equal(get(f.pend,6,9),'A aguardar esclarecimento');
+f=fixture();f.pend.seed(6,['P0001','TESTE-001','Documentos','Documentos obrigatórios sem ficheiro no eGO','Falta licença','Verificar dossier','Andreia','Alta','Por tratar']);save(f,d,{...docs,licenca:'sem_dossier'});assert.equal(get(f.pend,6,17),'Sara');assert.equal(get(f.pend,6,7),'Andreia');assert.equal(get(f.pend,6,8),'Alta');assert.equal(get(f.pend,6,9),'A aguardar esclarecimento');
+console.log('PASS documentos: ausência no dossier delega análise à Sara em pendência nova ou existente; distingue documentos por procurar no dossier.');
+
+f=fixture();f.pend.seed(6,['P0001','TESTE-001','Documentos','Documentos obrigatórios sem ficheiro no eGO','Outras faltas já conferidas','Verificar dossier','Andreia','Alta','Por tratar']);save(f,d,{licenca:'sem_dossier'});assert.equal(get(f.pend,6,17),'Sara');assert.match(get(f.pend,6,5),/Outras faltas já conferidas/);let once=snapshot(f);save(f,d,{licenca:'sem_dossier'});assert.equal(snapshot(f),once);console.log('PASS delegação parcial: preserva faltas anteriores e não duplica notas.');

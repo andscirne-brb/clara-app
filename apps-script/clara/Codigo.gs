@@ -240,15 +240,15 @@ function analisar(texto, docs) {
   }
   if (d.folhetos != null) prop('Folheto', d.folhetos > 0 ? 'Preenchido' : 'Em falta', d.folhetos + ' folhetos');
   // Documentos (marcados no painel a partir da ficha do EGO)
-  const emFalta = [], noutra = [];
+  const emFalta = [], noutra = [], semDossier = [], verificarDossier = [];
   DOCS.forEach(function (x) {
     const v = docs && docs[x[0]];
     if (v === 'sim') prop(x[1], 'Preenchido', 'ficha do EGO');
-    else if (v === 'nao') { prop(x[1], 'Em falta', 'ficha do EGO'); emFalta.push(x[2]); }
+    else if (v === 'nao' || v === 'sem_dossier') { prop(x[1], 'Em falta', v === 'sem_dossier' ? 'Sem ficheiro no eGO nem no dossier; aguarda Sara.' : 'ficha do EGO'); emFalta.push(x[2]); (v === 'sem_dossier' ? semDossier : verificarDossier).push(x[2]); }
     else if (v === 'categoria') { prop(x[1], 'Categoria errada', 'o ficheiro existe mas está noutra categoria'); noutra.push(x[2]); }
     else if (v === 'na') prop(x[1], 'Não aplicável', 'não se aplica a este imóvel');
   });
-  if (emFalta.length) nova('Documentos', 'Documentos obrigatórios sem ficheiro no eGO', 'Na ficha do eGO sem ficheiro: ' + emFalta.join(', ') + ' (' + hoje + ').', 'Verificar no dossier do escritório e carregar no eGO: ' + emFalta.join(', ') + '. Se não estiverem no dossier, pedir esclarecimento à Sara.');
+  if (emFalta.length) nova('Documentos', 'Documentos obrigatórios sem ficheiro no eGO', 'Na ficha do eGO sem ficheiro: ' + emFalta.join(', ') + ' (' + hoje + ').' + (semDossier.length ? ' Confirmado também em falta no dossier: ' + semDossier.join(', ') + '.' : ''), (verificarDossier.length ? 'Verificar no dossier do escritório e carregar no eGO: ' + verificarDossier.join(', ') + '. ' : '') + (semDossier.length ? 'Aguardar análise da Sara: ' + semDossier.join(', ') + '.' : 'Se não estiverem no dossier, pedir esclarecimento à Sara.'), 'eGO', semDossier.length > 0);
   if (noutra.length) nova('Documentos', 'Documentos na categoria errada no eGO', 'Na ficha do eGO, carregados noutra categoria: ' + noutra.join(', ') + ' (' + hoje + ').', 'Mover cada ficheiro para a categoria certa no bloco Documentos do eGO.');
   // A folha calcula o estado global a partir de vazios/Por verificar.
   // Registar o desconhecido mantém a fórmula válida, sem fabricar uma ausência.
@@ -259,10 +259,10 @@ function analisar(texto, docs) {
   if (d.videos == null) desconhecido('Vídeo');
   if (!Array.isArray(d.plantas)) desconhecido('Planta');
   if (d.folhetos == null) desconhecido('Folheto');
-  DOCS.forEach(function (x) { if (!docs || ['sim', 'nao', 'categoria', 'na'].indexOf(docs[x[0]]) < 0) desconhecido(x[1]); });
+  DOCS.forEach(function (x) { if (!docs || ['sim', 'nao', 'sem_dossier', 'categoria', 'na'].indexOf(docs[x[0]]) < 0) desconhecido(x[1]); });
   if (d.url && c.col('Página pública')) prop('Página pública', d.url, 'ligação ao anúncio no site');
   if (c.col('Data da verificação')) prop('Data da verificação', hoje, '');
-  const docsCompletos = DOCS.every(function (x) { return docs && ['sim', 'nao', 'categoria', 'na'].indexOf(docs[x[0]]) >= 0; });
+  const docsCompletos = DOCS.every(function (x) { return docs && ['sim', 'nao', 'sem_dossier', 'categoria', 'na'].indexOf(docs[x[0]]) >= 0; });
   const textosCompletos = Object.keys(IDIOMAS).every(function (k) { return T[k] && !T[k].erro && typeof T[k].descricao === 'string' && typeof T[k].titulo === 'string'; });
   const mediaCompletos = ['fotos', 'fotosComAlt', 'caracteristicas', 'videos', 'folhetos'].every(function (k) { return typeof d[k] === 'number' && isFinite(d[k]) && d[k] >= 0; }) && Array.isArray(d.plantas) && d.plantas.every(function (ext) { return /^(jpg|jpeg|png|webp|gif|pdf)$/.test(ext); });
   const completa = !d.parcial && docsCompletos && textosCompletos && mediaCompletos;
@@ -282,7 +282,7 @@ function analisar(texto, docs) {
   });
   if (d.videos != null) pode('Existe vídeo do imóvel?');
   if (Array.isArray(d.plantas) && d.plantas.every(function (e) { return /^(jpg|jpeg|png|webp|gif|pdf)$/.test(e); })) { pode('Imóvel sem planta'); pode('Planta só em PDF'); }
-  const todosVistos = docs && DOCS.every(function (x) { return ['sim', 'nao', 'categoria', 'na'].indexOf(docs[x[0]]) >= 0; });
+  const todosVistos = docs && DOCS.every(function (x) { return ['sim', 'nao', 'sem_dossier', 'categoria', 'na'].indexOf(docs[x[0]]) >= 0; });
   if (todosVistos && emFalta.length === 0) pode('Documentos obrigatórios sem ficheiro no eGO');
   if (todosVistos && noutra.length === 0) pode('Documentos na categoria errada no eGO');
   const detetados = {}; pend.forEach(function (p) { detetados[p.assunto] = true; });
@@ -290,10 +290,10 @@ function analisar(texto, docs) {
   // Pendências já existentes: não duplicar e confirmar as que foram corrigidas
   const ps = SpreadsheetApp.getActive().getSheetByName(PEND.nome);
   const existentes = {}, resolvidas = [];
-  ps.getRange(PEND.titulos + 1, 1, Math.max(1, ps.getLastRow() - PEND.titulos), 9).getDisplayValues().forEach(function (r, i) {
+  ps.getRange(PEND.titulos + 1, 1, Math.max(1, ps.getLastRow() - PEND.titulos), 17).getDisplayValues().forEach(function (r, i) {
     if (!r[1] || r[1].toUpperCase() !== ref) return;
     const key = r[1].toUpperCase() + '|' + r[3];
-    const registro = { id: r[0], linha: PEND.titulos + 1 + i, estado: r[8], evidencia: r[4], acao: r[5] };
+    const registro = { id: r[0], linha: PEND.titulos + 1 + i, estado: r[8], aguarda: r[16], evidencia: r[4], acao: r[5] };
     if (!existentes[key] || existentes[key].estado === 'Concluído') existentes[key] = registro;
     const aberta = r[8] !== 'Concluído' && r[8] !== 'Não aplicável';
     if (aberta && verificaveis[r[3]] && !detetados[r[3]]) resolvidas.push({ id: r[0], assunto: r[3], linha: PEND.titulos + 1 + i });
@@ -302,7 +302,14 @@ function analisar(texto, docs) {
     const ex = existentes[ref + '|' + p.assunto];
     p.jaExiste = ex ? ex.id : ''; p.linhaExistente = ex ? ex.linha : 0;
     p.reabrir = !!ex && ex.estado === 'Concluído';
-    p.atualizar = !!ex && ex.estado !== 'Concluído' && ex.estado !== 'Não aplicável' && todosVistos && p.tema === 'Documentos' && (ex.evidencia !== p.evidencia || ex.acao !== p.acao);
+    p.atualizar = !!ex && ex.estado !== 'Concluído' && ex.estado !== 'Não aplicável' && todosVistos && p.tema === 'Documentos' && (ex.evidencia !== p.evidencia || ex.acao !== p.acao || (p.sara && ex.aguarda !== 'Sara'));
+    p.delegarSara = !!ex && ex.estado !== 'Concluído' && ex.estado !== 'Não aplicável' && p.sara;
+    if (p.delegarSara && !todosVistos) {
+      const aviso = 'Confirmado sem ficheiro no eGO nem no dossier; aguarda Sara: ' + semDossier.join(', ') + '.';
+      p.evidencia = ex.evidencia.indexOf(aviso) >= 0 ? ex.evidencia : ex.evidencia + ' ' + aviso;
+      p.acao = ex.acao.indexOf(aviso) >= 0 ? ex.acao : ex.acao + ' ' + aviso;
+      p.atualizar = ex.evidencia !== p.evidencia || ex.acao !== p.acao || ex.aguarda !== 'Sara';
+    }
   });
   const mudam = campos.filter(function (x) { return String(x.atual) !== String(x.novo); }).length;
   return { ref: ref, linha: linha, campos: campos, pendencias: pend, resolvidas: resolvidas, notas: notas, mudam: mudam, url: d.url || '', hoje: hoje, completa: completa, textos: Object.keys(IDIOMAS).filter(function (k) { return T[k] && !T[k].erro && typeof T[k].descricao === 'string' && typeof T[k].titulo === 'string'; }).map(function (k) { return { idioma: k, titulo: T[k].titulo, descricao: T[k].descricao }; }) };
@@ -419,13 +426,13 @@ function gravar(texto, docs) {
     const criadas = [], reabertas = [], confirmadas = [];
     a.pendencias.forEach(function (p) {
       if (p.jaExiste && !p.reabrir) {
-        if (p.atualizar) [[5, p.evidencia], [6, p.acao], [11, hoje]].forEach(function (v) { agendar(ps, p.linhaExistente, v[0], v[1], p.assunto + ' · atualização (coluna ' + v[0] + ')', p.jaExiste); });
+        if (p.atualizar) [[5, p.evidencia], [6, p.acao], [11, hoje]].concat(p.delegarSara ? [[9, 'A aguardar esclarecimento'], [17, 'Sara']] : []).forEach(function (v) { agendar(ps, p.linhaExistente, v[0], v[1], p.assunto + ' · atualização (coluna ' + v[0] + ')', p.jaExiste); });
         return;
       }
       const linha = p.reabrir ? p.linhaExistente : livresP[ip++], id = p.reabrir ? p.jaExiste : 'P' + String(++maxId).padStart(4, '0');
       if (p.reabrir) {
         // Mantém a criação, responsável e prioridade; o histórico conserva a resolução anterior.
-        [[5, p.evidencia], [6, p.acao], [9, p.sara ? 'A aguardar esclarecimento' : 'Por tratar'], [11, hoje], [12, ''], [13, ''], [15, 'Por verificar']].forEach(function (v) { agendar(ps, linha, v[0], v[1], p.assunto + ' · reabertura (coluna ' + v[0] + ')', id); });
+        [[5, p.evidencia], [6, p.acao], [9, p.sara ? 'A aguardar esclarecimento' : 'Por tratar'], [11, hoje], [12, ''], [13, ''], [15, 'Por verificar'], [17, p.sara ? 'Sara' : '']].forEach(function (v) { agendar(ps, linha, v[0], v[1], p.assunto + ' · reabertura (coluna ' + v[0] + ')', id); });
         reabertas.push(id + ' ' + p.assunto);
       } else {
         const values = [id, a.ref, p.tema, p.assunto, p.evidencia, p.acao, p.sara ? 'Por atribuir' : 'Andreia', 'Normal', p.sara ? 'A aguardar esclarecimento' : 'Por tratar', hoje, hoje, '', '', p.onde, 'Por verificar'];
