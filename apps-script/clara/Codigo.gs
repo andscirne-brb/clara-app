@@ -396,9 +396,19 @@ function estrutura_(ss, nome, obrigatorias) {
   throw new Error('Os títulos de ' + nome + ' mudaram. Não gravei alterações.');
 }
 function celVazia_(v) { return v === '' || v == null; }
+function valorEscritaClara_(valor,formato) {
+  if(valor instanceof Date && /[dy]/i.test(String(formato).replace(/"[^"]*"/g,''))){
+    // Datas por número de série evitam a perda silenciosa de objetos Date em tabelas nativas.
+    const local=Utilities.formatDate(valor,SpreadsheetApp.getActive().getSpreadsheetTimeZone(),"yyyy-MM-dd'T'HH:mm:ss.SSS");
+    const serial=Date.parse(local+'Z')/86400000+25569;
+    if(!Number.isFinite(serial))throw Error('Não foi possível preparar a data para gravação.');
+    return serial;
+  }
+  return typeof valor==='string'&&valor!==''?"'"+valor:valor;
+}
 function escreverLiteralClara_(cel,valor){
   // Escape nativa do Sheets; não altera formatos das colunas tipadas.
-  cel.setValue(typeof valor==='string'&&valor!==''?"'"+valor:valor);
+  cel.setValue(valorEscritaClara_(valor,cel.getNumberFormat()));
 }
 // Agrupa apenas células planeadas contíguas: nunca inclui fórmulas ou intervalos intermédios.
 function lotesGravacaoClara_(plano) {
@@ -423,7 +433,7 @@ function conferirLotesClara_(lotes,antes){
   });
 }
 function escreverLoteClara_(l,antes){
-  l.rg.setValues(l.linhas.map(function(ps){return ps.map(function(p){const v=antes?p.antes:p.depois;return typeof v==='string'&&v!==''?"'"+v:v;});}));
+  l.rg.setValues(l.linhas.map(function(ps){return ps.map(function(p){const v=antes?p.antes:p.depois;return valorEscritaClara_(v,p.antesFormato);});}));
 }
 function mesmoValor_(a, b) {
   if(a instanceof Date && b instanceof Date)return a.getTime()===b.getTime();

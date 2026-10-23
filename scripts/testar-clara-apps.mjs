@@ -155,3 +155,22 @@ console.log('PASS recuperação: bloco parcialmente escrito é integralmente rep
 
 f=fixture();headers.push('Observações / justificação N/A');f=fixture();f.lev.seed(10,['TESTE-001']);f.lev.cells.set('10,'+headers.length,'Nota manual preservada.');
 a=analyse(f,payload(),{...docs,caderneta:'nao',licenca:'sem_dossier'});const note=a.campos.find(x=>x.coluna==='Observações / justificação N/A').novo;assert.match(note,/Caderneta Predial: em falta no eGO; dossier por verificar/);assert.match(note,/Licença de Habitação: em falta no eGO e no dossier; aguarda análise da Sara/);assert.match(note,/Nota manual preservada/);assert.equal(a.campos.find(x=>x.coluna==='Licença Habitação (anexo)').novo,'Em falta');save(f,payload(),{...docs,caderneta:'nao',licenca:'sem_dossier'});let stableDoc=snapshot(f);save(f,payload(),{...docs,caderneta:'nao',licenca:'sem_dossier'});assert.equal(snapshot(f),stableDoc);save(f,payload(),{...docs,caderneta:'',licenca:'sim'});assert.match(get(f.lev,10,headers.length),/Caderneta/);assert.doesNotMatch(get(f.lev,10,headers.length),/Licença/);console.log('PASS diferenciação: observações por documento, notas manuais preservadas, contagens compatíveis, repetição e resolução.');
+
+// Reproduz a perda de Date em coluna com validação de data, mantendo conferência estrita.
+const setOriginal=Range.prototype.setValue;
+Range.prototype.setValue=function(v){if(/[dy]/i.test(this.getNumberFormat())){if(v instanceof Date)v='';else if(typeof v==='number')v=new Date(Math.round((v-25569)*86400000));}return setOriginal.call(this,v);};
+try{
+ f=fixture();f.context.SpreadsheetApp.getActive().getSpreadsheetTimeZone=()=> 'UTC';
+ f.context.Utilities.formatDate=(d,tz,fmt)=>fmt==="yyyy-MM-dd'T'HH:mm:ss.SSS"?d.toISOString().slice(0,-1):fmt==='yyyy-MM-dd'?d.toISOString().slice(0,10):'22/10/2026';
+ for(let row=6;row<100;row++){
+  [10,11,13].forEach(col=>f.pend.formats.set(`${row},${col}`,'yyyy-mm-dd'));
+  f.tx.formats.set(`${row},6`,'yyyy-mm-dd');f.hist.formats.set(`${row},1`,'yyyy-mm-dd');
+ }
+ f.lev.formats.set('10,'+(headers.indexOf('Data da verificação')+1),'yyyy-mm-dd');
+ d=payload();d.plantas=['pdf'];save(f,d);assert.equal(get(f.pend,6,10).toISOString(),'2026-10-22T00:00:00.000Z');assert.equal(f.pend.getRange(6,10).getNumberFormat(),'yyyy-mm-dd');
+ const stable=snapshot(f);save(f,d);assert.equal(snapshot(f),stable);
+ const dadosAtuais=()=>JSON.stringify([...f.sheets].map(([n,s])=>[n,[...s.cells].filter(([k,v])=>v!=='').sort((a,b)=>a[0].localeCompare(b[0])),[...s.forms],[...s.formats]]));
+ d.textos.PT.descricao='Mudança de teste';const pre=dadosAtuais();f.fail();assert.throws(()=>save(f,d),/repostas/);assert.equal(dadosAtuais(),pre);
+ assert.equal(f.context.mesmoValor_(new Date('2026-10-22'),'2026-10-22'),false);
+ console.log('PASS datas nativas: Date perdido reproduzido, série numérica preserva valor e formato, repetição e rollback verificados sem relaxar comparação.');
+}finally{Range.prototype.setValue=setOriginal;}
