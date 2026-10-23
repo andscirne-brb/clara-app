@@ -15,6 +15,7 @@ function dadosGraficoContactosIdealista_(linhas,tz){
  return null;
 }
 function atualizarGraficoContactosIdealista_(ss){
+ if(ss.getSheetByName('Dashboard')&&ss.getSheetByName('Dashboard').getRange('A2').getValue()==='Resultados dos portais')return;
  const fonte=ss.getSheetByName('Idealista - recolhas'),dash=ss.getSheetByName('Dashboard');if(!fonte||!dash||fonte.getLastRow()<2)return;
  const d=dadosGraficoContactosIdealista_(fonte.getRange(2,1,fonte.getLastRow()-1,13).getValues(),ss.getSpreadsheetTimeZone());if(!d)return;
  const titulo='Idealista: contactos diários',charts=dash.getCharts().filter(function(c){return String(c.getOptions().get('title')||'').indexOf(titulo)===0;});if(charts.length>1)throw Error('Há gráficos de contactos Idealista repetidos.');

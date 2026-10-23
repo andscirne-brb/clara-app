@@ -8,6 +8,7 @@ function dadosDashboardIdealista_(linhas,tz){
 }
 function atualizarDashboardIdealista(){const ss=SpreadsheetApp.getActive(),r=atualizarDashboardIdealista_(ss),g=atualizarGraficoContactosIdealista_(ss);console.log(JSON.stringify({dashboard:r,grafico:g}));return r;}
 function atualizarDashboardIdealista_(ss){
+  if(ss.getSheetByName('Dashboard')&&ss.getSheetByName('Dashboard').getRange('A2').getValue()==='Resultados dos portais')return atualizarDashboardVisual_(ss);
   const sh=ss.getSheetByName('Dashboard'),origem=ss.getSheetByName('Idealista - recolhas');
   if(!sh||!origem)return;
   const marca='Idealista: estatísticas',ult=sh.getLastRow(),titulos=sh.getRange(1,1,Math.max(1,ult),1).getDisplayValues(),achadas=[];
