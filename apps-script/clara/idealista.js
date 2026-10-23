@@ -46,3 +46,35 @@ function recolherIdealista(doc, contexto) {
   if(out.tipo!=='lista' && (!out.periodo.inicio||!out.periodo.fim))out.cobertura+=out.tipo==='zona'&&relativo?' · '+relativo+'; datas exatas não indicadas nesta página':' · Período por confirmar antes de guardar';
   return out;
 }
+/* Leitura apenas dos pontos vetoriais visíveis; rejeita zoom parcial. */
+function descodificarContactosSVGIdealista(raw,inicio,fim,totalEsperado,optEsperado){
+  const a=Date.parse(inicio+'T00:00:00Z'),b=Date.parse(fim+'T00:00:00Z'),dias=Math.round((b-a)/86400000)+1;
+  if(!Number.isFinite(a)||!Number.isFinite(b)||dias<1||dias>3660||raw.total.length!==dias||raw.opt.length!==dias)throw Error('O gráfico não mostra todos os dias do período. Repõe a vista completa e recolhe novamente.');
+  const ticks=raw.ticks.filter(t=>Number.isFinite(t.valor)&&Number.isFinite(t.y)).sort((x,y)=>x.valor-y.valor);
+  if(ticks.length<2)throw Error('A escala do gráfico não ficou identificada.');
+  const z=ticks[0],u=ticks[ticks.length-1],escala=(u.y-z.y)/(u.valor-z.valor);
+  if(!Number.isFinite(escala)||escala>=0||ticks.some(t=>Math.abs(t.y-(z.y+(t.valor-z.valor)*escala))>0.001))throw Error('Escala diária não reconhecida.');
+  const valor=p=>{const n=z.valor+(p.y-z.y)/escala,v=Math.round(n);if(!Number.isFinite(n)||v<0||Math.abs(n-v)>0.0001)throw Error('Um ponto do gráfico não corresponde a um valor inteiro seguro.');return v;};
+  const passo=dias>1?(raw.total[dias-1].x-raw.total[0].x)/(dias-1):0;
+  if(dias>1&&passo<=0)throw Error('Ordem diária não reconhecida.');
+  const out=raw.total.map((p,i)=>{if(Math.abs(p.x-raw.opt[i].x)>0.001||Math.abs(p.x-(raw.total[0].x+passo*i))>0.001)throw Error('Os pontos do gráfico não estão alinhados por dia.');return{data:new Date(a+i*86400000).toISOString().slice(0,10),contactos:valor(p),opt:valor(raw.opt[i])};});
+  if(out.reduce((n,x)=>n+x.contactos,0)!==totalEsperado||out.reduce((n,x)=>n+x.opt,0)!==optEsperado)throw Error('A soma diária não coincide com os totais do Idealista. Espera o gráfico terminar de carregar e recolhe novamente.');
+  return out;
+}
+function pontosContactosSVGIdealista(doc){
+  const xy=e=>({x:Number(e.getAttribute('cx')),y:Number(e.getAttribute('cy'))});
+  return{ticks:Array.from(doc.querySelectorAll('#contactsGraph .y.axis .tick')).map(e=>({valor:Number(e.textContent.replace(/\s/g,'').replace(',','.')),y:Number((/translate\([^,]+,\s*([\d.-]+)/.exec(e.getAttribute('transform')||'')||[])[1])})),total:Array.from(doc.querySelectorAll('#contactsGraph .chart-line.target-total .-circles-total circle')).map(xy),opt:Array.from(doc.querySelectorAll('#contactsGraph .chart-line.target-opt .-circles-opt circle')).map(xy)};
+}
+async function recolherDiariosIdealista(doc,d){
+  const radioEmail=doc.querySelector('#HISTOEMAIL'),radioCall=doc.querySelector('#HISTOCALL'),total=doc.querySelector('#CONTACTS_TOTAL');
+  if(!radioEmail||!radioCall||!total)throw Error('O gráfico de contactos não ficou disponível nesta página.');
+  const original=radioCall.checked?radioCall:radioEmail,estado=total.checked,m=d.registos[0].metricas;
+  const pausa=ms=>new Promise(r=>setTimeout(r,ms));
+  async function ler(radio,esperado){
+    radio.click();await pausa(1000);let prev='',repeticoes=0,ultimo;
+    for(let i=0;i<18;i++){try{const raw=pontosContactosSVGIdealista(doc),sig=JSON.stringify(raw);repeticoes=sig===prev?repeticoes+1:0;prev=sig;if(repeticoes>=2&&radio.checked)return descodificarContactosSVGIdealista(raw,d.periodo.inicio,d.periodo.fim,m.contactos,esperado);}catch(e){ultimo=e;}await pausa(150);}
+    throw ultimo||Error('O gráfico ainda está a atualizar. Recolhe novamente.');
+  }
+  try{if(!total.checked)total.click();const emails=await ler(radioEmail,m.mensagens),calls=await ler(radioCall,m.chamadas);const diarios=emails.map((x,i)=>{const c=calls[i];if(x.data!==c.data||x.contactos!==c.contactos||x.opt+c.opt!==x.contactos)throw Error('Os contactos diários não coincidem com mensagens e chamadas.');return{data:x.data,contactos:x.contactos,mensagens:x.opt,chamadas:c.opt};});d.diarios=diarios;}
+  finally{if(!original.checked)original.click();if(total.checked!==estado)total.click();}
+}

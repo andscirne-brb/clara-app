@@ -6,6 +6,7 @@ base = pathlib.Path(__file__).resolve().parent.parent / 'apps-script' / 'clara'
 codigo = (base / 'Codigo.gs').read_text(encoding='utf-8')
 codigo += '\n' + (base / 'Idealista.gs').read_text(encoding='utf-8')
 codigo += '\n' + (base / 'DashboardIdealista.gs').read_text(encoding='utf-8')
+codigo += '\n' + (base / 'ContactosIdealista.gs').read_text(encoding='utf-8')
 painel = (base / 'Painel.html').read_text(encoding='utf-8')
 lista = (base / 'Lista.html').read_text(encoding='utf-8')
 resumo = (base / 'Resumo.html').read_text(encoding='utf-8')

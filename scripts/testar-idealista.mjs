@@ -1,5 +1,5 @@
 import fs from 'node:fs';import vm from 'node:vm';import assert from 'node:assert/strict';import crypto from 'node:crypto';
-const source=fs.readFileSync(new URL('../apps-script/clara/Codigo.gs',import.meta.url),'utf8')+'\n'+fs.readFileSync(new URL('../apps-script/clara/Idealista.gs',import.meta.url),'utf8');
+const source=fs.readFileSync(new URL('../apps-script/clara/Codigo.gs',import.meta.url),'utf8')+'\n'+fs.readFileSync(new URL('../apps-script/clara/Idealista.gs',import.meta.url),'utf8')+'\n'+fs.readFileSync(new URL('../apps-script/clara/ContactosIdealista.gs',import.meta.url),'utf8');
 class Sheet{constructor(){this.rows=[];this.fail=false;}getLastRow(){return this.rows.length}getMaxRows(){return 1000}setFrozenRows(){}getRange(r,c,n=1,m=1){const s=this;return {getDisplayValues(){return this.getValues().map(r=>r.map(String))},getValues(){return Array.from({length:n},(_,i)=>Array.from({length:m},(_,j)=>s.rows[r+i-1]?.[c+j-1]??''))},setValues(v){if(s.fail){s.fail=false;throw Error('Falha simulada')}v.forEach((a,i)=>{s.rows[r+i-1]??=[];a.forEach((v,j)=>s.rows[r+i-1][c+j-1]=v)});return this},clearContent(){for(let i=0;i<n;i++)for(let j=0;j<m;j++)if(s.rows[r+i-1])s.rows[r+i-1][c+j-1]='';return this},setNumberFormat(){return this},setFontWeight(){return this},setBackground(){return this},setFontColor(){return this}}}}
 let sh=null;const ss={getSheetByName(){return sh},insertSheet(){sh=new Sheet;return sh},getSpreadsheetTimeZone(){return 'Europe/Lisbon'}};
 const ctx={console,Date,Number,JSON,SpreadsheetApp:{getActive:()=>ss,flush(){}},LockService:{getDocumentLock:()=>({tryLock:()=>true,releaseLock(){}})},Utilities:{DigestAlgorithm:{SHA_256:'sha256'},computeDigest:(_,s)=>Array.from(crypto.createHash('sha256').update(s).digest()),parseDate:s=>new Date(s+'T00:00:00Z'),formatDate:d=>d.toISOString().slice(0,10)}};vm.createContext(ctx);vm.runInContext(source,ctx);
@@ -45,7 +45,7 @@ doc.querySelectorAll=s=>s==='td'?[el('448\u00a0953 visitas totais'),el('47\u00a0
 const spacing=cc.recolherIdealista(doc,{url:'https://www.idealista.pt/webtool/stats/loadImpactStats',lido:p.lido});
 assert.equal(spacing.registos[0].metricas.impactos,496409);assert.equal(spacing.registos[0].metricas.visitasTotais,448953);assert.equal(spacing.registos[0].metricas.acoes,47456);
 const preview=ctx.analisarIdealista(enc(spacing));assert.equal(preview.estatisticas.length,15);assert.equal(preview.estatisticas.find(x=>x.nome==='Favoritos').valor,null);
-const review=ctx.resumoEstatisticasIdealista_(preview);assert.match(review,/Impactos: 496 409/);assert.match(review,/Favoritos: Não recolhido/);assert.match(review,/Envios a amigos: 0/);assert.match(review,/não dados por imóvel ou por dia/);
+const review=ctx.resumoEstatisticasIdealista_(preview);assert.match(review,/Impactos: 496 409/);assert.match(review,/Favoritos: Não recolhido/);assert.match(review,/Envios a amigos: 0/);assert.match(review,/Gráfico diário não recolhido/);
 console.log('PASS estatísticas: espaços duplicados e não separáveis, totais de visitas e ações, revisão legível e ausentes distintos de zero.');
 
 vm.runInContext(fs.readFileSync(new URL('../apps-script/clara/DashboardIdealista.gs',import.meta.url),'utf8'),ctx);
@@ -61,3 +61,17 @@ assert.equal(dashboard.find(x=>x.inicio==='2026-07-24').metricas.contactos,50);
 assert.equal(dashboard.find(x=>x.inicio==='2026-09-22'&&x.filtros==='["Venda"]').metricas.partilhas,0);
 assert.equal(dashboard[0].metricas.favoritos,undefined);
 console.log('PASS Dashboard: períodos e filtros separados, última recolha do período, zero distinto de ausente e sem somar janelas sobrepostas.');
+
+const chartPayload=structuredClone(p);chartPayload.tipo='geral';chartPayload.periodo={inicio:'2026-10-01',fim:'2026-10-02'};chartPayload.registos=[{id:'carteira',metricas:{contactos:3,mensagens:2,chamadas:1}}];chartPayload.diarios=[{data:'2026-10-01',contactos:1,mensagens:1,chamadas:0},{data:'2026-10-02',contactos:2,mensagens:1,chamadas:1}];
+assert.doesNotThrow(()=>ctx.validarContactosDiariosIdealista_(chartPayload));
+let broken=structuredClone(chartPayload);broken.diarios[1].data='2026-10-01';assert.throws(()=>ctx.validarContactosDiariosIdealista_(broken),/Dias/);
+broken=structuredClone(chartPayload);broken.registos[0].metricas.contactos=99;assert.throws(()=>ctx.validarContactosDiariosIdealista_(broken),/soma diária/);
+const raw={ticks:[{valor:0,y:100},{valor:2,y:0}],total:[{x:0,y:50},{x:10,y:0}],opt:[{x:0,y:50},{x:10,y:50}]};
+const decoded=cc.descodificarContactosSVGIdealista(raw,'2026-10-01','2026-10-02',3,2);assert.equal(decoded[1].data,'2026-10-02');assert.equal(decoded[1].contactos,2);
+assert.throws(()=>cc.descodificarContactosSVGIdealista(raw,'2026-10-01','2026-10-03',3,2),/todos os dias/);
+assert.throws(()=>cc.descodificarContactosSVGIdealista(raw,'2026-10-01','2026-10-02',9,2),/soma diária/);
+const fractional=structuredClone(raw);fractional.total[0].y=49;assert.throws(()=>cc.descodificarContactosSVGIdealista(fractional,'2026-10-01','2026-10-02',3,2),/inteiro/);
+const dailyRow=(hash,date,key,value)=>['2026-10-23','contactos_diarios','2026-10-01','2026-10-02','[]','',date,key,value,'',hash,'',''];
+const dailyHistory=chartPayload.diarios.flatMap(x=>['contactos','mensagens','chamadas'].map(k=>dailyRow('one',x.data,k,x[k])));
+const grouped=ctx.dadosGraficoContactosIdealista_(dailyHistory.concat(dailyHistory.map(x=>{const r=[...x];r[10]='two';return r;})),'Europe/Lisbon');assert.equal(grouped.diarios.length,2);assert.equal(grouped.diarios[1].chamadas,1);
+console.log('PASS contactos diários: escala SVG, datas completas, soma igual ao portal, frações rejeitadas, dias repetidos rejeitados e recolhas sobrepostas não somadas.');

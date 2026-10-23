@@ -26,7 +26,7 @@ function atualizarDashboardIdealista_(ss){
   if(!periodos.length)out[2][1]='Ainda sem recolhas gerais';
   out[22][0]='Contactos recebidos incluem clientes e angariação. Emails/mensagens e chamadas detalham os contactos de clientes.';
   out[23][0]='Anúncios ativos: valor no momento da leitura. Não é a média do período nem o inventário completo do eGO.';
-  out[24][0]='Os últimos 2 dias podem sofrer ajustes. Séries diárias e evolução face a um período anterior ainda não disponíveis.';
+  out[24][0]='Os últimos 2 dias podem sofrer ajustes. O gráfico diário aparece abaixo quando existe uma recolha completa validada.';
   out[25][0]='Histórico: Idealista - recolhas. Uma nova leitura do mesmo período atualiza esta vista e preserva a anterior no histórico.';
   // Só o bloco reservado é atualizado. Valores históricos permanecem intactos.
   rg.setValues(out).setFontWeight('normal').setFontColor('#25373a').setBackground('#ffffff').setFontFamily('Arial').setFontSize(10).setVerticalAlignment('middle').setWrap(true);

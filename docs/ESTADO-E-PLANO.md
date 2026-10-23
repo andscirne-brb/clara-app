@@ -238,3 +238,13 @@ A área A67 contém o bloco de pendências existente, preservado. As suas fórmu
 - Auditoria posterior de erros nas fórmulas de todas as folhas visíveis: zero erros detetados. Backups ocultos excluídos da auditoria operacional.
 - Scripts de manutenção ficam em scripts/corrigir-formulas-dashboard.gs; não adicionar menus. Folha técnica oculta Clara - teste de gravação contém apenas dados fictícios.
 - Gravação completa do imóvel real exige confirmação de sucesso após nova tentativa; o diagnóstico não a executou automaticamente.
+
+
+### Gráfico diário de contactos Idealista
+- Menu mantém Idealista: estatísticas, sem criar itens. Marcador passa a ler pontos e escala SVG visíveis de contactos/mensagens/chamadas, alternando os dois rádios e repondo a seleção original.
+- Rejeita zoom parcial, escala não linear/desconhecida, pontos fracionários/ambíguos, dias em falta, desalinhados, somas diferentes dos totais ou total diário diferente de mensagens+chamadas. Não usa OCR nem inventa valores. Em falha, mantém os totais e mostra aviso sobre a série.
+- Payload CLARA2 inclui diarios opcional. Validação independente no servidor; 3 linhas por dia no histórico Idealista - recolhas, tipo contactos_diarios. Datas não se somam entre capturas.
+- Novo gráfico combinado no Dashboard, ancorado em A124: contactos em linha e mensagens/chamadas em barras. Fonte derivada oculta Clara - contactos Idealista. Só atualiza o gráfico com título da Clara; preserva os anteriores.
+- Usa a última série completa validada com o seu período no título. Uma nova recolha do mesmo intervalo substitui a vista derivada; histórico anterior preservado. Períodos diferentes não são unidos nem somados.
+- Necessário atualizar o marcador uma vez. Leitura real de 90 pontos por série comparada com os totais do portal; dados reais apenas em ficheiros locais privados e no Sheets autorizado, não no GitHub.
+- Preferência de menus: plataforma: função, nomes curtos e claros. Perguntar antes de decidir em caso de ambiguidade; não renomear por iniciativa própria.
