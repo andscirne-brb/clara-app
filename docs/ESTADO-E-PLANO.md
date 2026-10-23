@@ -248,3 +248,5 @@ A área A67 contém o bloco de pendências existente, preservado. As suas fórmu
 - Usa a última série completa validada com o seu período no título. Uma nova recolha do mesmo intervalo substitui a vista derivada; histórico anterior preservado. Períodos diferentes não são unidos nem somados.
 - Necessário atualizar o marcador uma vez. Leitura real de 90 pontos por série comparada com os totais do portal; dados reais apenas em ficheiros locais privados e no Sheets autorizado, não no GitHub.
 - Preferência de menus: plataforma: função, nomes curtos e claros. Perguntar antes de decidir em caso de ambiguidade; não renomear por iniciativa própria.
+
+Validação real: série de 90 dias importada com somas conferidas e gráfico combinado criado na primeira aba. Nova recolha usa o mesmo gráfico, sem criar cópias. Datas curtas no eixo; intervalo completo no título. Teste assíncrono verifica reposição dos controlos em sucesso e falha.

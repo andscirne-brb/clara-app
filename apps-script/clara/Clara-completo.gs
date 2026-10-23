@@ -621,7 +621,7 @@ function dadosDashboardIdealista_(linhas,tz){
   const periodos={};Object.values(lotes).forEach(function(b){const key=JSON.stringify([b.inicio,b.fim,b.filtros]);if(!periodos[key]||periodos[key].ultima<b.ultima)periodos[key]=b;});
   return Object.values(periodos).sort(function(a,b){return b.ultima-a.ultima;}).slice(0,4);
 }
-function atualizarDashboardIdealista(){const r=atualizarDashboardIdealista_(SpreadsheetApp.getActive());console.log(JSON.stringify(r));return r;}
+function atualizarDashboardIdealista(){const ss=SpreadsheetApp.getActive(),r=atualizarDashboardIdealista_(ss),g=atualizarGraficoContactosIdealista_(ss);console.log(JSON.stringify({dashboard:r,grafico:g}));return r;}
 function atualizarDashboardIdealista_(ss){
   const sh=ss.getSheetByName('Dashboard'),origem=ss.getSheetByName('Idealista - recolhas');
   if(!sh||!origem)return;
@@ -679,9 +679,9 @@ function atualizarGraficoContactosIdealista_(ss){
  if(view.getRange(1,1,1,4).getDisplayValues()[0].join('|')!==headers.join('|'))throw Error('A estrutura da vista diária mudou.');
  const linhas=[headers].concat(d.diarios.map(function(r){return[Utilities.parseDate(r.data,ss.getSpreadsheetTimeZone(),'yyyy-MM-dd'),r.contactos,r.mensagens,r.chamadas];}));
  if(view.getMaxRows()<linhas.length)view.insertRowsAfter(view.getMaxRows(),linhas.length-view.getMaxRows());
- view.getRange(1,1,Math.max(view.getLastRow(),linhas.length),4).clearContent();view.getRange(1,1,linhas.length,4).setValues(linhas);view.getRange(2,1,d.diarios.length,1).setNumberFormat('yyyy-mm-dd');
+ view.getRange(1,1,Math.max(view.getLastRow(),linhas.length),4).clearContent();view.getRange(1,1,linhas.length,4).setValues(linhas);view.getRange(2,1,d.diarios.length,1).setNumberFormat('dd/MM');
  const nome=titulo+' · '+d.inicio+' a '+d.fim;let builder=charts.length?charts[0].modify().clearRanges():dash.newChart();
- builder=builder.setChartType(Charts.ChartType.COMBO).addRange(view.getRange(1,1,linhas.length,4)).setNumHeaders(1).setHiddenDimensionStrategy(Charts.ChartHiddenDimensionStrategy.SHOW_BOTH).setPosition(124,1,0,0).setOption('title',nome).setOption('width',980).setOption('height',430).setOption('legend',{position:'bottom'}).setOption('seriesType','bars').setOption('series',{0:{type:'line',color:'#ff598d',lineWidth:2},1:{type:'bars',color:'#98ae00'},2:{type:'bars',color:'#a773ff'}}).setOption('hAxis',{title:'Dia',format:'dd/MM'}).setOption('vAxis',{title:'Contactos',minValue:0,format:'0'}).setOption('focusTarget','category');
+ builder=builder.setChartType(Charts.ChartType.COMBO).addRange(view.getRange(1,1,linhas.length,4)).setNumHeaders(1).setHiddenDimensionStrategy(Charts.ChartHiddenDimensionStrategy.SHOW_BOTH).setPosition(124,1,0,0).setOption('title',nome).setOption('width',980).setOption('height',430).setOption('legend',{position:'bottom'}).setOption('seriesType','bars').setOption('series',{0:{type:'line',color:'#ff598d',lineWidth:2},1:{type:'bars',color:'#98ae00'},2:{type:'bars',color:'#a773ff'}}).setOption('hAxis',{title:'Dia',format:'dd/MM',showTextEvery:Math.max(1,Math.ceil(d.diarios.length/15)),slantedText:true,slantedTextAngle:45}).setOption('vAxis',{title:'Contactos',minValue:0,format:'0'}).setOption('focusTarget','category');
  if(charts.length)dash.updateChart(builder.build());else dash.insertChart(builder.build());SpreadsheetApp.flush();return{dias:d.diarios.length,inicio:d.inicio,fim:d.fim};
 }
 

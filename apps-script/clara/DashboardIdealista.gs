@@ -6,7 +6,7 @@ function dadosDashboardIdealista_(linhas,tz){
   const periodos={};Object.values(lotes).forEach(function(b){const key=JSON.stringify([b.inicio,b.fim,b.filtros]);if(!periodos[key]||periodos[key].ultima<b.ultima)periodos[key]=b;});
   return Object.values(periodos).sort(function(a,b){return b.ultima-a.ultima;}).slice(0,4);
 }
-function atualizarDashboardIdealista(){const r=atualizarDashboardIdealista_(SpreadsheetApp.getActive());console.log(JSON.stringify(r));return r;}
+function atualizarDashboardIdealista(){const ss=SpreadsheetApp.getActive(),r=atualizarDashboardIdealista_(ss),g=atualizarGraficoContactosIdealista_(ss);console.log(JSON.stringify({dashboard:r,grafico:g}));return r;}
 function atualizarDashboardIdealista_(ss){
   const sh=ss.getSheetByName('Dashboard'),origem=ss.getSheetByName('Idealista - recolhas');
   if(!sh||!origem)return;

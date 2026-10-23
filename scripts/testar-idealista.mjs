@@ -78,3 +78,12 @@ console.log('PASS contactos diários: escala SVG, datas completas, soma igual ao
 const markerSource=fs.readFileSync(new URL('../apps-script/clara/marcador.js',import.meta.url),'utf8').replace('/* IDEALISTA_COLLECTOR */',fs.readFileSync(new URL('../apps-script/clara/idealista.js',import.meta.url),'utf8')).split(/\r?\n/).map(x=>x.trim()).filter(Boolean).join(' ');
 assert.doesNotThrow(()=>new vm.Script(markerSource),'marcador compacto continua válido');
 console.log('PASS sintaxe do marcador compacto com leitura diária assíncrona.');
+
+cc.setTimeout=fn=>{fn();return 0;};
+let selected='email',enabled=false;
+const emailRadio={get checked(){return selected==='email'},click(){selected='email'}},callRadio={get checked(){return selected==='call'},click(){selected='call'}},totalBox={get checked(){return enabled},click(){enabled=!enabled}};
+const svgMock={querySelector:q=>q==='#HISTOEMAIL'?emailRadio:q==='#HISTOCALL'?callRadio:totalBox,querySelectorAll:q=>q.includes('.tick')?raw.ticks.map(t=>({textContent:String(t.valor),getAttribute:()=>`translate(0,${t.y})`})):(q.includes('target-total')?raw.total:selected==='email'?raw.opt:[{x:0,y:100},{x:10,y:50}]).map(t=>({getAttribute:k=>String(k==='cx'?t.x:t.y)}))};
+const automatic=structuredClone(chartPayload);delete automatic.diarios;await cc.recolherDiariosIdealista(svgMock,automatic);
+assert.equal(automatic.diarios.length,2);assert.equal(automatic.diarios[1].chamadas,1);assert.equal(selected,'email');assert.equal(enabled,false);
+const failedAuto=structuredClone(automatic);failedAuto.registos[0].metricas.contactos=99;delete failedAuto.diarios;await assert.rejects(()=>cc.recolherDiariosIdealista(svgMock,failedAuto),/soma diária/);assert.equal(selected,'email');assert.equal(enabled,false);
+console.log('PASS marcador: recolhe as duas séries, espera estabilização e repõe rádios/checkbox após sucesso ou falha.');
