@@ -367,15 +367,21 @@ function lotesGravacaoClara_(plano) {
     const ps=linhas[k].sort(function(a,b){return a.col-b.col;});let atual=null;
     ps.forEach(function(p){if(!atual||p.col!==atual.col+atual.itens.length){atual={sh:p.sh,linha:p.linha,col:p.col,itens:[]};lotes.push(atual);}atual.itens.push(p);});
   });
-  return lotes.map(function(l){l.rg=l.sh.getRange(l.linha,l.col,1,l.itens.length);return l;});
+  lotes.sort(function(a,b){return a.sh.getName().localeCompare(b.sh.getName())||a.col-b.col||a.itens.length-b.itens.length||a.linha-b.linha;});
+  const blocos=[];
+  lotes.forEach(function(l){const anterior=blocos[blocos.length-1];
+    if(anterior&&anterior.sh===l.sh&&anterior.col===l.col&&anterior.linhas[0].length===l.itens.length&&l.linha===anterior.linha+anterior.linhas.length)anterior.linhas.push(l.itens);
+    else blocos.push({sh:l.sh,linha:l.linha,col:l.col,linhas:[l.itens]});
+  });
+  return blocos.map(function(l){l.rg=l.sh.getRange(l.linha,l.col,l.linhas.length,l.linhas[0].length);return l;});
 }
 function conferirLotesClara_(lotes,antes){
-  lotes.forEach(function(l){const vs=l.rg.getValues()[0],fs=l.rg.getFormulas()[0],fm=l.rg.getNumberFormats()[0];
-    l.itens.forEach(function(p,i){if(fs[i]||!mesmoValor_(vs[i],antes?p.antes:p.depois)||fm[i]!==p.antesFormato)throw new Error('A conferência não corresponde ao valor previsto em '+l.sh.getName()+'!'+p.cel.getA1Notation()+'.');});
+  lotes.forEach(function(l){const vs=l.rg.getValues(),fs=l.rg.getFormulas(),fm=l.rg.getNumberFormats();
+    l.linhas.forEach(function(ps,r){ps.forEach(function(p,c){if(fs[r][c]||!mesmoValor_(vs[r][c],antes?p.antes:p.depois)||fm[r][c]!==p.antesFormato)throw new Error('A conferência não corresponde ao valor previsto em '+l.sh.getName()+'!'+p.cel.getA1Notation()+'.');});});
   });
 }
 function escreverLoteClara_(l,antes){
-  l.rg.setValues([l.itens.map(function(p){const v=antes?p.antes:p.depois;return typeof v==='string'&&v!==''?"'"+v:v;})]);
+  l.rg.setValues(l.linhas.map(function(ps){return ps.map(function(p){const v=antes?p.antes:p.depois;return typeof v==='string'&&v!==''?"'"+v:v;});}));
 }
 function mesmoValor_(a, b) {
   if(a instanceof Date && b instanceof Date)return a.getTime()===b.getTime();
@@ -392,35 +398,45 @@ function gravar(texto, docs) {
   const lock = LockService.getDocumentLock();
   if (!lock.tryLock(30000)) throw new Error('Há outra gravação da Clara em curso. Tenta novamente.');
   let aplicados = [], plano = [];
+  const inicio=Date.now(),tempos={};let etapaInicio=inicio;
+  function medir(fase){tempos[fase]=Date.now()-etapaInicio;etapaInicio=Date.now();console.log('Clara desempenho '+JSON.stringify({fase:fase,ms:tempos[fase]}));}
   try {
     const a = analisar(texto, docs), ss = SpreadsheetApp.getActive(), hoje = dataHoje_();
     const lev = ss.getSheetByName(LEV.nome), ps = ss.getSheetByName(PEND.nome);
     const tx = estrutura_(ss, 'Textos por idioma', ['Referência EGO', 'Idioma', 'Título original', 'Descrição original', 'Origem / evidência', 'Data de recolha', 'Estado da recolha']);
     const hs = estrutura_(ss, 'Registo de alterações', ['Data da alteração', 'Referência EGO', 'Autor', 'Onde foi alterado', 'Campo / assunto', 'Antes', 'Depois / alteração realizada', 'Motivo / fonte', 'Resultado da verificação']);
-    const vistos = {}, historico = [], idOperacao = Utilities.getUuid();
+    medir('analise');
+    const vistos = {}, historico = [], idOperacao = Utilities.getUuid(),cacheLinhas={},metadados={};
+    function meta(sh){const k=sh.getName();return metadados[k]||(metadados[k]={max:sh.getMaxRows(),largura:sh.getLastColumn()});}
+    function carregarLinhas(sh,inicio,n){
+      const rg=sh.getRange(inicio,1,n,meta(sh).largura),vs=rg.getValues(),fs=rg.getFormulas(),fm=rg.getNumberFormats();
+      vs.forEach(function(v,i){cacheLinhas[sh.getName()+'|'+(inicio+i)]={valores:v,formulas:fs[i],formatos:fm[i]};});
+    }
+    function linhaCache(sh,linha){const k=sh.getName()+'|'+linha;if(!cacheLinhas[k])carregarLinhas(sh,linha,1);return cacheLinhas[k];}
     function agendar(sh, linha, col, novo, campo, pendencia, semHistorico) {
-      if (!col || linha > sh.getMaxRows()) throw new Error('Sem espaço ou coluna em ' + sh.getName() + '. Não gravei alterações.');
+      if (!col || linha > meta(sh).max) throw new Error('Sem espaço ou coluna em ' + sh.getName() + '. Não gravei alterações.');
       if (typeof novo === 'string' && novo.length > 50000) throw new Error('O texto excede o limite de uma célula. Não gravei alterações.');
       const cel = sh.getRange(linha, col);
-      if (cel.getFormula()) throw new Error('A célula ' + sh.getName() + '!' + cel.getA1Notation() + ' tem uma fórmula. Não gravei alterações.');
-      const antes = cel.getValue();
+      const snapshot=linhaCache(sh,linha);
+      if (snapshot.formulas[col-1]) throw new Error('A célula ' + sh.getName() + '!' + cel.getA1Notation() + ' tem uma fórmula. Não gravei alterações.');
+      const antes = snapshot.valores[col-1];
       if (mesmoValor_(antes, novo)) return;
       const key = sh.getName() + '|' + linha + '|' + col;
       if (vistos[key]) throw new Error('Alterações repetidas na mesma célula. Não gravei alterações.');
       vistos[key] = true;
-      plano.push({ cel: cel, sh: sh, linha: linha, col: col, antes: antes, depois: novo, antesFormato: cel.getNumberFormat() });
+      plano.push({ cel: cel, sh: sh, linha: linha, col: col, antes: antes, depois: novo, antesFormato: snapshot.formatos[col-1] });
       if (!semHistorico) historico.push({ onde: sh.getName(), campo: campo, antes: textoHistorico_(antes), depois: textoHistorico_(novo), pendencia: pendencia || '' });
     }
     function vagas(sh, inicio, quantidade) {
       if (!quantidade) return [];
-      const n = sh.getMaxRows() - inicio + 1;
-      if (n < quantidade) throw new Error('Sem linhas livres em ' + sh.getName() + '. Não gravei alterações.');
-      const rg = sh.getRange(inicio, 1, n, sh.getLastColumn()), values = rg.getValues(), formulas = rg.getFormulas(), livres = [];
-      for (let i = 0; i < n && livres.length < quantidade; i++) {
-        // Uma linha com fórmulas de conferência pode estar livre para uma pendência.
-        const ocupada = values[i].some(function (v, j) { return !celVazia_(v) && !(sh.getName() === PEND.nome && j === 15 && formulas[i][j]); });
-        const formula = formulas[i].some(function (v, j) { return !!v && !(sh.getName() === PEND.nome && j === 15); });
-        if (!ocupada && !formula) livres.push(inicio + i);
+      const limite=meta(sh).max,livres=[];
+      for(let cursor=inicio;cursor<=limite&&livres.length<quantidade;cursor+=200){
+        const n=Math.min(200,limite-cursor+1),rg=sh.getRange(cursor,1,n,meta(sh).largura),values=rg.getValues(),formulas=rg.getFormulas();
+        for(let i=0;i<n&&livres.length<quantidade;i++){
+          const ocupada=values[i].some(function(v,j){return !celVazia_(v)&&!(sh.getName()===PEND.nome&&j===15&&formulas[i][j]);});
+          const formula=formulas[i].some(function(v,j){return !!v&&!(sh.getName()===PEND.nome&&j===15);});
+          if(!ocupada&&!formula)livres.push(cursor+i);
+        }
       }
       if (livres.length !== quantidade) throw new Error('Sem linhas livres em ' + sh.getName() + '. Não gravei alterações.');
       return livres;
@@ -428,7 +444,7 @@ function gravar(texto, docs) {
     a.campos.forEach(function (x) {
       // Estado da verificação é calculado em algumas folhas. Os blocos por verificar
       // acima alimentam essa fórmula; a Clara nunca a substitui por texto.
-      if (x.coluna === 'Estado da verificação' && lev.getRange(a.linha, x.col).getFormula()) return;
+      if (x.coluna === 'Estado da verificação' && linhaCache(lev,a.linha).formulas[x.col-1]) return;
       agendar(lev, a.linha, x.col, x.coluna === 'Data da verificação' ? hoje : x.novo, x.coluna);
     });
     // Só atualiza idiomas efetivamente lidos; nunca apaga um idioma inacessível.
@@ -470,24 +486,29 @@ function gravar(texto, docs) {
       confirmadas.push(r.id + ' ' + r.assunto);
     });
     const lugares = vagas(hs.sh, hs.linha + 1, historico.length);
+    if(lugares.length)carregarLinhas(hs.sh,lugares[0],lugares[lugares.length-1]-lugares[0]+1);
     historico.forEach(function (h, i) {
       const dados = { 'Data da alteração': hoje, 'Referência EGO': a.ref, 'ID da pendência': h.pendencia, 'Autor': 'Andreia', 'Onde foi alterado': 'Levantamento', 'Campo / assunto': h.onde + ' · ' + h.campo, 'Antes': h.antes, 'Depois / alteração realizada': h.depois, 'Motivo / fonte': (a.url || 'Leitura da Clara') + ' · operação ' + idOperacao, 'Resultado da verificação': 'Por verificar' };
       Object.keys(dados).forEach(function (nome) { if (hs.col(nome)) agendar(hs.sh, lugares[i], hs.col(nome), dados[nome], '', '', true); });
     });
     // Leituras e escritas por intervalos, preservando comparação estrita e recuperação.
+    medir('preparacao');
     const lotes=lotesGravacaoClara_(plano);
     conferirLotesClara_(lotes,true);
+    medir('conferenciaAntes');
     try {
       lotes.forEach(function(l){aplicados.push(l);escreverLoteClara_(l,false);});
       SpreadsheetApp.flush();
+      medir('escrita');
       conferirLotesClara_(lotes,false);
+      medir('conferenciaDepois');
     } catch(err) {
       let falhou=false;
       aplicados.reverse().forEach(function(l){try{escreverLoteClara_(l,true);}catch(e){falhou=true;}});
       try{SpreadsheetApp.flush();conferirLotesClara_(aplicados,true);}catch(e){falhou=true;}
       throw new Error((falhou?'A gravação falhou e a recuperação ficou incompleta. Confere o histórico de versões do Sheets antes de repetir. ':'A gravação falhou e as células foram repostas. ')+err.message);
     }
-    return { ref: a.ref, escritos: a.campos.filter(function (x) { return String(x.atual) !== String(x.novo); }).length, textos: a.textos.length, historico: historico.length, criadas: criadas, reabertas: reabertas, confirmadas: confirmadas };
+    return { desempenho: {ms:Date.now()-inicio,fases:tempos,celulas:plano.length,intervalos:lotes.length}, ref: a.ref, escritos: a.campos.filter(function (x) { return String(x.atual) !== String(x.novo); }).length, textos: a.textos.length, historico: historico.length, criadas: criadas, reabertas: reabertas, confirmadas: confirmadas };
   } finally { lock.releaseLock(); }
 }
 

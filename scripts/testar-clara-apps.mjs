@@ -49,7 +49,7 @@ function fixture(){
  const sheets=new Map([lev,tx,hist,pend].map(s=>[s.name,s]));
  let fail=false, releases=0, acquired=true;
  const ss={getSheetByName:n=>sheets.get(n),getSpreadsheetTimeZone:()=> 'Europe/Lisbon'};
- const context=vm.createContext({Date,console,SpreadsheetApp:{getActive:()=>ss,flush(){if(fail){fail=false;throw Error('Synthetic flush failure')}},newRichTextValue:()=>({setText(text){return {build:()=>({text})}}})},LockService:{getDocumentLock:()=>({tryLock:()=>acquired,releaseLock(){releases++}})},Utilities:{getUuid:()=> 'SYNTHETIC-ID',formatDate:(_,__,fmt)=>fmt==='yyyy-MM-dd'?'2026-10-22':'22/10/2026',parseDate:()=>new Date('2026-10-22T00:00:00Z')}});
+ const context=vm.createContext({Date,console:{log(t){if(!String(t).startsWith('Clara desempenho '))console.log(t);}},SpreadsheetApp:{getActive:()=>ss,flush(){if(fail){fail=false;throw Error('Synthetic flush failure')}},newRichTextValue:()=>({setText(text){return {build:()=>({text})}}})},LockService:{getDocumentLock:()=>({tryLock:()=>acquired,releaseLock(){releases++}})},Utilities:{getUuid:()=> 'SYNTHETIC-ID',formatDate:(_,__,fmt)=>fmt==='yyyy-MM-dd'?'2026-10-22':'22/10/2026',parseDate:()=>new Date('2026-10-22T00:00:00Z')}});
  vm.runInContext(source,context);
  return {context,lev,tx,hist,pend,sheets,fail(){fail=true},busy(){acquired=false},releases:()=>releases};
 }
@@ -143,3 +143,12 @@ f=fixture();d=payload();d.fotos=14;d.fotosComAlt=11;f.pend.seed(6,['P0001','TEST
 
 f=fixture();d=payload();d.caracteristicas=1;d.nomesCaracteristicas=['Elevador'];d.textos.PT.descricao='Apartamento com piscina e garagem. Elevador no prédio. Sem lareira. Possibilidade de jardim.';
 let cross=f.context.cruzarCaracteristicasClara_(d);assert.deepEqual(Array.from(cross.sugestoes,x=>x.nome),['Piscina','Garagem']);assert.equal(cross.assinaladasSemTexto.length,0);d.parcial=true;assert.equal(f.context.cruzarCaracteristicasClara_(d).avaliadas,0);delete d.parcial;d.nomesCaracteristicas=[''];assert.equal(f.context.cruzarCaracteristicasClara_(d).avaliadas,0);console.log('PASS características: evidência textual, negação e hipótese excluídas, nomes ausentes e leitura parcial não produzem conclusão.');
+
+f=fixture();d=payload();const report=save(f,d);assert(report.desempenho.intervalos<report.desempenho.celulas/5);assert(Object.hasOwn(report.desempenho.fases,'preparacao'));
+const plan=[20,21,23].flatMap(linha=>[1,2].map(col=>({sh:f.hist,linha,col,cel:f.hist.getRange(linha,col),antes:'',depois:'X',antesFormato:'0.###############'})));
+let groups=f.context.lotesGravacaoClara_(plan);assert.equal(groups.length,2);assert.equal(groups[0].linhas.length,2);assert.equal(groups[1].linha,23);console.log('PASS blocos: histórico retangular, linha intermédia não incluída, métricas por fase.');
+
+f=fixture();const snapshotMeaningful=x=>JSON.stringify([...x.sheets].map(([n,s])=>[n,[...s.cells].filter(([,v])=>v!==''),[...s.forms]]));const baseFailure=snapshotMeaningful(f);let injected=false;
+Range.prototype.setValues=function(vs){if(!injected&&this.n>1){injected=true;new Range(this.sh,this.r,this.c,1,1).setValue(vs[0][0]);throw Error('Falha a meio do bloco');}return originalBatch.call(this,vs);};
+try{assert.throws(()=>save(f,payload()),/células foram repostas/);assert(injected);assert.equal(snapshotMeaningful(f),baseFailure);}finally{Range.prototype.setValues=originalBatch;}
+console.log('PASS recuperação: bloco parcialmente escrito é integralmente reposto.');
