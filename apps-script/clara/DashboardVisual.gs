@@ -26,7 +26,7 @@ function atualizarDashboardVisual_(ss){
  function block(row,col,n,height,text,size,color,bold,back){const r=s.getRange(row,col,height,n);r.breakApart();r.merge();r.setValue(text===null?'—':text).setBackground(back||bg).setFontSize(size||10).setFontColor(color||ink).setFontWeight(bold?'bold':'normal').setWrap(true).setHorizontalAlignment('left').setFontLine('none');return r;}
  function section(row,title){block(row,1,12,1,title,13,ink,true);s.setRowHeight(row,32);}
  function card(col,name,value,label,period,detail,footer,color){block(6,col,4,1,name,12,color,true,'#ffffff');block(7,col,4,2,value,32,ink,true,'#ffffff');block(9,col,4,1,label,11,muted,false,'#ffffff');block(10,col,4,2,period,10,muted,false,'#ffffff');block(12,col,4,2,detail,11,ink,true,'#ffffff');block(14,col,4,2,footer,9,muted,false,'#ffffff');}
- block(2,1,12,2,'Resultados dos portais',23,ink,true);block(4,1,12,1,'Últimos 30 dias disponíveis · períodos identificados em cada portal',11,muted);
+ block(2,1,12,2,'Resultados dos portais',23,ink,true);block(4,1,12,1,'Dados por portal · consultar as datas de cada fonte antes de comparar',11,muted);
  const fmt=v=>typeof v==='number'?v.toLocaleString('pt-PT'):'Não recolhido';
  card(1,'IDEALISTA',p?fmt(p.metricas.contactos):'Sem dados','contactos recebidos',p?p.inicio+' a '+p.fim+'\n'+(()=>{try{return JSON.parse(p.filtros).join(' · ');}catch(e){return p.filtros;}})():'Falta recolha de 30 dias',p?fmt(p.metricas.visitasDetalhes)+' visitas aos anúncios\n'+fmt(p.metricas.anunciosAtivosHoje)+' anúncios ativos na recolha':'Registar estatísticas no menu Clara',p?'Recolha: '+p.recolha+' · '+fmt(p.metricas.mensagens)+' mensagens / '+fmt(p.metricas.chamadas)+' chamadas':'',teal);
  card(5,'GREEN-ACRES',lastGreen?fmt(lastGreen[4]):'Sem dados','contactos únicos · último dado disponível',lastGreen?iso(lastGreen[0])+' a '+iso(lastGreen[1]):'Sem recolha',lastGreen?'Sem janela de 30 dias recolhida':'Falta relatório de contactos','O gráfico mensal mantém o histórico. Período distinto do Idealista.',blue);
@@ -62,8 +62,8 @@ function atualizarDashboardVisual_(ss){
  block(63,7,6,2,'Imóveis com pendências',12,ink,true,'#ffffff');block(65,7,6,2,'',26,purple,true,'#ffffff').setFormula(f.imoveis).setNumberFormat('0');block(67,7,6,2,'A conclusão de uma recolha não significa que todas as correções estejam concluídas.',10,muted,false,'#ffffff');
  section(71,'Consultar o detalhe');
  [['Levantamento','eGO · estado dos imóveis',1],['Pendências da equipa','Equipa · tarefas e bloqueios',5],['Perfis dos portais','Portais · perfis e pendências',9]].forEach(a=>{const target=ss.getSheetByName(a[0]);if(target)block(73,a[2],4,2,'',11,teal,true,'#e6f0f2').setRichTextValue(SpreadsheetApp.newRichTextValue().setText(a[1]).setLinkUrl(ss.getUrl()+'#gid='+target.getSheetId()).build());});
- block(77,1,12,2,'Últimos 30 dias disponíveis por fonte. Sem dados = não recolhido, não zero. Uma medição isolada é o ponto inicial; não prova melhoria.',10,muted);
- block(80,1,12,1,'Dashboard atualizado em '+Utilities.formatDate(new Date(),tz,'yyyy-MM-dd HH:mm')+' · fontes e histórico preservados nas abas de detalhe.',9,muted);
+ block(77,1,12,2,'Datas dos dados: Idealista '+(p?p.fim:'sem recolha')+' · Green-Acres '+(lastGreen?iso(lastGreen[1]):'sem recolha')+' · Rightmove '+(rm.length?iso(rm[0][0]):'sem recolha')+'. Sem dados não significa zero.',10,muted);
+ block(80,1,12,1,'Vista atualizada em '+Utilities.formatDate(new Date(),tz,'yyyy-MM-dd HH:mm')+' · atualizar a vista não recolhe novos dados dos portais.',9,muted);
  s.setTabColor(teal);if(!v.isSheetHidden())v.hideSheet();SpreadsheetApp.flush();return{periodo:p?{inicio:p.inicio,fim:p.fim}:null,diarios:dailyOk?30:0,rightmove:rm.length,mediaRightmove:views.length?views.reduce((a,b)=>a+b,0)/views.length:null,graficos:s.getCharts().length,pontosRightmove:right.length,pontosEGO:ego.length};
 }
 

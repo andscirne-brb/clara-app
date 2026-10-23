@@ -169,6 +169,18 @@ function linhaDoImovel_(sh, c, ref) {
 }
 
 /* ---------- análise (não grava nada) ---------- */
+// Comparação conservadora de um conjunto explícito de características; não prova existência física.
+function cruzarCaracteristicasClara_(d){
+  const normal=function(t){return String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();};
+  const nomes=d.nomesCaracteristicas,pt=d.textos&&d.textos.PT;
+  if((d.idiomaCaracteristicas&&['PT','EN'].indexOf(d.idiomaCaracteristicas)<0)||(d.parcial&&!d.nomesCaracteristicasCompletos)||!Array.isArray(nomes)||(!d.nomesCaracteristicasCompletos&&nomes.length!==d.caracteristicas)||nomes.some(function(n){return typeof n!=='string'||!n.trim();})||!pt||pt.erro||typeof pt.descricao!=='string'||!pt.descricao.trim())return {estado:'Não foi possível verificar',sugestoes:[],assinaladasSemTexto:[],avaliadas:0};
+  const regras=[['Piscina',/\bpiscinas?\b|\bswimming pool\b/],['Garagem',/\bgarage(?:m|ns)\b|\bgarage\b/],['Elevador',/\belevador\b|\blift\b|\belevator\b/],['Ar condicionado',/\bar condicionado\b|\bair conditioning\b/],['Terraço',/\bterracos?\b|\bterrace\b/],['Varanda',/\bvarandas?\b|\bbalcony\b/],['Jardim',/\bjardim\b|\bgarden\b/],['Lareira',/\blareira\b|\bfireplace\b/],['Painéis solares',/\bpaineis solares\b|\bsolar panels\b/],['Vidros duplos',/\bvidros duplos\b|\bdouble glazing\b/]];
+  const frases=pt.descricao.replace(/<[^>]*>/g,' ').split(/[.!?;\n]+/).map(function(t){return t.trim();}).filter(Boolean),lista=nomes.map(normal),sugestoes=[],semTexto=[];
+  regras.forEach(function(r){const assinalada=lista.some(function(n){return r[1].test(n);});const f=frases.find(function(t){const n=normal(t);return r[1].test(n)&&!/(\bsem\b|\bnao\b|possibilidade|potencial|poder[aã]|projeto|pre.instalacao|previst)/.test(n);});
+    if(f&&!assinalada)sugestoes.push({nome:r[0],excerto:f.slice(0,300)});if(assinalada&&!f)semTexto.push(r[0]);
+  });
+  return {estado:sugestoes.length||semTexto.length?'Há diferenças a rever':'Sem divergências nos itens avaliados',sugestoes:sugestoes,assinaladasSemTexto:semTexto,avaliadas:regras.length};
+}
 function analisar(texto, docs) {
   texto = String(texto || '').trim();
   if(texto.indexOf('CLARA2:')===0)return analisarIdealista(texto);
@@ -181,12 +193,19 @@ function analisar(texto, docs) {
   const linha = linhaDoImovel_(sh, c, ref);
   if (!linha) throw new Error('A referência ' + ref + ' não está no Levantamento.');
   const atual = sh.getRange(linha, 1, 1, c.titulos.length).getDisplayValues()[0];
-  const campos = [], pend = [], notas = [];
+  const campos = [], pend = [], notas = [], naoVerificados = [];
   const prop = function (coluna, valor, motivo) {
     const k = c.col(coluna); if (!k) { notas.push('Coluna "' + coluna + '" não encontrada; ignorada.'); return; }
     const existente = campos.find(function (x) { return x.col === k; });
     if (existente) { existente.novo = valor; existente.motivo = motivo || ''; }
     else campos.push({ coluna: coluna, col: k, atual: atual[k - 1], novo: valor, motivo: motivo || '' });
+  };
+  const preservar = function(coluna,motivo){
+    const k=c.col(coluna);if(!k)return;
+    const anterior=atual[k-1], conhecido=anterior!==''&&anterior!=='Por verificar';
+    const i=campos.findIndex(function(x){return x.col===k;});if(i>=0)campos.splice(i,1);
+    naoVerificados.push({coluna:coluna,anterior:anterior,preservado:conhecido,motivo:motivo});
+    prop(coluna,conhecido?anterior:'Por verificar',motivo+(conhecido?' Mantido o último estado registado; não foi reconfirmado.':''));
   };
   const nova = function (tema, assunto, evidencia, acao, ondeCorrigir, sara) {
     pend.push({ tema: tema, assunto: assunto, evidencia: evidencia, acao: acao, onde: ondeCorrigir || 'eGO', sara: !!sara });
@@ -200,7 +219,7 @@ function analisar(texto, docs) {
     if (c.col('N.º de imagens')) prop('N.º de imagens', d.fotos, '');
     if (d.fotos === 0) nova('Imagens', 'Imóvel sem fotografias', 'O site não mostra fotografias' + fonte + '.', 'Carregar fotografias no eGO.');
   }
-  if (d.fotosComAlt != null && d.fotos > 0) {
+  if (!d.parcial && d.fotosComAlt != null && d.fotos > 0) {
     const ok = d.fotosComAlt === d.fotos;
     prop('Alt-text', ok ? 'Preenchido' : 'Em falta', d.fotosComAlt + ' de ' + d.fotos + ' com texto alternativo');
     if (!ok) nova('Imagens', 'Fotografias sem texto alternativo', 'No site, ' + (d.fotos - d.fotosComAlt) + ' de ' + d.fotos + ' fotografias sem texto alternativo; ' + d.fotosComLegenda + ' com legenda' + fonte + '.', 'Preencher o texto alternativo e a legenda das fotografias no eGO.');
@@ -214,7 +233,7 @@ function analisar(texto, docs) {
     else if (!String(t.descricao || '').trim()) falta = 'descrição vazia';
     else if (k !== 'EN' && k !== 'PT' && T.EN && t.descricao === T.EN.descricao) falta = 'a página em ' + IDIOMAS[k] + ' mostra o texto inglês';
     else if (k === 'EN' && T.PT && t.descricao === T.PT.descricao) falta = 'a página em inglês mostra o texto português';
-    if (!t || t.erro) { prop('Descrição ' + k, 'Por verificar', falta); return; }
+    if (!t || t.erro) { preservar('Descrição ' + k, falta); return; }
     prop('Descrição ' + k, falta ? 'Em falta' : 'Preenchido', falta || (t.descricao.length + ' caracteres'));
     if (falta) {
       const nome = { PT: 'português', EN: 'inglês', FR: 'francês', DE: 'alemão', ES: 'espanhol' }[k];
@@ -224,7 +243,12 @@ function analisar(texto, docs) {
       nova('Textos', 'Título em ' + IDIOMAS[k] + ' em falta', 'No site, o título em ' + IDIOMAS[k] + ' é igual ao inglês' + fonte + '.', 'Preencher o título em ' + IDIOMAS[k] + ' no eGO.');
   });
   // Características, vídeo, visita virtual, planta, folheto
-  if (d.caracteristicas != null) prop('Características', d.caracteristicas > 0 ? 'Preenchido' : 'Em falta', d.caracteristicas + ' características assinaladas');
+  if (!d.parcial && d.caracteristicas != null) prop('Características', d.caracteristicas > 0 ? 'Preenchido' : 'Em falta', d.caracteristicas + ' características assinaladas');
+  const cruzamento=cruzarCaracteristicasClara_(d);
+  if(c.col('Campos de características em falta')){
+    if(cruzamento.avaliadas)prop('Campos de características em falta',cruzamento.sugestoes.length?'Sugestões por confirmar: '+cruzamento.sugestoes.map(function(x){return x.nome;}).join(', '):'Sem divergências nos itens avaliados','Comparação da descrição PT com os itens assinalados; requer revisão.');
+    else preservar('Campos de características em falta','Não foi possível cruzar descrição e nomes das características.');
+  }
   if (d.videos != null) {
     prop('Vídeo', d.videos > 0 ? 'Preenchido' : 'Em falta', d.videos + ' vídeos');
     if (d.videos === 0) nova('Vídeo', 'Existe vídeo do imóvel?', 'O site não mostra vídeo' + fonte + '.', 'Esclarecer se existe vídeo e onde está, para a Andreia o carregar no eGO.', 'eGO', true);
@@ -251,8 +275,8 @@ function analisar(texto, docs) {
   if (emFalta.length) nova('Documentos', 'Documentos obrigatórios sem ficheiro no eGO', 'Na ficha do eGO sem ficheiro: ' + emFalta.join(', ') + ' (' + hoje + ').' + (semDossier.length ? ' Confirmado também em falta no dossier: ' + semDossier.join(', ') + '.' : ''), (verificarDossier.length ? 'Verificar no dossier do escritório e carregar no eGO: ' + verificarDossier.join(', ') + '. ' : '') + (semDossier.length ? 'Aguardar análise da Sara: ' + semDossier.join(', ') + '.' : 'Se não estiverem no dossier, pedir esclarecimento à Sara.'), 'eGO', semDossier.length > 0);
   if (noutra.length) nova('Documentos', 'Documentos na categoria errada no eGO', 'Na ficha do eGO, carregados noutra categoria: ' + noutra.join(', ') + ' (' + hoje + ').', 'Mover cada ficheiro para a categoria certa no bloco Documentos do eGO.');
   // A folha calcula o estado global a partir de vazios/Por verificar.
-  // Registar o desconhecido mantém a fórmula válida, sem fabricar uma ausência.
-  const desconhecido = function (coluna) { prop(coluna, 'Por verificar', 'Este bloco não foi verificado nesta leitura.'); };
+  // Uma falha de leitura não substitui um estado conhecido por desconhecido.
+  const desconhecido = function (coluna) { preservar(coluna, 'Este bloco não foi verificado nesta leitura.'); };
   if (d.fotos == null) desconhecido('Imagens');
   if (d.fotosComAlt == null || d.parcial) desconhecido('Alt-text');
   if (d.caracteristicas == null || d.parcial) desconhecido('Características');
@@ -274,7 +298,7 @@ function analisar(texto, docs) {
   const verificaveis = {};
   const pode = function (a) { verificaveis[a] = true; };
   if (d.fotos != null) pode('Imóvel sem fotografias');
-  if (d.fotosComAlt != null) pode('Fotografias sem texto alternativo');
+  if (!d.parcial && d.fotosComAlt != null) pode('Fotografias sem texto alternativo');
   Object.keys(IDIOMAS).forEach(function (k) {
     const t = T[k]; if (!t || t.erro) return;
     pode('Descrição em ' + IDIOMAS[k] + ' em falta');
@@ -302,7 +326,7 @@ function analisar(texto, docs) {
     const ex = existentes[ref + '|' + p.assunto];
     p.jaExiste = ex ? ex.id : ''; p.linhaExistente = ex ? ex.linha : 0;
     p.reabrir = !!ex && ex.estado === 'Concluído';
-    p.atualizar = !!ex && ex.estado !== 'Concluído' && ex.estado !== 'Não aplicável' && todosVistos && p.tema === 'Documentos' && (ex.evidencia !== p.evidencia || ex.acao !== p.acao || (p.sara && ex.aguarda !== 'Sara'));
+    p.atualizar = !!ex && ex.estado !== 'Concluído' && ex.estado !== 'Não aplicável' && (p.tema === 'Documentos' ? todosVistos : !!verificaveis[p.assunto]) && (ex.evidencia !== p.evidencia || ex.acao !== p.acao || (p.sara && ex.aguarda !== 'Sara'));
     p.delegarSara = !!ex && ex.estado !== 'Concluído' && ex.estado !== 'Não aplicável' && p.sara;
     if (p.delegarSara && !todosVistos) {
       const aviso = 'Confirmado sem ficheiro no eGO nem no dossier; aguarda Sara: ' + semDossier.join(', ') + '.';
@@ -312,7 +336,7 @@ function analisar(texto, docs) {
     }
   });
   const mudam = campos.filter(function (x) { return String(x.atual) !== String(x.novo); }).length;
-  return { ref: ref, linha: linha, campos: campos, pendencias: pend, resolvidas: resolvidas, notas: notas, mudam: mudam, url: d.url || '', hoje: hoje, completa: completa, textos: Object.keys(IDIOMAS).filter(function (k) { return T[k] && !T[k].erro && typeof T[k].descricao === 'string' && typeof T[k].titulo === 'string'; }).map(function (k) { return { idioma: k, titulo: T[k].titulo, descricao: T[k].descricao }; }) };
+  return { ref: ref, linha: linha, campos: campos, pendencias: pend, resolvidas: resolvidas, notas: notas, naoVerificados: naoVerificados, cruzamento: cruzamento, mudam: mudam, url: d.url || '', hoje: hoje, completa: completa, textos: Object.keys(IDIOMAS).filter(function (k) { return T[k] && !T[k].erro && typeof T[k].descricao === 'string' && typeof T[k].titulo === 'string'; }).map(function (k) { return { idioma: k, titulo: T[k].titulo, descricao: T[k].descricao }; }) };
 }
 
 /* ---------- gravação e histórico (só depois de confirmar) ---------- */

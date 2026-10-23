@@ -13,7 +13,7 @@
   const me = ld(document);
   if(!me){ui.falhar('Esta página não é uma ficha de imóvel. Abre o anúncio e volta a clicar no marcador.');return;}
   const ext = x => ((JSON.stringify(x).match(/\.(pdf|jpe?g|png|webp|gif)\b/i) || [])[1] || '?').toLowerCase().replace('jpeg', 'jpg');
-  const out = { v: 1, origem: 'site', lido: new Date().toISOString(), url: location.href.split('?')[0], ref: null, textos: {} };
+  const out = { v: 1, origem: 'site', lido: new Date().toISOString(), url: location.href.split('?')[0], ref: null, idiomaCaracteristicas: (document.documentElement.lang || '').slice(0,2).toUpperCase(), textos: {} };
   let p = null;
   const u = performance.getEntriesByType('resource').map(e => e.name).find(n => /websiteapi\.egorealestate\.com\/v1\/Properties\/\d+\?.*propertyid=/.test(n));
   if (u) { try { p = await fetchClara(u,true); } catch (e) {} }
@@ -26,6 +26,7 @@
       plantas: (p.BluePrints || []).map(ext), videos: (p.Videos || []).length,
       visitaVirtual: !!(p.HasVirtualTour || (p.VirtualTours || []).length || (p.ExternalVirtualTours || []).length),
       fotos360: (p.Photos360 || []).length, folhetos: (p.Brochures || []).length,
+      nomesCaracteristicas: (p.Features || []).flatMap(g => (g.Childs || []).map(f => typeof f === 'string' ? f : typeof f.Name === 'string' ? f.Name : '')),
       caracteristicas: (p.Features || []).reduce((n, g) => n + ((g.Childs || []).length), 0),
       classeEnergetica: p.EnergyCertification || ''
     });
@@ -38,6 +39,13 @@
       plantas: [...new Set(html.match(/\/Tblueprint\/ID[0-9a-f-]+\.\w+/g) || [])].map(s => s.split('.').pop().toLowerCase()),
       videos: document.querySelector('#videoTab.propertyMediaDisabled') ? 0 : null
     });
+  }
+  /* Nomes do bloco do próprio imóvel; exclui equipamentos da zona envolvente. */
+  const blocoFeatures=document.querySelector('.propertyBasicFeatures');
+  if(blocoFeatures){
+    const itens=Array.from(blocoFeatures.querySelectorAll('.detailWrapper .detailItem'));
+    const nomes=itens.filter(e=>{const ul=e.closest('.detailWrapper'),m=(ul.className||'').match(/\bfeat\d+\b/),h=m&&blocoFeatures.querySelector('.featureHeader.'+m[0]);return !h||!/zona envolvente|surroundings/i.test(h.textContent);}).map(e=>{const n=e.querySelector('.label'),v=e.querySelector('.value');return n&&v&&(v.querySelector('[class*="tick"]')||v.textContent.trim()&&!/^(0|n[aã]o|no)$/i.test(v.textContent.trim()))?n.textContent.trim():'';});
+    if(itens.length&&nomes.length&&nomes.every(Boolean)){out.nomesCaracteristicas=nomes;out.nomesCaracteristicasCompletos=true;out.idiomaCaracteristicas=(document.documentElement.lang||'').slice(0,2).toUpperCase();}
   }
   const alternativos=new Map();for(const l of document.querySelectorAll('link[rel=alternate][hreflang]')){const k=l.hreflang.slice(0,2).toUpperCase();if(['PT','EN','FR','DE','ES'].includes(k)&&!alternativos.has(k)&&/^https?:\/\/(?:www\.)?janela-imobiliaria\.com\//.test(l.href))alternativos.set(k,l.href);}
   let feitos=0;ui.estado('A ler títulos e descrições nos idiomas disponíveis…');

@@ -133,3 +133,13 @@ f=fixture();f.pend.seed(6,['P0001','TESTE-001','Documentos','Documentos obrigat�
 console.log('PASS documentos: ausência no dossier delega análise à Sara em pendência nova ou existente; distingue documentos por procurar no dossier.');
 
 f=fixture();f.pend.seed(6,['P0001','TESTE-001','Documentos','Documentos obrigatórios sem ficheiro no eGO','Outras faltas já conferidas','Verificar dossier','Andreia','Alta','Por tratar']);save(f,d,{licenca:'sem_dossier'});assert.equal(get(f.pend,6,17),'Sara');assert.match(get(f.pend,6,5),/Outras faltas já conferidas/);let once=snapshot(f);save(f,d,{licenca:'sem_dossier'});assert.equal(snapshot(f),once);console.log('PASS delegação parcial: preserva faltas anteriores e não duplica notas.');
+
+f=fixture();d=payload();d.parcial=true;delete d.textos.FR;
+['Alt-text','Características','Descrição FR','Certificado Energético (anexo)'].forEach(h=>f.lev.cells.set('10,'+(headers.indexOf(h)+1),'Preenchido'));
+f.pend.seed(6,['P0001','TESTE-001','Imagens','Fotografias sem texto alternativo','','','Andreia','Normal','Por tratar']);
+a=analyse(f,d,{});['Alt-text','Características','Descrição FR','Certificado Energético (anexo)'].forEach(h=>assert.equal(a.campos.find(x=>x.coluna===h).novo,'Preenchido'));assert.equal(a.resolvidas.length,0);assert(a.naoVerificados.some(x=>x.coluna==='Descrição FR'&&x.preservado));save(f,d,{});assert.equal(get(f.pend,6,9),'Por tratar');console.log('PASS leitura parcial: preserva estados conhecidos e não conclui pendências de blocos não lidos.');
+
+f=fixture();d=payload();d.fotos=14;d.fotosComAlt=11;f.pend.seed(6,['P0001','TESTE-001','Imagens','Fotografias sem texto alternativo','14 fotografias sem texto alternativo','Ação antiga','Andreia','Alta','Em curso']);save(f,d);assert.match(get(f.pend,6,5),/3 de 14/);assert.equal(get(f.pend,6,9),'Em curso');console.log('PASS pendências de imagens: resolução parcial reduz faltas sem duplicar ou alterar gestão.');
+
+f=fixture();d=payload();d.caracteristicas=1;d.nomesCaracteristicas=['Elevador'];d.textos.PT.descricao='Apartamento com piscina e garagem. Elevador no prédio. Sem lareira. Possibilidade de jardim.';
+let cross=f.context.cruzarCaracteristicasClara_(d);assert.deepEqual(Array.from(cross.sugestoes,x=>x.nome),['Piscina','Garagem']);assert.equal(cross.assinaladasSemTexto.length,0);d.parcial=true;assert.equal(f.context.cruzarCaracteristicasClara_(d).avaliadas,0);delete d.parcial;d.nomesCaracteristicas=[''];assert.equal(f.context.cruzarCaracteristicasClara_(d).avaliadas,0);console.log('PASS características: evidência textual, negação e hipótese excluídas, nomes ausentes e leitura parcial não produzem conclusão.');
