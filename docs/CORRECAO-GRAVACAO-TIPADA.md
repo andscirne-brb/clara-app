@@ -7,3 +7,5 @@ escreverLiteralClara_ usa o escape nativo por apóstrofo para texto literal e pr
 Validação: testes sintéticos de gravação e recuperação, incluindo texto numérico, zeros iniciais, apóstrofos e texto com sinal de igual. O mock rejeita qualquer chamada de formatação. Regressões eGO e Idealista passaram. Testes de integração em cópias de tabelas tipadas confirmaram escrita e reposição sem alterar formatos.
 
 A transação completa com a leitura original do utilizador ainda aguarda validação. Não confundir os testes em cópias com uma gravação operacional concluída.
+
+Validação operacional posterior concluída: gravação pelo painel eGO: estado com leitura original, seguida de reabertura do documento e conferência dos valores persistidos, cinco idiomas e histórico. A transação terminou com sucesso. A indicação anterior de validação pendente fica resolvida.
