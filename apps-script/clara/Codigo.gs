@@ -122,6 +122,8 @@ function resumoSemanal(dias) {
   return { de: fmt(de), ate: fmt(hoje), linhas: linhas, corrigidas: corrigidas, novas: novas, aSara: aSara };
 }
 function htmlResumo_(r) {
+  const fimResumo = String(r.ate || '').split('/').reverse().join('-');
+  const pedidoLeadsEstaSemana = fimResumo >= '2026-10-19' && fimResumo <= '2026-10-25';
   const e = function (s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
   const td = 'border:1px solid #d7dde0;padding:8px;vertical-align:top;text-align:left';
   const cel = function (a, vazio) { return a.length ? a.map(function (x) { return '<div>' + e(x) + '</div>'; }).join('') : '<span style="color:#6b7b80">' + vazio + '</span>'; };
@@ -130,7 +132,7 @@ function htmlResumo_(r) {
     '<table style="border-collapse:collapse;width:100%"><thead><tr>' + ['Imóvel', 'Trabalho realizado / verificação', 'Para a tua análise'].map(function (h) { return '<th style="' + td + ';background:#edf1f2">' + h + '</th>'; }).join('') + '</tr></thead><tbody>' +
     r.linhas.map(function (l) { return '<tr><th scope="row" style="' + td + '">' + e(l.ref) + '</th><td style="' + td + '">' + cel(l.trabalho, 'Sem trabalho neste período.') + '</td><td style="' + td + '">' + cel(l.pendente, 'Nada pendente.') + '</td></tr>'; }).join('') +
     '</tbody></table><p>O detalhe está no separador Pendências da equipa do levantamento.</p>' +
-    '<p><strong>Relatórios de leads do eGO</strong><br>Para preparar um relatório de progressão baseado em dados reais, preciso de acesso a relatórios com o número de leads por dia e a respetiva origem no eGO. Neste momento não consigo consultar esta informação no eGO. Podes ajudar-me a obter estes relatórios? Preciso apenas das contagens diárias por origem, sem informação individual de cada lead.</p><p>Obrigada,<br>Andreia</p></div>';
+    (pedidoLeadsEstaSemana ? '<p><strong>Relatórios de leads do eGO</strong><br>Para preparar um relatório de progressão baseado em dados reais, preciso de acesso a relatórios com o número de leads por dia e a respetiva origem no eGO. Neste momento não consigo consultar esta informação no eGO. Podes ajudar-me a obter acesso a estes relatórios na plataforma? Preciso apenas das contagens diárias por origem, sem informação individual de cada lead. Depois de ter acesso, consigo consultar os relatórios autonomamente de quinze em quinze dias.</p>' : '') + '<p>Obrigada,<br>Andreia</p></div>';
 }
 function previewResumo(dias) { const r = resumoSemanal(dias); r.html = htmlResumo_(r); r.assunto = 'Anúncios: ponto de situação de ' + r.de + ' a ' + r.ate; return r; }
 
