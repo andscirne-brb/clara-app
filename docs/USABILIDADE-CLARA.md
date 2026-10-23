@@ -17,3 +17,5 @@ Reduzir o esforço para recolher, rever e guardar, mantendo confirmação humana
 Testes sintéticos de estado, resposta antiga, alteração de documentos, clique duplo, recuperação, pesquisa sem acentos, cópia recusada, tempo limite e idiomas inacessíveis. Regressões eGO, Idealista, dashboard e marcador compacto incluídas na validação automática.
 
 O novo painel foi renderizado no navegador integrado no documento ligado. A ligação RPC desse navegador devolve PERMISSION_DENIED. No acesso automático ao Chrome, os painéis HTML ficaram vazios, incluindo Progresso. Foi solicitada confirmação humana do carregamento no Chrome; esta validação continua pendente. Não declarar validação completa da gravação pela nova interface só pelos testes ou pela renderização inicial. A gravação de dados não foi repetida nesta revisão.
+
+Na instalação, a cópia usa a API da área de transferência e, se recusada, seleciona o código e pede Ctrl+C. Não declara cópia automática confirmada apenas por uma seleção. A cópia por teclado foi conferida integralmente com o código do marcador gerado.

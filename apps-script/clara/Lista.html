@@ -41,7 +41,7 @@ function mostrar(orig){
   h+='<p class="muted">Carrega numa referência para ir à linha no Sheet.</p>';
   document.getElementById('out').innerHTML=h;
 }
-function carregar(){document.getElementById('out').textContent='A carregar…';google.script.run.withSuccessHandler(mostrar).withFailureHandler(e=>document.getElementById('out').textContent=e.message).listaTrabalho();}
+function carregar(){document.getElementById('out').textContent='A carregar…';google.script.run.withSuccessHandler(mostrar).withFailureHandler(e=>document.getElementById('out').textContent=/PERMISSION_DENIED|authorization/i.test(e.message||'')?'Esta sessão Google não permitiu aceder à folha. Reabre o documento com a conta autorizada.':e.message).listaTrabalho();}
 document.getElementById('pesquisa').addEventListener('input',()=>{if(dadosLista)mostrar(dadosLista);});
 carregar();
 </script>
