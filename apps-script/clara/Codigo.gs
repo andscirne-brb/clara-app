@@ -327,6 +327,25 @@ function escreverLiteralClara_(cel,valor){
   // Escape nativa do Sheets; não altera formatos das colunas tipadas.
   cel.setValue(typeof valor==='string'&&valor!==''?"'"+valor:valor);
 }
+// Agrupa apenas células planeadas contíguas: nunca inclui fórmulas ou intervalos intermédios.
+function lotesGravacaoClara_(plano) {
+  const linhas = {};
+  plano.forEach(function(p){const k=p.sh.getName()+'|'+p.linha;(linhas[k]||(linhas[k]=[])).push(p);});
+  const lotes=[];
+  Object.keys(linhas).forEach(function(k){
+    const ps=linhas[k].sort(function(a,b){return a.col-b.col;});let atual=null;
+    ps.forEach(function(p){if(!atual||p.col!==atual.col+atual.itens.length){atual={sh:p.sh,linha:p.linha,col:p.col,itens:[]};lotes.push(atual);}atual.itens.push(p);});
+  });
+  return lotes.map(function(l){l.rg=l.sh.getRange(l.linha,l.col,1,l.itens.length);return l;});
+}
+function conferirLotesClara_(lotes,antes){
+  lotes.forEach(function(l){const vs=l.rg.getValues()[0],fs=l.rg.getFormulas()[0],fm=l.rg.getNumberFormats()[0];
+    l.itens.forEach(function(p,i){if(fs[i]||!mesmoValor_(vs[i],antes?p.antes:p.depois)||fm[i]!==p.antesFormato)throw new Error('A conferência não corresponde ao valor previsto em '+l.sh.getName()+'!'+p.cel.getA1Notation()+'.');});
+  });
+}
+function escreverLoteClara_(l,antes){
+  l.rg.setValues([l.itens.map(function(p){const v=antes?p.antes:p.depois;return typeof v==='string'&&v!==''?"'"+v:v;})]);
+}
 function mesmoValor_(a, b) {
   if(a instanceof Date && b instanceof Date)return a.getTime()===b.getTime();
   // O Sheets normaliza as quebras de linha; não ignorar outras diferenças.
@@ -358,7 +377,7 @@ function gravar(texto, docs) {
       const key = sh.getName() + '|' + linha + '|' + col;
       if (vistos[key]) throw new Error('Alterações repetidas na mesma célula. Não gravei alterações.');
       vistos[key] = true;
-      plano.push({ cel: cel, antes: antes, depois: novo, antesFormato: cel.getNumberFormat() });
+      plano.push({ cel: cel, sh: sh, linha: linha, col: col, antes: antes, depois: novo, antesFormato: cel.getNumberFormat() });
       if (!semHistorico) historico.push({ onde: sh.getName(), campo: campo, antes: textoHistorico_(antes), depois: textoHistorico_(novo), pendencia: pendencia || '' });
     }
     function vagas(sh, inicio, quantidade) {
@@ -424,18 +443,18 @@ function gravar(texto, docs) {
       const dados = { 'Data da alteração': hoje, 'Referência EGO': a.ref, 'ID da pendência': h.pendencia, 'Autor': 'Andreia', 'Onde foi alterado': 'Levantamento', 'Campo / assunto': h.onde + ' · ' + h.campo, 'Antes': h.antes, 'Depois / alteração realizada': h.depois, 'Motivo / fonte': (a.url || 'Leitura da Clara') + ' · operação ' + idOperacao, 'Resultado da verificação': 'Por verificar' };
       Object.keys(dados).forEach(function (nome) { if (hs.col(nome)) agendar(hs.sh, lugares[i], hs.col(nome), dados[nome], '', '', true); });
     });
-    // Reconferir todas as células antes da primeira escrita, incluindo vagas e histórico.
-    plano.forEach(function (p) { if (p.cel.getFormula() || !mesmoValor_(p.cel.getValue(), p.antes) || p.cel.getNumberFormat()!==p.antesFormato) throw new Error('Uma célula mudou entretanto. Analisa novamente antes de gravar.'); });
-
+    // Leituras e escritas por intervalos, preservando comparação estrita e recuperação.
+    const lotes=lotesGravacaoClara_(plano);
+    conferirLotesClara_(lotes,true);
     try {
-      plano.forEach(function (p) { aplicados.push(p); escreverLiteralClara_(p.cel, p.depois); });
+      lotes.forEach(function(l){aplicados.push(l);escreverLoteClara_(l,false);});
       SpreadsheetApp.flush();
-      plano.forEach(function (p) { if (p.cel.getFormula() || !mesmoValor_(p.cel.getValue(), p.depois)) throw new Error('A leitura após gravação não corresponde ao valor previsto em '+p.cel.getSheet().getName()+'!'+p.cel.getA1Notation()+'.'); });
-    } catch (err) {
-      let falhou = false;
-      aplicados.reverse().forEach(function (p) { try { escreverLiteralClara_(p.cel, p.antes); } catch (e) { falhou = true; } });
-      try { SpreadsheetApp.flush(); aplicados.forEach(function(p){if(p.cel.getFormula()||!mesmoValor_(p.cel.getValue(),p.antes)||p.cel.getNumberFormat()!==p.antesFormato)falhou=true;}); } catch (e) { falhou = true; }
-      throw new Error((falhou ? 'A gravação falhou e a recuperação ficou incompleta. Confere o histórico de versões do Sheets antes de repetir. ' : 'A gravação falhou e as células foram repostas. ') + err.message);
+      conferirLotesClara_(lotes,false);
+    } catch(err) {
+      let falhou=false;
+      aplicados.reverse().forEach(function(l){try{escreverLoteClara_(l,true);}catch(e){falhou=true;}});
+      try{SpreadsheetApp.flush();conferirLotesClara_(aplicados,true);}catch(e){falhou=true;}
+      throw new Error((falhou?'A gravação falhou e a recuperação ficou incompleta. Confere o histórico de versões do Sheets antes de repetir. ':'A gravação falhou e as células foram repostas. ')+err.message);
     }
     return { ref: a.ref, escritos: a.campos.filter(function (x) { return String(x.atual) !== String(x.novo); }).length, textos: a.textos.length, historico: historico.length, criadas: criadas, reabertas: reabertas, confirmadas: confirmadas };
   } finally { lock.releaseLock(); }

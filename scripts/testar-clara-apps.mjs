@@ -30,6 +30,8 @@ class Range {
  getSheet(){return this.sh}
  getNumberFormat(){return this.sh.formats.get(`${this.r},${this.c}`)??'0.###############'}
  setNumberFormat(v){this.sh.formats.set(`${this.r},${this.c}`,v);return this}
+ getNumberFormats(){return Array.from({length:this.n},(_,i)=>Array.from({length:this.m},(_,j)=>this.sh.formats.get(`${this.r+i},${this.c+j}`)??'0.###############'))}
+ setValues(vs){vs.forEach((row,i)=>row.forEach((v,j)=>new Range(this.sh,this.r+i,this.c+j,1,1).setValue(v)));return this}
  getValues(){return Array.from({length:this.n},(_,i)=>Array.from({length:this.m},(_,j)=>this.sh.cells.get(`${this.r+i},${this.c+j}`)??''))}
  getDisplayValues(){return this.getValues().map(r=>r.map(v=>v instanceof Date?'22/10/2026':String(v)))}
  getFormulas(){return Array.from({length:this.n},(_,i)=>Array.from({length:this.m},(_,j)=>this.sh.forms.get(`${this.r+i},${this.c+j}`)??''))}
@@ -114,3 +116,13 @@ const stable=snapshot(f);save(f,d,pendingDocs);assert.equal(snapshot(f),stable);
 f=fixture();f.pend.seed(6,['P0001','TESTE-001','Documentos','Documentos obrigatórios sem ficheiro no eGO','Faltam quatro documentos','Ação antiga','Equipa teste','Alta','Em curso']);
 save(f,d,{...pendingDocs,contrato:''});assert.equal(get(f.pend,6,5),'Faltam quatro documentos');
 console.log('PASS pendências: resolução parcial atualiza evidência, preserva gestão e histórico, não repete, leitura documental incompleta não reduz faltas.');
+
+f=fixture();let batchWrites=0,singleWrites=0;const originalBatch=Range.prototype.setValues,originalSingle=Range.prototype.setValue;
+Range.prototype.setValues=function(vs){batchWrites++;return originalBatch.call(this,vs)};
+Range.prototype.setValue=function(v){singleWrites++;return originalSingle.call(this,v)};
+try{save(f,payload());assert(batchWrites<singleWrites/3,'muito menos escritas remotas por intervalo');}finally{Range.prototype.setValues=originalBatch;Range.prototype.setValue=originalSingle;}
+// A gap with a formula must not enter a write batch.
+f=fixture();f.lev.forms.set('10,3','=FORMULA_SEGURA()');
+const ps=[2,4].map(col=>({sh:f.lev,linha:10,col,cel:f.lev.getRange(10,col),antes:'',depois:'Novo',antesFormato:'0.###############'}));
+assert.equal(f.context.lotesGravacaoClara_(ps).length,2);
+console.log('PASS lotes: menos chamadas de escrita; lacunas e fórmulas não incluídas.');
