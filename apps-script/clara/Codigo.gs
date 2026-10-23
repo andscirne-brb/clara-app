@@ -26,34 +26,7 @@ function onOpen() {
   try {const ss=SpreadsheetApp.getActive(),d=ss.getSheetByName('Dashboard');if(d&&d.getRange('A2').getValue()==='Resultados dos portais')atualizarDashboardVisual();} catch(e){console.warn('Dashboard: '+e.message);}
 }
 
-function formulaEstadosDocumentaisClara_(formula){
-  // COUNTIF/COUNTIFS incluem as variantes; categorias identificam cada documento.
-  return formula.replace(/((?:COUNTIFS?|CONTAR\.SE(?:\.S)?)\([^)]*[,;])"Em falta"(?=\s*\))/gi,'$1"Em falta*"').replace(/(\$?[OPQR]\$?\d+)="Em falta"/g,function(_,cel){const sep=formula.indexOf(';')>=0?';':',';return 'LEFT('+cel+sep+'8)="Em falta"';});
-}
-function prepararEstadosDocumentaisClara(){
-  const props=PropertiesService.getDocumentProperties();if(props.getProperty('clara.documentos.estados.v1')==='ok')return;
-  const lock=LockService.getDocumentLock();if(!lock.tryLock(1000))throw Error('Há uma gravação em curso. Aguarda e reabre o painel.');
-  try{
-    if(props.getProperty('clara.documentos.estados.v1')==='ok')return;
-    const sh=SpreadsheetApp.getActive().getSheetByName(LEV.nome),n=sh.getLastRow()-LEV.titulos;if(n<1)return;
-    const headers=sh.getRange(LEV.titulos,1,1,sh.getLastColumn()).getDisplayValues()[0];if(DOCS.some(function(x,i){return headers[14+i]!==x[1];})||headers[25]!=='Categorias com faltas'||headers[26]!=='Categorias identificadas')throw Error('A estrutura do Levantamento mudou; estados documentais não foram alterados.');
-    const rg=sh.getRange(LEV.titulos+1,26,n,2),fs=rg.getFormulas(),vs=rg.getValues(),old=vs.map(function(row,i){return row.map(function(v,j){return fs[i][j]||(typeof v==='string'&&v!==''?"'"+v:v);});}),next=old.map(function(row){return row.slice();});let mudou=false;
-    fs.forEach(function(row,i){row.forEach(function(f,j){if(f){next[i][j]=formulaEstadosDocumentaisClara_(f);if(next[i][j]!==f)mudou=true;}});});
-    const dr=sh.getRange(LEV.titulos+1,15,n,4),valid=dr.getDataValidations(),rules=sh.getConditionalFormatRules(),changes=[];
-    const labels=['Em falta no eGO · verificar dossier','Em falta no eGO e no dossier · aguarda Sara'];
-    valid.forEach(function(row,i){row.forEach(function(rule,j){if(rule&&rule.getCriteriaType()===SpreadsheetApp.DataValidationCriteria.VALUE_IN_LIST){const a=rule.getCriteriaValues(),list=a[0].slice();labels.forEach(function(t){if(list.indexOf(t)<0)list.push(t);});changes.push({row:i,col:j,old:rule,novo:rule.copy().requireValueInList(list,a[1]).build()});}});});
-    try{
-      if(mudou)rg.setValues(next);
-      if(changes.length){const nv=valid.map(function(row){return row.slice();});changes.forEach(function(x){nv[x.row][x.col]=x.novo;});dr.setDataValidations(nv);}
-      sh.setConditionalFormatRules([SpreadsheetApp.newConditionalFormatRule().whenTextContains('Em falta').setBackground('#fce8e6').setFontColor('#a23224').setRanges([dr]).build()].concat(rules));
-      SpreadsheetApp.flush();const got=rg.getFormulas();fs.forEach(function(row,i){row.forEach(function(f,j){if(f&&got[i][j]!==next[i][j])throw Error('A fórmula documental não ficou guardada como previsto.');});});
-      props.setProperty('clara.documentos.estados.v1','ok');
-    }catch(e){if(mudou)rg.setValues(old);if(changes.length)dr.setDataValidations(valid);sh.setConditionalFormatRules(rules);SpreadsheetApp.flush();throw e;}
-  }finally{lock.releaseLock();}
-}
-
 function abrirPainel() {
-  prepararEstadosDocumentaisClara();
   SpreadsheetApp.getUi().showSidebar(HtmlService.createHtmlOutput(PAINEL_HTML).setTitle('Clara'));
 }
 
@@ -295,10 +268,20 @@ function analisar(texto, docs) {
   DOCS.forEach(function (x) {
     const v = docs && docs[x[0]];
     if (v === 'sim') prop(x[1], 'Preenchido', 'ficha do EGO');
-    else if (v === 'nao' || v === 'sem_dossier') { prop(x[1], v === 'sem_dossier' ? 'Em falta no eGO e no dossier · aguarda Sara' : 'Em falta no eGO · verificar dossier', v === 'sem_dossier' ? 'Sem ficheiro no eGO nem no dossier; aguarda Sara.' : 'ficha do EGO'); emFalta.push(x[2]); (v === 'sem_dossier' ? semDossier : verificarDossier).push(x[2]); }
+    else if (v === 'nao' || v === 'sem_dossier') { prop(x[1], 'Em falta', v === 'sem_dossier' ? 'Sem ficheiro no eGO nem no dossier; aguarda Sara.' : 'ficha do EGO'); emFalta.push(x[2]); (v === 'sem_dossier' ? semDossier : verificarDossier).push(x[2]); }
     else if (v === 'categoria') { prop(x[1], 'Categoria errada', 'o ficheiro existe mas está noutra categoria'); noutra.push(x[2]); }
     else if (v === 'na') prop(x[1], 'Não aplicável', 'não se aplica a este imóvel');
   });
+  // Distingue o dossier no Levantamento sem alterar os estados usados pelas fórmulas.
+  if(c.col('Observações / justificação N/A')){
+    const anterior=String(atual[c.col('Observações / justificação N/A')-1]||'');let linhas=anterior.split(/\r?\n/);
+    DOCS.forEach(function(x){const v=docs&&docs[x[0]];if(['sim','nao','sem_dossier','categoria','na'].indexOf(v)<0)return;
+      const prefixo=x[2]+': ';linhas=linhas.filter(function(l){return l.indexOf(prefixo)!==0;});
+      if(v==='nao')linhas.push(prefixo+'em falta no eGO; dossier por verificar.');
+      if(v==='sem_dossier')linhas.push(prefixo+'em falta no eGO e no dossier; aguarda análise da Sara.');
+    });
+    const novo=linhas.filter(Boolean).join('\n');if(novo!==anterior)prop('Observações / justificação N/A',novo,'Situação documental por documento; outras observações preservadas.');
+  }
   if (emFalta.length) nova('Documentos', 'Documentos obrigatórios sem ficheiro no eGO', 'Na ficha do eGO sem ficheiro: ' + emFalta.join(', ') + ' (' + hoje + ').' + (semDossier.length ? ' Confirmado também em falta no dossier: ' + semDossier.join(', ') + '.' : ''), (verificarDossier.length ? 'Verificar no dossier do escritório e carregar no eGO: ' + verificarDossier.join(', ') + '. ' : '') + (semDossier.length ? 'Aguardar análise da Sara: ' + semDossier.join(', ') + '.' : 'Se não estiverem no dossier, pedir esclarecimento à Sara.'), 'eGO', semDossier.length > 0);
   if (noutra.length) nova('Documentos', 'Documentos na categoria errada no eGO', 'Na ficha do eGO, carregados noutra categoria: ' + noutra.join(', ') + ' (' + hoje + ').', 'Mover cada ficheiro para a categoria certa no bloco Documentos do eGO.');
   // A folha calcula o estado global a partir de vazios/Por verificar.

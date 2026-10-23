@@ -1,5 +1,9 @@
 # Diferenciação documental no Levantamento
 
-As quatro colunas documentais guardam Em falta no eGO · verificar dossier ou Em falta no eGO e no dossier · aguarda Sara, conforme a escolha manual explícita no painel. Estados antigos Em falta não são inferidos nem reclassificados. A gravação existente conserva antes/depois no histórico.
+As colunas documentais mantêm o estado Em falta, compatível com as fórmulas e tabelas existentes. A diferença é guardada, por documento, em Observações / justificação N/A:
+- Nome do documento: em falta no eGO; dossier por verificar.
+- Nome do documento: em falta no eGO e no dossier; aguarda análise da Sara.
 
-Ao reabrir eGO: estado, uma preparação idempotente adapta a contagem e lista de categorias às variantes Em falta, acrescenta os valores a validações por lista existentes e mantém destaque visual de falta. Valida os cabeçalhos antes, preserva as restantes regras e repõe fórmulas/validação/regras se ocorrer erro. Não altera valores documentais históricos. Propriedade do documento evita repetir a preparação em cada abertura. Sem mudanças nos nomes do menu.
+O painel mostra o texto na revisão antes de guardar e o histórico conserva o antes/depois. Desconhecido preserva a nota anterior. Ao confirmar ficheiro presente, remove apenas a linha documental correspondente. Outras observações são mantidas. Não infere a situação de registos antigos.
+
+A tentativa inicial de alterar fórmulas da tabela foi rejeitada na conferência e revertida. A solução final não altera fórmulas, tipos, validações nem regras de formatação da folha. Não há preparação/migração a executar ao abrir o painel.
