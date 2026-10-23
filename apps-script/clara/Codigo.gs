@@ -144,10 +144,11 @@ function mostrarMarcador() {
     '<p><b>1.</b> Arrasta este botão para a barra de marcadores do navegador:</p>' +
     '<p style="text-align:center"><a href="' + codigo + '" style="display:inline-block;padding:8px 18px;background:#1a73e8;color:#fff;border-radius:6px;text-decoration:none;font-weight:bold">Clara</a></p>' +
     '<p>Se não der para arrastar: cria um marcador novo, chama-lhe <b>Clara</b> e cola isto no endereço:</p>' +
-    '<textarea style="width:100%;height:90px;font-size:11px" onclick="this.select()">' + codigo.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</textarea>' +
+    '<label for="codigoMarcador">Código para o endereço do marcador</label><textarea id="codigoMarcador" style="width:100%;height:72px;font-size:11px" onclick="this.select()">' + codigo.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</textarea>' +
+    '<button style="background:#087f8c;color:white;border:0;border-radius:6px;padding:9px 14px" onclick="var t=document.getElementById(&quot;codigoMarcador&quot;);t.select();document.getElementById(&quot;estadoCopia&quot;).textContent=document.execCommand(&quot;copy&quot;)?&quot;Código copiado. Substitui o endereço do marcador Clara que já tens.&quot;:&quot;Texto selecionado. Copia com Ctrl+C.&quot;;">Copiar código</button><p id="estadoCopia" role="status" style="font-size:12px;color:#526b78">Atualiza o marcador existente para usar a recolha guiada.</p>' +
     '<p><b>2.</b> No site da Janela ou no Idealista com sessão iniciada, carrega no marcador <b>Clara</b>. Para atualizar um marcador antigo, substitui o seu endereço por este.</p>' +
     '<p><b>3.</b> Para o Idealista: <b>Clara &gt; Idealista: estatísticas</b>, cola (Ctrl+V), revê e guarda. Para imóveis do site da Janela: <b>Clara &gt; eGO: estado</b>.</p></div>';
-  SpreadsheetApp.getUi().showModalDialog(HtmlService.createHtmlOutput(html).setWidth(520).setHeight(430), 'Instalar o marcador Clara');
+  SpreadsheetApp.getUi().showModalDialog(HtmlService.createHtmlOutput(html).setWidth(520).setHeight(540), 'Instalar o marcador Clara');
 }
 
 /* ---------- utilitários ---------- */

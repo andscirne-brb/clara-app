@@ -75,7 +75,7 @@ const dailyRow=(hash,date,key,value)=>['2026-10-23','contactos_diarios','2026-10
 const dailyHistory=chartPayload.diarios.flatMap(x=>['contactos','mensagens','chamadas'].map(k=>dailyRow('one',x.data,k,x[k])));
 const grouped=ctx.dadosGraficoContactosIdealista_(dailyHistory.concat(dailyHistory.map(x=>{const r=[...x];r[10]='two';return r;})),'Europe/Lisbon');assert.equal(grouped.diarios.length,2);assert.equal(grouped.diarios[1].chamadas,1);
 console.log('PASS contactos diários: escala SVG, datas completas, soma igual ao portal, frações rejeitadas, dias repetidos rejeitados e recolhas sobrepostas não somadas.');
-const markerSource=fs.readFileSync(new URL('../apps-script/clara/marcador.js',import.meta.url),'utf8').replace('/* IDEALISTA_COLLECTOR */',fs.readFileSync(new URL('../apps-script/clara/idealista.js',import.meta.url),'utf8')).split(/\r?\n/).map(x=>x.trim()).filter(Boolean).join(' ');
+const markerSource=fs.readFileSync(new URL('../apps-script/clara/marcador.js',import.meta.url),'utf8').replace('/* CLARA_UI */',fs.readFileSync(new URL('../apps-script/clara/marcador-ui.js',import.meta.url),'utf8')).replace('/* IDEALISTA_COLLECTOR */',fs.readFileSync(new URL('../apps-script/clara/idealista.js',import.meta.url),'utf8')).split(/\r?\n/).map(x=>x.trim()).filter(Boolean).join(' ');
 assert.doesNotThrow(()=>new vm.Script(markerSource),'marcador compacto continua válido');
 console.log('PASS sintaxe do marcador compacto com leitura diária assíncrona.');
 

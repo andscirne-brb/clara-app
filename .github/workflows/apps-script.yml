@@ -6,6 +6,7 @@ on:
       - 'scripts/testar-clara-apps.mjs'
       - 'scripts/testar-idealista.mjs'
       - 'scripts/testar-dashboard-visual.mjs'
+      - 'scripts/testar-interface-clara.mjs'
       - 'scripts/construir-clara.py'
       - '.github/workflows/apps-script.yml'
   workflow_dispatch:
@@ -25,5 +26,6 @@ jobs:
       - run: node scripts/testar-clara-apps.mjs
       - run: node scripts/testar-idealista.mjs
       - run: node scripts/testar-dashboard-visual.mjs
+      - run: node scripts/testar-interface-clara.mjs
       - run: python scripts/construir-clara.py
       - run: git diff --exit-code -- apps-script/clara/Clara-completo.gs

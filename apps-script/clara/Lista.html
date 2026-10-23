@@ -1,5 +1,5 @@
 <!doctype html>
-<html><head><base target="_top"><meta charset="utf-8">
+<html lang="pt"><head><base target="_top"><meta charset="utf-8">
 <style>
 body{font-family:Arial,sans-serif;font-size:13px;color:#202124;margin:0;padding:12px}
 h3{font-size:14px;margin:16px 0 6px}
@@ -8,34 +8,41 @@ h3{font-size:14px;margin:16px 0 6px}
 .barra div{background:#188038;height:8px;border-radius:4px}
 .item{border-left:3px solid #1a73e8;background:#f8f9fa;padding:6px 8px;margin:6px 0}
 .item.sara{border-left-color:#f9ab00}
-.item b{cursor:pointer;color:#1a73e8}
+.item .ref{cursor:pointer;color:#087f8c;background:none;border:0;padding:0;margin:0;min-height:28px;font-weight:bold}input{width:100%;box-sizing:border-box;padding:9px;border:1px solid #91a8b4;border-radius:6px;margin:6px 0 10px}button:focus-visible,input:focus{outline:3px solid #79c5d3;outline-offset:2px}
 .item ul{margin:4px 0 0 16px;padding:0}
 a{color:#1a73e8}
 button{background:#fff;color:#1a73e8;border:1px solid #dadce0;border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;margin-top:8px}
 </style></head>
 <body>
-<div id="out">A carregar…</div>
+<label for="pesquisa"><b>Procurar referência ou localidade</b></label><div class="muted">Pesquisa nos imóveis e pendências apresentados neste painel.</div><input id="pesquisa" placeholder="Ex.: APT14077 ou Faro" type="search"><div id="filtro" class="muted" role="status"></div><div id="out" aria-live="polite">A carregar…</div>
 <button onclick="carregar()">Atualizar</button>
 <script>
-function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function ir(sep,l){google.script.run.irPara(sep,l);}
-function liga(u){return u?' · <a href="'+esc(u)+'" target="_blank">página pública</a>':'';}
+function liga(u){return /^https?:\/\//.test(u||'')?' · <a href="'+esc(u)+'" target="_blank">página pública</a>':'';}
 function barra(a,b,t){const p=b?Math.round(100*a/b):0;return '<div>'+t+': <b>'+a+' de '+b+'</b></div><div class="barra"><div style="width:'+p+'%"></div></div>';}
-function mostrar(d){
+let dadosLista=null;
+function normalizar(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
+function mostrar(orig){
+  dadosLista=orig;const q=normalizar(document.getElementById('pesquisa').value),match=x=>!q||normalizar(JSON.stringify(x)).includes(q),d=Object.assign({},orig);
+  ['prioritarios','minhas','sara','perfis','alta'].forEach(k=>d[k]=(orig[k]||[]).filter(match));
+  document.getElementById('filtro').textContent=q?'Resultados filtrados. Limpa a pesquisa para ver tudo.':'';
+
   let h='<h3>Progresso</h3>'+barra(d.contagem['Prioritária'][0],d.contagem['Prioritária'][1],'Prioritários verificados')+barra(d.verificados,d.total,'Todos os imóveis verificados');
   h+='<h3>1. Prioritários por verificar ('+d.prioritarios.length+')</h3>';
-  h+=d.prioritarios.length?d.prioritarios.map(im=>'<div class="item"><b onclick="ir(\'Levantamento\','+im.linha+')">'+esc(im.ref)+'</b> · '+esc(im.natureza)+' · '+esc(im.concelho)+liga(im.url)+'</div>').join(''):'<div class="muted">Todos verificados.</div>';
+  h+=d.prioritarios.length?d.prioritarios.map(im=>'<div class="item"><button class="ref" onclick="ir(\'Levantamento\','+im.linha+')">'+esc(im.ref)+'</button> · '+esc(im.natureza)+' · '+esc(im.concelho)+liga(im.url)+'</div>').join(''):'<div class="muted">'+(q?'Sem correspondência.':'Todos verificados.')+'</div>';
   h+='<h3>2. As tuas pendências ('+d.minhas.reduce((n,x)=>n+x.pendencias.length,0)+' em '+d.minhas.length+' imóveis)</h3>';
-  h+=d.minhas.length?d.minhas.map(im=>'<div class="item"><b onclick="ir(\'Pendências da equipa\','+im.pendencias[0].linha+')">'+esc(im.ref)+'</b> '+(im.prioridade==='Prioritária'?'· prioritário':'')+liga(im.url)+'<ul>'+im.pendencias.map(p=>'<li>'+esc(p.assunto)+'<div class="muted">'+esc(p.acao)+'</div></li>').join('')+'</ul></div>').join(''):'<div class="muted">Nenhuma.</div>';
+  h+=d.minhas.length?d.minhas.map(im=>'<div class="item"><button class="ref" onclick="ir(\'Pendências da equipa\','+im.pendencias[0].linha+')">'+esc(im.ref)+'</button> '+(im.prioridade==='Prioritária'?'· prioritário':'')+liga(im.url)+'<ul>'+im.pendencias.map(p=>'<li>'+esc(p.assunto)+'<div class="muted">'+esc(p.acao)+'</div></li>').join('')+'</ul></div>').join(''):'<div class="muted">Nenhuma.</div>';
   h+='<h3>3. À espera da Sara ('+d.sara.length+')</h3>';
-  h+=d.sara.length?d.sara.map(p=>'<div class="item sara"><b onclick="ir(\'Pendências da equipa\','+p.linha+')">'+esc(p.ref)+'</b> · '+esc(p.assunto)+'</div>').join(''):'<div class="muted">Nenhuma.</div>';
+  h+=d.sara.length?d.sara.map(p=>'<div class="item sara"><button class="ref" onclick="ir(\'Pendências da equipa\','+p.linha+')">'+esc(p.ref)+'</button> · '+esc(p.assunto)+'</div>').join(''):'<div class="muted">Nenhuma.</div>';
   h+='<h3>4. Perfis dos portais ('+d.perfis.length+')</h3>';
-  h+=d.perfis.length?d.perfis.map(p=>'<div class="item"><b onclick="ir(\''+(p.origem==='Perfis dos portais'?'Perfis dos portais':'Pendências da equipa')+'\','+p.linha+')">'+esc(p.portal)+'</b> · '+esc(p.assunto)+(p.url?' · <a href="'+esc(p.url)+'" target="_blank">perfil</a>':'')+'<div class="muted">'+esc(p.estado)+': '+esc(p.acao)+'</div></div>').join(''):'<div class="muted">Nada em aberto.</div>';
-  if(!d.prioritarios.length&&d.altaTotal)h+='<h3>Depois: prioridade Alta por verificar ('+d.altaTotal+')</h3>'+d.alta.map(im=>'<div class="item"><b onclick="ir(\'Levantamento\','+im.linha+')">'+esc(im.ref)+'</b> · '+esc(im.natureza)+' · '+esc(im.concelho)+liga(im.url)+'</div>').join('');
+  h+=d.perfis.length?d.perfis.map(p=>'<div class="item"><button class="ref" onclick="ir(\''+(p.origem==='Perfis dos portais'?'Perfis dos portais':'Pendências da equipa')+'\','+p.linha+')">'+esc(p.portal)+'</button> · '+esc(p.assunto)+(p.url?' · <a href="'+esc(p.url)+'" target="_blank">perfil</a>':'')+'<div class="muted">'+esc(p.estado)+': '+esc(p.acao)+'</div></div>').join(''):'<div class="muted">Nada em aberto.</div>';
+  if(!orig.prioritarios.length&&d.altaTotal)h+='<h3>Depois: prioridade Alta por verificar ('+d.altaTotal+')</h3>'+d.alta.map(im=>'<div class="item"><button class="ref" onclick="ir(\'Levantamento\','+im.linha+')">'+esc(im.ref)+'</button> · '+esc(im.natureza)+' · '+esc(im.concelho)+liga(im.url)+'</div>').join('');
   h+='<p class="muted">Carrega numa referência para ir à linha no Sheet.</p>';
   document.getElementById('out').innerHTML=h;
 }
 function carregar(){document.getElementById('out').textContent='A carregar…';google.script.run.withSuccessHandler(mostrar).withFailureHandler(e=>document.getElementById('out').textContent=e.message).listaTrabalho();}
+document.getElementById('pesquisa').addEventListener('input',()=>{if(dadosLista)mostrar(dadosLista);});
 carregar();
 </script>
 </body></html>

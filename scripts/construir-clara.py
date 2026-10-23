@@ -13,6 +13,7 @@ painel = (base / 'Painel.html').read_text(encoding='utf-8')
 lista = (base / 'Lista.html').read_text(encoding='utf-8')
 resumo = (base / 'Resumo.html').read_text(encoding='utf-8')
 marc = (base / 'marcador.js').read_text(encoding='utf-8')
+marc = marc.replace('/* CLARA_UI */', (base / 'marcador-ui.js').read_text(encoding='utf-8'))
 marc = marc.replace('/* IDEALISTA_COLLECTOR */', (base / 'idealista.js').read_text(encoding='utf-8'))
 marc = ' '.join(l.strip() for l in marc.splitlines() if l.strip())
 out = codigo + '\n/* ---------- gerado por scripts/construir-clara.py: não editar à mão ---------- */\n'
