@@ -23,16 +23,25 @@ function simplificarPendenciasEquipa() {
   s.setFrozenColumns(0);
   s.getRange('A1:Q4').breakApart().clearContent();
   s.getRange('B2:Q2').merge().setValue('Pendências da equipa').setFontSize(20).setFontWeight('bold').setFontColor('#183746');
-  s.getRange('B3:Q3').merge().setValue('O que falta fazer · quem acompanha · de quem precisamos de resposta. Usa os filtros nos cabeçalhos.').setFontSize(10).setFontColor('#607786');
+  s.getRange('B3:Q3').merge().setValue('O que falta fazer · quem é responsável · qual é o estado. Usa os filtros nos cabeçalhos.').setFontSize(10).setFontColor('#607786');
   s.getRange('B4:Q4').merge().setValue('Detalhes e histórico preservados em colunas ocultas. Para consultar tarefas concluídas, ajusta o filtro Estado.').setFontSize(9).setFontColor('#607786');
   s.showColumns(1,17);
-  [[1,1],[3,1],[5,1],[8,1],[10,1],[12,5]].forEach(x=>s.hideColumns(x[0],x[1]));
-  [[2,125],[4,220],[6,330],[7,100],[9,175],[11,115],[17,130]].forEach(x=>s.setColumnWidth(x[0],x[1]));
+  [[1,1],[3,1],[5,1],[8,1],[10,1],[12,6]].forEach(x=>s.hideColumns(x[0],x[1]));
+  [[2,125],[4,245],[6,355],[7,125],[9,195],[11,140]].forEach(x=>s.setColumnWidth(x[0],x[1]));
   s.setFrozenRows(5);s.setFrozenColumns(0);s.setHiddenGridlines(true);
   s.getRange(5,1,1,17).setBackground('#183746').setFontColor('#ffffff').setFontWeight('bold').setWrap(true);s.setRowHeight(5,48);
   if(s.getLastRow()>5){s.getRange(6,1,s.getLastRow()-5,17).setFontFamily('Arial').setFontSize(10).setVerticalAlignment('top').setWrap(true);s.autoResizeRows(6,s.getLastRow()-5);}
+  const dados=s.getLastRow()>5?s.getRange(6,1,s.getLastRow()-5,17).getValues():[],h=SpreadsheetApp.getActive().getSheetByName('Registo de alterações'),agora=Utilities.formatDate(new Date(),SpreadsheetApp.getActive().getSpreadsheetTimeZone(),'yyyy-MM-dd');
+  const hc=h?colunas_(h,5):null,registos=[];
+  dados.forEach(function(r,i){if(r[8]!=='A aguardar esclarecimento')return;if(r[6]!=='Sara'){
+    if(!hc)throw Error('Falta histórico para registar a mudança de responsável.');
+    const linha=Array(hc.titulos.length).fill(''),campos={'Data da alteração':agora,'Referência EGO':r[1],'ID da pendência':r[0],'Autor':'Andreia','Onde foi alterado':'Pendências da equipa','Campo / assunto':'Responsável','Antes':r[6],'Depois / alteração realizada':'Sara','Motivo / fonte':'Regra aprovada: aguardar esclarecimento atribui a tarefa à Sara.','Resultado da verificação':'Confirmado'};
+    Object.keys(campos).forEach(k=>{if(hc.col(k))linha[hc.col(k)-1]=campos[k];});registos.push(linha);
+  }});
+  if(registos.length)h.getRange(h.getLastRow()+1,1,registos.length,hc.titulos.length).setValues(registos);
+  dados.forEach(function(r,i){if(r[8]==='A aguardar esclarecimento'){if(r[6]!=='Sara')s.getRange(i+6,7).setValue('Sara');if(r[16]!=='Sara')s.getRange(i+6,17).setValue('Sara');}});
   SpreadsheetApp.flush();
-  return {colunasVisiveis:7,registos:Math.max(0,s.getLastRow()-5)};
+  return {colunasVisiveis:6,registos:Math.max(0,s.getLastRow()-5)};
 }
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Clara')
@@ -350,7 +359,7 @@ function analisar(texto, docs) {
   ps.getRange(PEND.titulos + 1, 1, Math.max(1, ps.getLastRow() - PEND.titulos), 17).getDisplayValues().forEach(function (r, i) {
     if (!r[1] || r[1].toUpperCase() !== ref) return;
     const key = r[1].toUpperCase() + '|' + r[3];
-    const registro = { id: r[0], linha: PEND.titulos + 1 + i, estado: r[8], aguarda: r[16], evidencia: r[4], acao: r[5] };
+    const registro = { id: r[0], linha: PEND.titulos + 1 + i, estado: r[8], aguarda: r[16], responsavel: r[6], evidencia: r[4], acao: r[5] };
     if (!existentes[key] || existentes[key].estado === 'Concluído') existentes[key] = registro;
     const aberta = r[8] !== 'Concluído' && r[8] !== 'Não aplicável';
     if (aberta && verificaveis[r[3]] && !detetados[r[3]]) resolvidas.push({ id: r[0], assunto: r[3], linha: PEND.titulos + 1 + i });
@@ -359,13 +368,13 @@ function analisar(texto, docs) {
     const ex = existentes[ref + '|' + p.assunto];
     p.jaExiste = ex ? ex.id : ''; p.linhaExistente = ex ? ex.linha : 0;
     p.reabrir = !!ex && ex.estado === 'Concluído';
-    p.atualizar = !!ex && ex.estado !== 'Concluído' && ex.estado !== 'Não aplicável' && (p.tema === 'Documentos' ? todosVistos : !!verificaveis[p.assunto]) && (ex.evidencia !== p.evidencia || ex.acao !== p.acao || (p.sara && ex.aguarda !== 'Sara'));
+    p.atualizar = !!ex && ex.estado !== 'Concluído' && ex.estado !== 'Não aplicável' && (p.tema === 'Documentos' ? todosVistos : !!verificaveis[p.assunto]) && (ex.evidencia !== p.evidencia || ex.acao !== p.acao || (p.sara && (ex.aguarda !== 'Sara' || ex.responsavel !== 'Sara')));
     p.delegarSara = !!ex && ex.estado !== 'Concluído' && ex.estado !== 'Não aplicável' && p.sara;
     if (p.delegarSara && !todosVistos) {
       const aviso = 'Confirmado sem ficheiro no eGO nem no dossier; aguarda Sara: ' + semDossier.join(', ') + '.';
       p.evidencia = ex.evidencia.indexOf(aviso) >= 0 ? ex.evidencia : ex.evidencia + ' ' + aviso;
       p.acao = ex.acao.indexOf(aviso) >= 0 ? ex.acao : ex.acao + ' ' + aviso;
-      p.atualizar = ex.evidencia !== p.evidencia || ex.acao !== p.acao || ex.aguarda !== 'Sara';
+      p.atualizar = ex.evidencia !== p.evidencia || ex.acao !== p.acao || ex.aguarda !== 'Sara' || ex.responsavel !== 'Sara';
     }
   });
   const mudam = campos.filter(function (x) { return String(x.atual) !== String(x.novo); }).length;
@@ -499,16 +508,16 @@ function gravar(texto, docs) {
     const criadas = [], reabertas = [], confirmadas = [];
     a.pendencias.forEach(function (p) {
       if (p.jaExiste && !p.reabrir) {
-        if (p.atualizar) [[5, p.evidencia], [6, p.acao], [11, hoje]].concat(p.delegarSara ? [[9, 'A aguardar esclarecimento'], [17, 'Sara']] : []).forEach(function (v) { agendar(ps, p.linhaExistente, v[0], v[1], p.assunto + ' · atualização (coluna ' + v[0] + ')', p.jaExiste); });
+        if (p.atualizar) [[5, p.evidencia], [6, p.acao], [11, hoje]].concat(p.delegarSara ? [[7, 'Sara'], [9, 'A aguardar esclarecimento'], [17, 'Sara']] : []).forEach(function (v) { agendar(ps, p.linhaExistente, v[0], v[1], p.assunto + ' · atualização (coluna ' + v[0] + ')', p.jaExiste); });
         return;
       }
       const linha = p.reabrir ? p.linhaExistente : livresP[ip++], id = p.reabrir ? p.jaExiste : 'P' + String(++maxId).padStart(4, '0');
       if (p.reabrir) {
         // Mantém a criação, responsável e prioridade; o histórico conserva a resolução anterior.
-        [[5, p.evidencia], [6, p.acao], [9, p.sara ? 'A aguardar esclarecimento' : 'Por tratar'], [11, hoje], [12, ''], [13, ''], [15, 'Por verificar'], [17, p.sara ? 'Sara' : '']].forEach(function (v) { agendar(ps, linha, v[0], v[1], p.assunto + ' · reabertura (coluna ' + v[0] + ')', id); });
+        [[5, p.evidencia], [6, p.acao]].concat(p.sara ? [[7, 'Sara']] : []).concat([[9, p.sara ? 'A aguardar esclarecimento' : 'Por tratar'], [11, hoje], [12, ''], [13, ''], [15, 'Por verificar'], [17, p.sara ? 'Sara' : '']]).forEach(function (v) { agendar(ps, linha, v[0], v[1], p.assunto + ' · reabertura (coluna ' + v[0] + ')', id); });
         reabertas.push(id + ' ' + p.assunto);
       } else {
-        const values = [id, a.ref, p.tema, p.assunto, p.evidencia, p.acao, p.sara ? 'Por atribuir' : 'Andreia', 'Normal', p.sara ? 'A aguardar esclarecimento' : 'Por tratar', hoje, hoje, '', '', p.onde, 'Por verificar'];
+        const values = [id, a.ref, p.tema, p.assunto, p.evidencia, p.acao, p.sara ? 'Sara' : 'Andreia', 'Normal', p.sara ? 'A aguardar esclarecimento' : 'Por tratar', hoje, hoje, '', '', p.onde, 'Por verificar'];
         values.forEach(function (v, i) { agendar(ps, linha, i + 1, v, p.assunto + ' · coluna ' + (i + 1), id); });
         agendar(ps, linha, 17, p.sara ? 'Sara' : '', p.assunto + ' · aguarda análise', id);
         criadas.push(id + ' ' + p.assunto);
