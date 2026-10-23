@@ -14,6 +14,26 @@ const DOCS = [
   ['licenca', 'Licença Habitação (anexo)', 'Licença de Habitação']
 ];
 
+/** Simplifica a apresentação sem mover registos, alterar estados ou perder detalhes. */
+function simplificarPendenciasEquipa() {
+  const s=SpreadsheetApp.getActive().getSheetByName(PEND.nome);
+  if(!s)throw Error('Pendências da equipa não encontrada.');
+  const cab=s.getRange(5,1,1,17).getDisplayValues()[0];
+  if(cab[0]!=='ID'||cab[8]!=='Estado'||cab[16]!=='Aguarda análise de')throw Error('Estrutura de pendências diferente da esperada.');
+  s.setFrozenColumns(0);
+  s.getRange('A1:Q4').breakApart().clearContent();
+  s.getRange('B2:Q2').merge().setValue('Pendências da equipa').setFontSize(20).setFontWeight('bold').setFontColor('#183746');
+  s.getRange('B3:Q3').merge().setValue('O que falta fazer · quem acompanha · de quem precisamos de resposta. Usa os filtros nos cabeçalhos.').setFontSize(10).setFontColor('#607786');
+  s.getRange('B4:Q4').merge().setValue('Detalhes e histórico preservados em colunas ocultas. Para consultar tarefas concluídas, ajusta o filtro Estado.').setFontSize(9).setFontColor('#607786');
+  s.showColumns(1,17);
+  [[1,1],[3,1],[5,1],[8,1],[10,1],[12,5]].forEach(x=>s.hideColumns(x[0],x[1]));
+  [[2,125],[4,220],[6,330],[7,100],[9,175],[11,115],[17,130]].forEach(x=>s.setColumnWidth(x[0],x[1]));
+  s.setFrozenRows(5);s.setFrozenColumns(0);s.setHiddenGridlines(true);
+  s.getRange(5,1,1,17).setBackground('#183746').setFontColor('#ffffff').setFontWeight('bold').setWrap(true);s.setRowHeight(5,48);
+  if(s.getLastRow()>5){s.getRange(6,1,s.getLastRow()-5,17).setFontFamily('Arial').setFontSize(10).setVerticalAlignment('top').setWrap(true);s.autoResizeRows(6,s.getLastRow()-5);}
+  SpreadsheetApp.flush();
+  return {colunasVisiveis:7,registos:Math.max(0,s.getLastRow()-5)};
+}
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Clara')
     .addItem('Progresso', 'abrirLista')
