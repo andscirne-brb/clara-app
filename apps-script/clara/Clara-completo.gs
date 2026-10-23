@@ -779,6 +779,14 @@ function periodo30Dashboard_(linhas,tz){
  linhas.forEach((r,i)=>{if(r[1]!=='geral'||!r[10])return;const id=String(r[10]),b=lotes[id]||(lotes[id]={inicio:iso(r[2]),fim:iso(r[3]),filtros:String(r[4]),recolha:iso(r[0]),ultima:i,metricas:{}});b.ultima=i;if(typeof r[8]==='number')b.metricas[r[7]]=r[8];});
  return Object.values(lotes).filter(b=>Math.round((Date.parse(b.fim)-Date.parse(b.inicio))/86400000)+1===30).sort((a,b)=>b.fim.localeCompare(a.fim)||b.ultima-a.ultima)[0]||null;
 }
+function leadsMensaisRightmove_(linhas,tz){
+ const iso=v=>v instanceof Date?Utilities.formatDate(v,tz,'yyyy-MM-dd'):String(v||''),meses={};
+ linhas.forEach((r,i)=>{if(String(r[3]).toLowerCase()!=='rightmove')return;const a=iso(r[0]),b=iso(r[1]),k=a.slice(0,7),n=[r[4],r[10],r[11]];
+   if(!/^\d{4}-\d{2}-01$/.test(a)||b.slice(0,7)!==k||b<a||n.some(x=>typeof x!=='number'||!Number.isInteger(x)||x<0)||n[0]!==n[1]+n[2])return;
+   const m={inicio:a,fim:b,total:n[0],chamadas:n[1],emails:n[2],recolha:iso(r[8]),ordem:i},old=meses[k];if(!old||b>old.fim||b===old.fim&&(m.recolha>old.recolha||m.recolha===old.recolha&&i>old.ordem))meses[k]=m;
+ });
+ return Object.keys(meses).sort().map(k=>{const m=meses[k],day=Number(m.fim.slice(-2)),last=new Date(Date.UTC(Number(k.slice(0,4)),Number(k.slice(5,7)),0)).getUTCDate();m.parcial=day<last;m.mes=k;return m;});
+}
 function atualizarDashboardVisual(){const lock=LockService.getDocumentLock();if(!lock.tryLock(1000))return;try{const r=atualizarDashboardVisual_(SpreadsheetApp.getActive());console.log(JSON.stringify(r));return r;}finally{lock.releaseLock();}}
 function prepararDashboardVisual(){
  const ss=SpreadsheetApp.getActive(),s=ss.getSheetByName('Dashboard');if(!s)throw Error('Dashboard não encontrado.');
@@ -793,11 +801,12 @@ function atualizarDashboardVisual_(ss){
  prepararEspacoProgressao_(ss,s);
  const tz=ss.getSpreadsheetTimeZone(),rows=(name,start,width)=>{const sh=ss.getSheetByName(name);return sh&&sh.getLastRow()>=start?sh.getRange(start,1,sh.getLastRow()-start+1,Math.min(width,sh.getLastColumn())).getValues():[];};
  const raw=rows('Idealista - recolhas',2,13),p=periodo30Dashboard_(raw,tz),allDaily=dadosGraficoContactosIdealista_(raw,tz);
- const green=rows('Leads por período',6,10).filter(r=>String(r[3]).toLowerCase()==='green-acres'&&typeof r[4]==='number');
+ const leads=rows('Leads por período',6,12),rmLeads=leadsMensaisRightmove_(leads,tz),rmUltimo=rmLeads.length?rmLeads[rmLeads.length-1]:null;
+ const green=leads.filter(r=>String(r[3]).toLowerCase()==='green-acres'&&typeof r[4]==='number');
  const iso=v=>v instanceof Date?Utilities.formatDate(v,tz,'yyyy-MM-dd'):String(v||'');green.sort((a,b)=>iso(a[1]).localeCompare(iso(b[1])));
  const lastGreen=green.length?green[green.length-1]:null,rm=rows('Rightmove - anúncios',6,22).filter(r=>r[2]),activeRM=rm.filter(r=>String(r[7]).match(/Disponível|Available/i)),views=rm.filter(r=>typeof r[17]==='number').map(r=>r[17]);
  const bg='#f3f6fa',ink='#183746',muted='#607786',teal='#087f8c',blue='#239bc1',purple='#8170bc';
- s.getRange('A1:L88').setBackground(bg).setFontFamily('Arial').setFontSize(10).setFontColor(ink).setVerticalAlignment('middle').setNumberFormat('General');s.setHiddenGridlines(true);s.setFrozenRows(0);s.setFrozenColumns(0);s.setColumnWidths(1,12,92);s.setRowHeights(1,88,22);s.setRowHeight(1,12);
+ s.getRange('A1:L102').setBackground(bg).setFontFamily('Arial').setFontSize(10).setFontColor(ink).setVerticalAlignment('middle').setNumberFormat('General');s.setHiddenGridlines(true);s.setFrozenRows(0);s.setFrozenColumns(0);s.setColumnWidths(1,12,92);s.setRowHeights(1,102,22);s.setRowHeight(1,12);
  function block(row,col,n,height,text,size,color,bold,back){const r=s.getRange(row,col,height,n);r.breakApart();r.merge();r.setValue(text===null?'—':text).setBackground(back||bg).setFontSize(size||10).setFontColor(color||ink).setFontWeight(bold?'bold':'normal').setWrap(true).setHorizontalAlignment('left').setFontLine('none');return r;}
  function section(row,title){block(row,1,12,1,title,13,ink,true);s.setRowHeight(row,32);}
  function card(col,name,value,label,period,detail,footer,color){block(6,col,4,1,name,12,color,true,'#ffffff');block(7,col,4,2,value,32,ink,true,'#ffffff');block(9,col,4,1,label,11,muted,false,'#ffffff');block(10,col,4,2,period,10,muted,false,'#ffffff');block(12,col,4,2,detail,11,ink,true,'#ffffff');block(14,col,4,2,footer,9,muted,false,'#ffffff');}
@@ -805,7 +814,7 @@ function atualizarDashboardVisual_(ss){
  const fmt=v=>typeof v==='number'?v.toLocaleString('pt-PT'):'Não recolhido';
  card(1,'IDEALISTA',p?fmt(p.metricas.contactos):'Sem dados','contactos recebidos',p?p.inicio+' a '+p.fim+'\n'+(()=>{try{return JSON.parse(p.filtros).join(' · ');}catch(e){return p.filtros;}})():'Falta recolha de 30 dias',p?fmt(p.metricas.visitasDetalhes)+' visitas aos anúncios\n'+fmt(p.metricas.anunciosAtivosHoje)+' anúncios ativos na recolha':'Registar estatísticas no menu Clara',p?'Recolha: '+p.recolha+' · '+fmt(p.metricas.mensagens)+' mensagens / '+fmt(p.metricas.chamadas)+' chamadas':'',teal);
  card(5,'GREEN-ACRES',lastGreen?fmt(lastGreen[4]):'Sem dados','contactos únicos · último dado disponível',lastGreen?iso(lastGreen[0])+' a '+iso(lastGreen[1]):'Sem recolha',lastGreen?'Sem janela de 30 dias recolhida':'Falta relatório de contactos','O gráfico mensal mantém o histórico. Período distinto do Idealista.',blue);
- card(9,'RIGHTMOVE',rm.length?activeRM.length:'Sem dados','anúncios disponíveis',rm.length?'Relatório: '+iso(rm[0][0]):'Sem relatório',views.length?(views.reduce((a,b)=>a+b,0)/views.length).toFixed(2).replace('.',',')+' visitas / dia por anúncio\nMédia do relatório de 30 dias':'Desempenho por recolher','Contactos não incluídos no CSV. Datas exatas da janela não indicadas.',purple);
+ card(9,'RIGHTMOVE',rmLeads.length?fmt(rmLeads.reduce((n,x)=>n+x.total,0)):'Sem dados','leads · meses registados',rmUltimo?rmLeads[0].inicio+' a '+rmUltimo.fim+(rmUltimo.parcial?' · mês final parcial':''):'Sem relatório de leads',fmt(activeRM.length)+' anúncios · '+(views.length?(views.reduce((a,b)=>a+b,0)/views.length).toFixed(2).replace('.',','):'—')+' visitas/dia/anúncio (30 dias)',rmUltimo?rmLeads.reduce((n,x)=>n+x.chamadas,0)+' chamadas · '+rmLeads.reduce((n,x)=>n+x.emails,0)+' emails. Sem janela de 30 dias de leads.':'Contactos por recolher.',purple);
  [['A6','IDEALISTA','Idealista - recolhas'],['E6','GREEN-ACRES','Leads por período'],['I6','RIGHTMOVE','Rightmove - anúncios']].forEach(a=>{const t=ss.getSheetByName(a[2]);if(t)s.getRange(a[0]).setRichTextValue(SpreadsheetApp.newRichTextValue().setText(a[1]).setLinkUrl(ss.getUrl()+'#gid='+t.getSheetId()).build());});
  section(17,'Evolução dos contactos');
  let v=ss.getSheetByName('Clara - dashboard');if(!v){v=ss.insertSheet('Clara - dashboard');v.hideSheet();}v.clearContents();
@@ -839,7 +848,14 @@ function atualizarDashboardVisual_(ss){
  [['Levantamento','eGO · estado dos imóveis',1],['Pendências da equipa','Equipa · tarefas e bloqueios',5],['Perfis dos portais','Portais · perfis e pendências',9]].forEach(a=>{const target=ss.getSheetByName(a[0]);if(target)block(73,a[2],4,2,'',11,teal,true,'#e6f0f2').setRichTextValue(SpreadsheetApp.newRichTextValue().setText(a[1]).setLinkUrl(ss.getUrl()+'#gid='+target.getSheetId()).build());});
  block(77,1,12,2,'Datas dos dados: Idealista '+(p?p.fim:'sem recolha')+' · Green-Acres '+(lastGreen?iso(lastGreen[1]):'sem recolha')+' · Rightmove '+(rm.length?iso(rm[0][0]):'sem recolha')+'. Sem dados não significa zero.',10,muted);
  block(80,1,12,1,'Vista atualizada em '+Utilities.formatDate(new Date(),tz,'yyyy-MM-dd HH:mm')+' · atualizar a vista não recolhe novos dados dos portais.',9,muted);
- s.setTabColor(teal);if(!v.isSheetHidden())v.hideSheet();SpreadsheetApp.flush();return{periodo:p?{inicio:p.inicio,fim:p.fim}:null,diarios:dailyOk?30:0,rightmove:rm.length,mediaRightmove:views.length?views.reduce((a,b)=>a+b,0)/views.length:null,graficos:s.getCharts().length,pontosRightmove:right.length,pontosEGO:ego.length};
+ section(83,'Rightmove · evolução das leads');
+ v.getRange('P1:R1').setValues([['Mês','Chamadas','Emails']]);if(rmLeads.length)v.getRange(2,16,rmLeads.length,3).setValues(rmLeads.map(x=>[x.mes+(x.parcial?' *':''),x.chamadas,x.emails]));SpreadsheetApp.flush();
+ block(85,1,6,12,rmLeads.length?'':'Falta histórico mensal de leads Rightmove.',11,muted,false,'#ffffff');
+ if(rmLeads.length)chart('Rightmove · leads por mês',v.getRange(1,16,rmLeads.length+1,3),85,1,Charts.ChartType.COLUMN,{isStacked:true,colors:[teal,'#4678ec'],vAxis:{minValue:0,format:'0'},hAxis:{slantedText:true,slantedTextAngle:30}});
+ block(85,7,6,2,'Como ler estes resultados',12,ink,true,'#ffffff');
+ block(88,7,6,4,'Chamadas e emails são contactos registados pela plataforma; não são clientes únicos nem vendas. * Mês parcial: não comparar diretamente com um mês completo.',11,muted,false,'#ffffff');
+ block(93,7,6,4,'Plantas no Rightmove: '+rm.filter(r=>typeof r[6]==='number'&&r[6]>0).length+' de '+rm.length+' anúncios. Visitas médias e fotografias ficam no detalhe. «New entry» não é uma variação comparável; 30/60/90 dias não são datas sucessivas.',10,muted,false,'#ffffff');
+ s.setTabColor(teal);if(!v.isSheetHidden())v.hideSheet();SpreadsheetApp.flush();return{periodo:p?{inicio:p.inicio,fim:p.fim}:null,diarios:dailyOk?30:0,rightmove:rm.length,mediaRightmove:views.length?views.reduce((a,b)=>a+b,0)/views.length:null,graficos:s.getCharts().length,pontosRightmove:right.length,pontosEGO:ego.length,mesesLeadsRightmove:rmLeads.length,totalLeadsRightmove:rmLeads.reduce((n,x)=>n+x.total,0)};
 }
 
 

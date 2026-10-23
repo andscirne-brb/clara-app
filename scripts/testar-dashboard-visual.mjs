@@ -33,3 +33,6 @@ captured=c.guardarMedicaoRightmove_(ssH,[source('1',5),source('2',5)],'UTC');ass
 const before=JSON.stringify(ssH.sh.a);ssH.failNext=true;assert.throws(()=>c.guardarMedicaoRightmove_(ssH,[source('1',9),source('2',9)],'UTC'),/falha simulada/);assert.equal(JSON.stringify(ssH.sh.a.slice(0,5)),before);
 assert.throws(()=>c.guardarMedicaoRightmove_(ssH,[source('1',3),source('1',3)],'UTC'),/repetidos/);
 console.log('PASS histórico Rightmove: duplicação impedida mesmo com outra ordem, revisão preservada, último lote selecionado e falha sem alterar registos anteriores.');
+
+const lr=(a,b,t,call,email,dt='2026-10-23')=>[a,b,'','Rightmove',t,'','','',dt,'',call,email];
+let ml=c.leadsMensaisRightmove_([lr('2026-07-01','2026-07-31',0,0,0),lr('2026-09-01','2026-09-30',1,0,1),lr('2026-10-01','2026-10-20',1,1,0),lr('2026-10-01','2026-10-23',2,1,1),lr('2026-10-01','2026-10-23',2,1,1)],'UTC');assert.equal(ml.length,3);assert.equal(ml[0].total,0);assert.equal(ml[2].total,2);assert.equal(ml[2].parcial,true);assert.equal(ml[1].parcial,false);assert.equal(c.leadsMensaisRightmove_([lr('2026-10-01','2026-10-23',3,1,1)],'UTC').length,0);assert.equal(c.leadsMensaisRightmove_([lr('2026-10-01','2026-10-23',0,'','')],'UTC').length,0);console.log('PASS leads Rightmove: meses parciais, zero real, revisão e repetição não somadas, totais incoerentes e canais desconhecidos rejeitados.');
