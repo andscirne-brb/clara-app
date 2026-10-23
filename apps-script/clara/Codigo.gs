@@ -293,7 +293,7 @@ function analisar(texto, docs) {
   ps.getRange(PEND.titulos + 1, 1, Math.max(1, ps.getLastRow() - PEND.titulos), 9).getDisplayValues().forEach(function (r, i) {
     if (!r[1] || r[1].toUpperCase() !== ref) return;
     const key = r[1].toUpperCase() + '|' + r[3];
-    const registro = { id: r[0], linha: PEND.titulos + 1 + i, estado: r[8] };
+    const registro = { id: r[0], linha: PEND.titulos + 1 + i, estado: r[8], evidencia: r[4], acao: r[5] };
     if (!existentes[key] || existentes[key].estado === 'Concluído') existentes[key] = registro;
     const aberta = r[8] !== 'Concluído' && r[8] !== 'Não aplicável';
     if (aberta && verificaveis[r[3]] && !detetados[r[3]]) resolvidas.push({ id: r[0], assunto: r[3], linha: PEND.titulos + 1 + i });
@@ -302,6 +302,7 @@ function analisar(texto, docs) {
     const ex = existentes[ref + '|' + p.assunto];
     p.jaExiste = ex ? ex.id : ''; p.linhaExistente = ex ? ex.linha : 0;
     p.reabrir = !!ex && ex.estado === 'Concluído';
+    p.atualizar = !!ex && ex.estado !== 'Concluído' && ex.estado !== 'Não aplicável' && todosVistos && p.tema === 'Documentos' && (ex.evidencia !== p.evidencia || ex.acao !== p.acao);
   });
   const mudam = campos.filter(function (x) { return String(x.atual) !== String(x.novo); }).length;
   return { ref: ref, linha: linha, campos: campos, pendencias: pend, resolvidas: resolvidas, notas: notas, mudam: mudam, url: d.url || '', hoje: hoje, completa: completa, textos: Object.keys(IDIOMAS).filter(function (k) { return T[k] && !T[k].erro && typeof T[k].descricao === 'string' && typeof T[k].titulo === 'string'; }).map(function (k) { return { idioma: k, titulo: T[k].titulo, descricao: T[k].descricao }; }) };
@@ -398,7 +399,10 @@ function gravar(texto, docs) {
     ids.forEach(function (r) { const m = /^P(\d+)$/.exec(r[0]); if (m) maxId = Math.max(maxId, +m[1]); });
     const criadas = [], reabertas = [], confirmadas = [];
     a.pendencias.forEach(function (p) {
-      if (p.jaExiste && !p.reabrir) return;
+      if (p.jaExiste && !p.reabrir) {
+        if (p.atualizar) [[5, p.evidencia], [6, p.acao], [11, hoje]].forEach(function (v) { agendar(ps, p.linhaExistente, v[0], v[1], p.assunto + ' · atualização (coluna ' + v[0] + ')', p.jaExiste); });
+        return;
+      }
       const linha = p.reabrir ? p.linhaExistente : livresP[ip++], id = p.reabrir ? p.jaExiste : 'P' + String(++maxId).padStart(4, '0');
       if (p.reabrir) {
         // Mantém a criação, responsável e prioridade; o histórico conserva a resolução anterior.

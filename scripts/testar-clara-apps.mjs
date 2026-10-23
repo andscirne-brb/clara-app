@@ -100,3 +100,17 @@ f=fixture();d=payload();d.textos.PT.titulo='00123';d.textos.PT.descricao="'Texto
 const originalFormatSetter=Range.prototype.setNumberFormat;Range.prototype.setNumberFormat=function(){throw Error('Não pode definir o formato de número de células numa coluna escrita.');};
 try{save(f,d);assert.equal(get(f.tx,6,3),'00123');assert.equal(get(f.tx,6,4),"'Texto com apóstrofo inicial");f=fixture();f.fail();assert.throws(()=>save(f,payload()),/células foram repostas/);}finally{Range.prototype.setNumberFormat=originalFormatSetter;}
 console.log('PASS colunas tipadas: gravação e rollback sem chamadas de formatação, apóstrofo inicial preservado.');
+
+// Partial resolution narrows evidence without replacing ownership or manual state.
+f=fixture();d=payload();
+f.pend.seed(6,['P0001','TESTE-001','Documentos','Documentos obrigatórios sem ficheiro no eGO','Faltam quatro documentos','Ação antiga','Equipa teste','Alta','Em curso','2026-10-01','2026-10-01','','','eGO','Por verificar']);
+const pendingDocs={...docs,licenca:'nao'};
+assert.equal(analyse(f,d,pendingDocs).pendencias.find(p=>p.jaExiste==='P0001').atualizar,true);
+save(f,d,pendingDocs);
+assert.match(get(f.pend,6,5),/Licença/);assert.doesNotMatch(get(f.pend,6,5),/Caderneta|Certificado|Contrato/);
+assert.equal(get(f.pend,6,7),'Equipa teste');assert.equal(get(f.pend,6,8),'Alta');assert.equal(get(f.pend,6,9),'Em curso');assert.equal(get(f.pend,6,10),'2026-10-01');
+assert([...f.hist.cells.values()].includes('Faltam quatro documentos'));
+const stable=snapshot(f);save(f,d,pendingDocs);assert.equal(snapshot(f),stable);
+f=fixture();f.pend.seed(6,['P0001','TESTE-001','Documentos','Documentos obrigatórios sem ficheiro no eGO','Faltam quatro documentos','Ação antiga','Equipa teste','Alta','Em curso']);
+save(f,d,{...pendingDocs,contrato:''});assert.equal(get(f.pend,6,5),'Faltam quatro documentos');
+console.log('PASS pendências: resolução parcial atualiza evidência, preserva gestão e histórico, não repete, leitura documental incompleta não reduz faltas.');
