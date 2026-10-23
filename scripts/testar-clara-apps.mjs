@@ -33,7 +33,7 @@ class Range {
  getValues(){return Array.from({length:this.n},(_,i)=>Array.from({length:this.m},(_,j)=>this.sh.cells.get(`${this.r+i},${this.c+j}`)??''))}
  getDisplayValues(){return this.getValues().map(r=>r.map(v=>v instanceof Date?'22/10/2026':String(v)))}
  getFormulas(){return Array.from({length:this.n},(_,i)=>Array.from({length:this.m},(_,j)=>this.sh.forms.get(`${this.r+i},${this.c+j}`)??''))}
- setValue(v){if(typeof v==='string'&&v.startsWith('='))throw Error('Unsafe formula');if(typeof v==='string'&&/^\d+$/.test(v))v=Number(v);this.sh.cells.set(`${this.r},${this.c}`,v);return this}
+ setValue(v){const literal=typeof v==='string'&&v.startsWith("'");if(literal)v=v.slice(1);if(!literal&&typeof v==='string'&&v.startsWith('='))throw Error('Unsafe formula');if(!literal&&typeof v==='string'&&/^\d+$/.test(v))v=Number(v);if(typeof v==='string')v=v.replace(/\r\n?/g,'\n');this.sh.cells.set(`${this.r},${this.c}`,v);return this}
  setRichTextValue(v){this.sh.cells.set(`${this.r},${this.c}`,this.getNumberFormat()!=='@'&&/^\d+$/.test(v.text)?Number(v.text):v.text.replace(/\r\n?/g,'\n'));return this}
 }
 const docs={caderneta:'sim',certificado:'sim',contrato:'sim',licenca:'sim'};
@@ -89,9 +89,14 @@ assert.equal(f.context.mesmoValor_('A\r\nB','A\nB'),true);
 assert([...f.hist.cells.values()].some(v=>v==='00123'),'histórico conserva números como texto literal');
 console.log('PASS gravação: texto numérico e zeros iniciais preservados, CRLF normalizado, tipos e conteúdo divergentes continuam rejeitados.');
 
-assert.equal(get(f.tx,6,3),'00123');assert.equal(f.tx.getRange(6,3).getNumberFormat(),'@');console.log('PASS formato literal: simula conversão numérica do RichText pelo Sheets e exige formato @.');
+assert.equal(get(f.tx,6,3),'00123');assert.equal(f.tx.getRange(6,3).getNumberFormat(),'0.###############');console.log('PASS texto literal: apóstrofo nativo preserva zeros iniciais e não muda formatos.');
 
 const repairContext=vm.createContext({});vm.runInContext(fs.readFileSync(new URL('./corrigir-formulas-dashboard.gs',import.meta.url),'utf8'),repairContext);
 assert.equal(repairContext.separadoresPtClara_('=IF(A1="a,b",1,0)'),'=IF(A1="a,b";1;0)');
 assert.equal(repairContext.separadoresPtClara_('=IF(A1="a""b,c",1,0)'),'=IF(A1="a""b,c";1;0)');
 console.log('PASS fórmulas PT: separadores corrigidos sem alterar texto entre aspas.');
+
+f=fixture();d=payload();d.textos.PT.titulo='00123';d.textos.PT.descricao="'Texto com apóstrofo inicial";
+const originalFormatSetter=Range.prototype.setNumberFormat;Range.prototype.setNumberFormat=function(){throw Error('Não pode definir o formato de número de células numa coluna escrita.');};
+try{save(f,d);assert.equal(get(f.tx,6,3),'00123');assert.equal(get(f.tx,6,4),"'Texto com apóstrofo inicial");f=fixture();f.fail();assert.throws(()=>save(f,payload()),/células foram repostas/);}finally{Range.prototype.setNumberFormat=originalFormatSetter;}
+console.log('PASS colunas tipadas: gravação e rollback sem chamadas de formatação, apóstrofo inicial preservado.');
