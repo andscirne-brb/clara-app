@@ -1,6 +1,6 @@
 # Rightmove Plus no marcador Clara
 
-Menu: **Rightmove: estatísticas**. O marcador reconhece Lead Reports e Property performance report. Depois da recolha, colar no painel, rever e confirmar. Reinstalar o marcador após esta atualização (versão 20261024.3).
+Menu: **Rightmove: estatísticas**. O marcador reconhece Lead Reports e Property performance report. Depois da recolha, colar no painel, rever e confirmar. Reinstalar o marcador após esta atualização (versão 20261025.1).
 
 ## Leads
 
@@ -10,7 +10,7 @@ Destino: Rightmove - leads diárias. Guarda cada série com período, data de re
 
 ## Property Performance
 
-Limpar pesquisa e desmarcar Include sold STC. Escolher Last 30, 60 ou 90 Days. O marcador percorre a lista virtual, reúne códigos únicos e compara com o total indicado. Repõe a posição de deslocação no fim. Mudanças de filtros ou indicadores durante a leitura impedem a conclusão.
+Limpar pesquisa e desmarcar Include sold STC. Escolher Last 30, 60 ou 90 Days. A primeira opção é a exportação CSV oficial: reúne as três janelas numa só recolha. Se a captura do CSV não estiver disponível, o marcador percorre a lista virtual da janela selecionada, reúne códigos únicos e compara com o total indicado. Repõe a posição de deslocação no fim. Mudanças de filtros ou indicadores durante a leitura impedem a conclusão.
 
 Destino: Rightmove - desempenho. Regista data de atualização indicada pelo portal, janela, código, referência, localidade, preço, fotografias, plantas, dias desde atualização, visitas diárias médias e comparações. New entry fica como texto, não vira percentagem. Não inventa datas exatas do período a partir da janela.
 
@@ -29,3 +29,14 @@ Registo inicial validado no documento: 31 dias conferidos com o resumo do portal
 ## Correção do carregamento dos totais
 
 A versão 20261024.3 aguarda a ausência de indicadores de carregamento e a correspondência do total de cada canal com Summary. Um zero transitório não provoca imediatamente o erro de totais alterados. No fim, volta a conferir os três totais do resumo. Se a diferença persistir, termina com aviso e não copia uma série incoerente. Teste de regressão com zeros transitórios aprovado.
+
+
+## CSV automático (20261025.1)
+
+O marcador aciona o botão oficial e tenta ler o conteúdo gerado no navegador, sem endpoints privados nem envio a terceiros. Observa temporariamente a criação de Blob/URL e cliques de descarga CSV por até 12 segundos; repõe os métodos originais em sucesso, erro ou timeout, sem substituir alterações concorrentes. Mantém o download normal do portal, pelo que pode ficar uma cópia em Downloads. Não exige escolher o ficheiro manualmente.
+
+Confere cabeçalhos, estrutura das linhas, aspas, total de anúncios, códigos únicos, três janelas, média da agência e correspondência dos anúncios visíveis. Um CSV capturado mas inválido provoca erro; não é substituído silenciosamente por dados parciais. Se não conseguir capturar o ficheiro, usa a leitura anterior da janela selecionada.
+
+A revisão mostra 50 anúncios e janelas de 30, 60 e 90 dias. Guarda os indicadores em Rightmove - desempenho e o registo de origem, aviso do portal e data de atualização em Rightmove - importações CSV. Ambas as escritas são conferidas e repostas em falha. Repetir o mesmo CSV não soma dados. Não inventa datas de início e fim a partir das janelas. O dashboard continua a selecionar a janela de 30 dias.
+
+Validação: parser testado com o CSV real de 50 anúncios; testes sintéticos de estrutura, repetição, falha e captura Blob; teste nativo em folhas temporárias confirmou 150 linhas, 50 códigos em cada janela, repetição sem duplicação e aviso preservado. As folhas temporárias foram removidas. Falta o teste de aceitação da captura automática com o marcador reinstalado no navegador da utilizadora. Dados reais e capturas não são publicados.

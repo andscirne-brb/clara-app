@@ -1,0 +1,26 @@
+/* CSV oficial: RFC 4180, sem rede ou APIs privadas do portal. */
+function linhasCSVRightmove(texto){
+ if(typeof texto!=='string'||texto.length>2000000)throw Error('CSV demasiado grande.');const out=[];let row=[],cell='',quoted=false,closed=false;const s=texto.replace(/^\uFEFF/,'');
+ for(let i=0;i<s.length;i++){const c=s[i];if(quoted){if(c==='"'){if(s[i+1]==='"'){cell+='"';i++;}else{quoted=false;closed=true;}}else cell+=c;continue;}if(c==='"'){if(cell||closed)throw Error('Aspas inválidas no CSV.');quoted=true;}else if(c===','){row.push(cell);cell='';closed=false;}else if(c==='\r'||c==='\n'){if(c==='\r'&&s[i+1]==='\n')i++;row.push(cell);if(row.some(x=>x!==''))out.push(row);row=[];cell='';closed=false;}else{if(closed)throw Error('CSV mal formado.');cell+=c;}}
+ if(quoted)throw Error('CSV incompleto.');row.push(cell);if(row.some(x=>x!==''))out.push(row);return out;
+}
+function converterCSVRightmove(texto,meta){
+ const linhas=linhasCSVRightmove(texto),h=linhas.shift()||[],idx=n=>{const i=h.indexOf(n);if(i<0||h.lastIndexOf(n)!==i)throw Error('Coluna CSV em falta ou repetida: '+n);return i;};
+ const comuns=['Address','Agent Reference','Price','Photos','Floorplans','Rightmove URL'],indexes={};comuns.forEach(n=>indexes[n]=idx(n));
+ const janelas=[30,60,90],cols={};janelas.forEach(j=>{cols[j]=['Average Daily Views Last '+j+' Days','Views vs previous Last '+j+' Days','Views vs previous Last '+j+' Days %','Views vs branch Last '+j+' Days','Views vs branch Last '+j+' Days %'].map(idx);});
+ if(linhas.length!==meta.total)throw Error('O CSV tem '+linhas.length+' anúncios; a página indica '+meta.total+'.');const ids=new Set(),lotes=janelas.map(j=>({janela:j,mediaAgencia:null,registos:[]}));
+ linhas.forEach(row=>{if(row.length!==h.length)throw Error('Linha CSV incompleta.');const get=n=>row[indexes[n]],url=get('Rightmove URL').trim(),id=(/^(?:https:\/\/)?(?:www\.)?rightmove\.co\.uk\/properties\/(\d+)\/?$/.exec(url)||[])[1];if(!id||ids.has(id))throw Error('Código CSV ausente ou repetido.');ids.add(id);
+ const numeric=s=>numeroRightmove(String(s).replace(/,/g,'').trim()),base={id,ref:get('Agent Reference'),local:get('Address'),preco:numeric(get('Price')),fotografias:numeric(get('Photos')),plantas:numeric(get('Floorplans')),diasAtualizacao:null};
+ lotes.forEach(l=>{const c=cols[l.janela],diferenca=row[c[3]].trim();const media=numeric(row[c[0]]);if(!/^[+-]?\d+(?:\.\d+)?$/.test(diferenca))throw Error('Comparação com a agência não reconhecida.');const agencia=media-Number(diferenca);if(agencia<0||l.mediaAgencia!==null&&Math.abs(l.mediaAgencia-agencia)>1e-8)throw Error('Média da agência incoerente no CSV.');l.mediaAgencia=agencia;l.registos.push(Object.assign({},base,{media,anterior:row[c[1]]+' · '+row[c[2]],vsAgencia:row[c[4]]+' ('+row[c[3]]+')'}));});
+ });
+ lotes.forEach(l=>l.registos.sort((a,b)=>a.id.localeCompare(b.id)));const selecionado=lotes.find(l=>l.janela===meta.janela);if(Array.isArray(meta.registos)&&meta.registos.some(r=>{const c=selecionado.registos.find(x=>x.id===r.id);return !c||['ref','preco','fotografias','plantas','media'].some(k=>c[k]!==r[k]);}))throw Error('Os anúncios visíveis não coincidem com o CSV exportado.');if(Math.abs(lotes.find(l=>l.janela===meta.janela).mediaAgencia-meta.mediaAgencia)>1e-8)throw Error('A média da agência difere entre a página e o CSV.');return{v:3,origem:'rightmove',tipo:'performance_csv',marcadorVersao:'20261025.1',lido:new Date().toISOString(),url:'https://admin.rightmove.co.uk/manage/branch/overseas/reports/property-performance-report',atualizado:meta.atualizado,total:meta.total,avisoFonte:meta.avisoFonte||'',lotes};
+}
+async function capturarCSVRightmove(doc){
+ const botao=doc.querySelector('.export-report');if(!botao)throw Error('Botão CSV não encontrado.');const U=URL,original=U.createObjectURL,Anchor=HTMLAnchorElement.prototype,click=Anchor.click;let timer,resolveCsv,rejectCsv,terminou=false;
+ const resultado=new Promise((resolve,reject)=>{resolveCsv=resolve;rejectCsv=reject;});
+ const receber=async blob=>{try{const texto=await blob.text();if(!/Average Daily Views Last 30 Days/.test(texto.slice(0,8000)))return;if(!terminou){terminou=true;resolveCsv(texto);}}catch(e){/* Outra exportação não deve interromper a página. */}};
+ const interceptURL=function(blob){const url=original.apply(this,arguments);if(blob&&typeof blob.text==='function')receber(blob);return url;};
+ const interceptClick=function(){const href=this.href||'';if(/\.csv$/i.test(this.download||'')&&/^data:/i.test(href)){try{const comma=href.indexOf(','),head=href.slice(0,comma),data=href.slice(comma+1),texto=/;base64/i.test(head)?new TextDecoder().decode(Uint8Array.from(atob(data),c=>c.charCodeAt(0))):decodeURIComponent(data);receber(new Blob([texto]));}catch(e){/* Mantém o download normal. */}}return click.apply(this,arguments);};
+ try{U.createObjectURL=interceptURL;Anchor.click=interceptClick;if(U.createObjectURL!==interceptURL||Anchor.click!==interceptClick)throw Error('O navegador não permite capturar esta exportação.');timer=setTimeout(()=>{terminou=true;rejectCsv(Error('O CSV não ficou disponível no tempo previsto.'));},12000);botao.click();return await resultado;}
+ finally{clearTimeout(timer);if(U.createObjectURL===interceptURL)U.createObjectURL=original;if(Anchor.click===interceptClick)Anchor.click=click;}
+}

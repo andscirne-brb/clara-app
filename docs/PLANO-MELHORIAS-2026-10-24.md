@@ -69,3 +69,7 @@ Rascunho local por documento, recuperação com nova análise obrigatória, avis
 ## Sétimo ponto: Rightmove Plus
 
 Implementada leitura de leads por data e de Property Performance, revisão no painel, histórico sem somar repetições, gráfico diário e desempenho de 30 dias separado de 60/90. Testes locais e gravação nativa aprovados. Teste de aceitação do marcador no navegador da utilizadora ainda necessário. Ver RIGHTMOVE-MARCADOR.md.
+
+## Oitavo ponto: exportação CSV Rightmove
+
+CSV oficial como primeira opção; três janelas numa só leitura, validação de cobertura, histórico e metadados transacionais. Testes locais e nativos aprovados; captura no navegador da utilizadora por confirmar.
