@@ -65,3 +65,7 @@ Implementada verificação das fontes antes de reconstruir gráficos. Reutiliza 
 ## Sexto ponto: continuidade da recolha
 
 Rascunho local por documento, recuperação com nova análise obrigatória, aviso de gravação interrompida e identificação da versão do marcador. Testes aprovados. Ver RASCUNHOS-E-VERSAO.md.
+
+## Sétimo ponto: Rightmove Plus
+
+Implementada leitura de leads por data e de Property Performance, revisão no painel, histórico sem somar repetições, gráfico diário e desempenho de 30 dias separado de 60/90. Testes locais e gravação nativa aprovados. Teste de aceitação do marcador no navegador da utilizadora ainda necessário. Ver RIGHTMOVE-MARCADOR.md.
