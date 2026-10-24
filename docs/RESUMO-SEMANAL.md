@@ -9,3 +9,5 @@ A propriedade privada do Apps Script `CLARA_VISTA_SARA_FVID` guarda o identifica
 O pedido de acesso a relatórios agregados eGO permanece limitado ao resumo da semana já definida; as ligações de consulta são permanentes.
 
 A tabela resume os campos e idiomas registados, sem copiar descrições completas nem repetir cada célula do histórico. Registar no levantamento não equivale a corrigir o CRM; o histórico completo permanece no documento.
+
+A pré-visualização é associada ao plano e período que a originaram. Alterações invalidam assunto e corpo; respostas antigas e erros de pedidos ultrapassados são ignorados. Copiar volta a confirmar os dados atuais, mesmo que um evento de alteração não tenha sido recebido. Pedidos idênticos em curso não são repetidos e falhas mantêm o plano.

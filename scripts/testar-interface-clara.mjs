@@ -32,3 +32,17 @@ const links=[{hreflang:'pt-PT',href:pt},{hreflang:'en-GB',href:en},{hreflang:'en
 let capture=await lerMarcadorFixture('pt-PT',links,fixtures);assert.equal(capture.ref,'EX1001');assert.equal(capture.parcial,true);assert.equal(capture.textos.EN.titulo,'English');assert.equal(capture.textos.FR.erro,true);assert.equal(capture.textos.PT.titulo,'Título pt-PT');
 capture=await lerMarcadorFixture('fr-FR',links,fixtures);assert.equal(capture.textos.PT.erro,true);assert.equal(capture.textos.FR.titulo,'Título fr-FR');
 console.log('PASS interface: pesquisa sem acentos não altera dados; página inacessível não vira descrição vazia; idioma atual não é guardado como português por engano.');
+
+const resumoHtml=fs.readFileSync(new URL('../apps-script/clara/Resumo.html',import.meta.url),'utf8'),wf=new Map(),wcalls=[];let copies=0;
+const wfget=id=>{if(!wf.has(id))wf.set(id,{value:id==='dias'?'7':'',textContent:'',innerHTML:'',disabled:false,select(){}});return wf.get(id);};
+const wrpc={withSuccessHandler(f){this.ok=f;return this;},withFailureHandler(f){this.fail=f;return this;},previewResumo(dias,plano){wcalls.push({dias,plano,ok:this.ok,fail:this.fail});}};
+const w={document:{getElementById:wfget,execCommand(){copies++;return true;},createRange:()=>({selectNodeContents(){}})},window:{getSelection:()=>({removeAllRanges(){},addRange(){}})},google:{script:{run:wrpc}},setTimeout:()=>1,clearTimeout(){}};vm.createContext(w);vm.runInContext(resumoHtml.match(/<script>([\s\S]*?)<\/script>/)[1],w);
+const reply=(html,plan=['Plano'])=>({html,assunto:'Assunto '+html,proximosPassos:plan});
+const opening=wcalls.at(-1);wfget('plano').value='Plano A';w.invalidar();opening.ok(reply('antigo'));assert.equal(wfget('copiarEmail').disabled,true);assert.equal(wfget('assunto').value,'');
+w.ver();const first=wcalls.at(-1);const beforeRequests=wcalls.length;w.ver();assert.equal(wcalls.length,beforeRequests);
+wfget('plano').value='Plano B';w.invalidar();w.ver();const second=wcalls.at(-1);second.ok(reply('atual'));first.ok(reply('antigo'));assert.equal(wfget('prev').innerHTML,'atual');assert.equal(wfget('copiarEmail').disabled,false);first.fail({message:'Falha antiga'});assert.equal(wfget('prev').innerHTML,'atual');w.copiarEmail();assert.equal(copies,1);
+wfget('dias').value='14';w.ver();const changedPeriod=wcalls.at(-1);assert.equal(wfget('copiarEmail').disabled,true);assert.equal(wfget('copiarAssunto').disabled,true);w.copiarAssunto();assert.equal(copies,1);changedPeriod.ok(reply('período antigo'));assert.equal(wfget('copiarEmail').disabled,true);
+w.ver();wcalls.at(-1).fail({message:'Falha atual'});assert.equal(wfget('plano').value,'Plano B');assert.equal(wfget('prev').textContent,'Falha atual');assert.equal(wfget('copiarEmail').disabled,true);
+w.ver();wcalls.at(-1).ok(reply('recuperado'));assert.equal(wfget('copiarEmail').disabled,false);wfget('plano').value='Alterado sem evento';w.copiarEmail();assert.equal(copies,1);assert.equal(wfget('copiarEmail').disabled,true);
+wfget('plano').value='';w.ver();wcalls.at(-1).ok(reply('sem plano',[]));assert.equal(wfget('copiarEmail').disabled,true);assert.equal(wfget('copiarAssunto').disabled,false);
+console.log('PASS resumo assíncrono: respostas fora de ordem, alterações durante carregamento, falha antiga ignorada, cópia protegida, pedido repetido e recuperação sem perder plano.');

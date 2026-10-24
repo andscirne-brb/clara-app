@@ -51,3 +51,5 @@ Aplicar uma fase de cada vez. Testar primeiro em dados fictícios/cópias, verif
 ## Execução por pontos
 
 2026-10-24: implementado o primeiro ponto, gestão coerente de responsável/estado. As listas e o resumo deixaram de depender da coluna interna; dashboard segue a mesma regra, e edições manuais são sincronizadas por onEdit. Testados delegação, devolução, conclusão, repetição e recuperação; percursos confirmados em cópias nativas. Ver GESTAO-PENDENCIAS.md. Os restantes pontos continuam por executar.
+
+2026-10-24: implementado o segundo ponto, proteção assíncrona do resumo semanal. Alterações invalidam a cópia; respostas antigas não substituem a versão atual; pedidos iguais em curso não são duplicados; erros mantêm o plano. Validado por testes de respostas fora de ordem, plano/período alterados e recuperação.
