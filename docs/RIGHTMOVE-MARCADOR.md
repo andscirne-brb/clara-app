@@ -1,6 +1,6 @@
 # Rightmove Plus no marcador Clara
 
-Menu: **Rightmove: estatísticas**. O marcador reconhece Lead Reports e Property performance report. Depois da recolha, colar no painel, rever e confirmar. Reinstalar o marcador após esta atualização (versão 20261024.2).
+Menu: **Rightmove: estatísticas**. O marcador reconhece Lead Reports e Property performance report. Depois da recolha, colar no painel, rever e confirmar. Reinstalar o marcador após esta atualização (versão 20261024.3).
 
 ## Leads
 
@@ -25,3 +25,7 @@ Validação nativa Google Sheets: gravação e repetição de leads e desempenho
 A execução integral do novo marcador instalado no navegador da utilizadora continua a exigir um teste de aceitação, sobretudo para a deslocação da lista virtual e tempos de carregamento. Se o portal mudar a estrutura, a recolha deve falhar com aviso, nunca apresentar cobertura parcial como completa.
 
 Registo inicial validado no documento: 31 dias conferidos com o resumo do portal; segunda gravação devolveu duplicada, sem novas linhas. Dashboard com três gráficos, incluindo Rightmove por dia; verificação sem erros em células. Os dados concretos e capturas permanecem privados.
+
+## Correção do carregamento dos totais
+
+A versão 20261024.3 aguarda a ausência de indicadores de carregamento e a correspondência do total de cada canal com Summary. Um zero transitório não provoca imediatamente o erro de totais alterados. No fim, volta a conferir os três totais do resumo. Se a diferença persistir, termina com aviso e não copia uma série incoerente. Teste de regressão com zeros transitórios aprovado.
