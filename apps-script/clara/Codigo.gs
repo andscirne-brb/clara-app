@@ -144,8 +144,20 @@ function resumoSemanal(dias) {
   });
   // Registo de alterações
   const rg = ss.getSheetByName('Registo de alterações');
+  const alterados={};
   if (rg && rg.getLastRow() > 5) rg.getRange(6, 1, rg.getLastRow() - 5, 12).getDisplayValues().forEach(function (r) {
-    if (r[1] && dentro(r[0])) im(r[1]).trabalho.push('Alterado (' + r[4] + '): ' + r[5] + (r[7] ? ': ' + r[7] : '') + '.');
+    if(!r[1]||!dentro(r[0]))return;
+    const grupo=alterados[r[1]]||(alterados[r[1]]={campos:{},idiomas:{},pendencias:false});
+    const partes=String(r[5]||'').split(' · '),onde=partes[0];
+    if(onde==='Textos por idioma'&&IDIOMAS[partes[1]])grupo.idiomas[partes[1]]=true;
+    else if(onde===PEND.nome||r[4]===PEND.nome)grupo.pendencias=true;
+    else if(onde===LEV.nome&&partes[1])grupo.campos[partes.slice(1).join(' · ')]=true;
+    else if(r[5])grupo.campos[String(r[5])]=true;
+  });
+  Object.keys(alterados).forEach(function(ref){const g=alterados[ref],dest=im(ref).trabalho,campos=Object.keys(g.campos),idiomas=Object.keys(g.idiomas);
+    if(campos.length)dest.push('Registadas alterações no levantamento: '+campos.join(', ')+'.');
+    if(idiomas.length)dest.push('Registados textos por idioma: '+idiomas.join(', ')+'.');
+    if(g.pendencias)dest.push('Atualizado o acompanhamento das pendências.');
   });
   const linhas = Object.keys(por).map(function (k) { return por[k]; }).sort(function (a, b) { return b.pendente.length - a.pendente.length || a.ref.localeCompare(b.ref); });
   return { de: fmt(de), ate: fmt(hoje), linhas: linhas, corrigidas: corrigidas, novas: novas, aSara: aSara };
@@ -157,13 +169,19 @@ function htmlResumo_(r) {
   const td = 'border:1px solid #d7dde0;padding:8px;vertical-align:top;text-align:left';
   const cel = function (a, vazio) { return a.length ? a.map(function (x) { return '<div>' + e(x) + '</div>'; }).join('') : '<span style="color:#6b7b80">' + vazio + '</span>'; };
   return '<div style="font-family:Arial,sans-serif;font-size:14px;color:#24383f">' +
-    '<p>Olá Sara,</p><p>Ponto de situação dos anúncios de ' + r.de + ' a ' + r.ate + ': ' + r.corrigidas + ' correções confirmadas, ' + r.novas + ' novos pontos a tratar por mim e ' + r.aSara + ' questões que precisam da tua análise (última coluna).</p>' +
-    '<table style="border-collapse:collapse;width:100%"><thead><tr>' + ['Imóvel', 'Trabalho realizado / verificação', 'Para a tua análise'].map(function (h) { return '<th style="' + td + ';background:#edf1f2">' + h + '</th>'; }).join('') + '</tr></thead><tbody>' +
+    '<p>Olá Sara,</p>' + (r.links ? '<p>Para consulta: <a href="'+e(r.links.documento)+'">dashboard e detalhes do documento</a> · <a href="'+e(r.links.sara)+'">pendências para a Sara'+(r.links.filtrada?' (vista filtrada)':'')+'</a>.</p>' : '') + '<p>Ponto de situação dos anúncios de ' + r.de + ' a ' + r.ate + ': ' + r.corrigidas + ' correções confirmadas, ' + r.novas + ' novos pontos a tratar por mim e ' + r.aSara + ' questões que precisam da tua análise (última coluna).</p>' +
+    '<h3>Trabalho realizado e assuntos em acompanhamento</h3><table style="border-collapse:collapse;width:100%"><thead><tr>' + ['Imóvel', 'Trabalho realizado / verificação', 'Para a tua análise'].map(function (h) { return '<th style="' + td + ';background:#edf1f2">' + h + '</th>'; }).join('') + '</tr></thead><tbody>' +
     r.linhas.map(function (l) { return '<tr><th scope="row" style="' + td + '">' + e(l.ref) + '</th><td style="' + td + '">' + cel(l.trabalho, 'Sem trabalho neste período.') + '</td><td style="' + td + '">' + cel(l.pendente, 'Nada pendente.') + '</td></tr>'; }).join('') +
-    '</tbody></table><p>O detalhe está no separador Pendências da equipa do levantamento.</p>' +
+    '</tbody></table><h3>Seguimento previsto para a próxima semana</h3>' + ((r.proximosPassos||[]).length ? '<ul>'+r.proximosPassos.map(x=>'<li>'+e(x)+'</li>').join('')+'</ul>' : '<p>Planeamento por preencher antes de enviar.</p>') +
     (pedidoLeadsEstaSemana ? '<p><strong>Relatórios de leads do eGO</strong><br>Para preparar um relatório de progressão baseado em dados reais, preciso de acesso a relatórios com o número de leads por dia e a respetiva origem no eGO. Neste momento não consigo consultar esta informação no eGO. Podes ajudar-me a obter acesso a estes relatórios na plataforma? Preciso apenas das contagens diárias por origem, sem informação individual de cada lead. Depois de ter acesso, consigo consultar os relatórios autonomamente de quinze em quinze dias.</p>' : '') + '<p>Obrigada,<br>Andreia</p></div>';
 }
-function previewResumo(dias) { const r = resumoSemanal(dias); r.html = htmlResumo_(r); r.assunto = 'Anúncios: ponto de situação de ' + r.de + ' a ' + r.ate; return r; }
+function previewResumo(dias,plano) {
+  const r=resumoSemanal(dias),ss=SpreadsheetApp.getActive(),base=ss.getUrl(),dashboard=ss.getSheetByName('Dashboard'),pend=ss.getSheetByName(PEND.nome),vista=PropertiesService.getScriptProperties().getProperty('CLARA_VISTA_SARA_FVID')||'';
+  r.links={documento:base+(dashboard?'#gid='+dashboard.getSheetId():''),sara:base+(pend?'#gid='+pend.getSheetId():'')+(/^\d+$/.test(vista)?'&fvid='+vista:''),filtrada:/^\d+$/.test(vista)};
+  r.proximosPassos=String(plano||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  if(r.proximosPassos.join('\n').length>10000)throw Error('O plano é demasiado extenso. Resume os próximos passos.');
+  r.html=htmlResumo_(r);r.assunto='Anúncios: ponto de situação de '+r.de+' a '+r.ate;return r;
+}
 
 function irPara(separador, linha) {
   const sh = SpreadsheetApp.getActive().getSheetByName(separador);

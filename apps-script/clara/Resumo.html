@@ -3,22 +3,27 @@
 <style>
 body{font-family:Arial,sans-serif;font-size:13px;color:#202124;margin:0;padding:12px}
 label{display:block;font-size:12px;color:#5f6368;margin-top:8px}
-select,input{width:100%;box-sizing:border-box;font-size:13px;padding:4px}
+select,input,textarea{width:100%;box-sizing:border-box;font-size:13px;padding:4px}
 button{background:#1a73e8;color:#fff;border:0;border-radius:6px;padding:8px 12px;font-size:13px;cursor:pointer;margin:8px 6px 0 0}
+button:disabled{opacity:.5;cursor:default}
 button.sec{background:#fff;color:#1a73e8;border:1px solid #dadce0}
 #prev{border:1px solid #dadce0;border-radius:6px;padding:8px;margin-top:10px;font-size:12px;max-height:420px;overflow:auto;background:#fff}
 .ok{color:#188038;margin-top:8px}.muted{color:#5f6368;font-size:12px}
 </style></head>
 <body>
-<label>Período</label>
+<p><strong>Para:</strong> Sara<br><strong>Cc:</strong> Idília e Júlia</p>
+<label for="dias">Período</label>
 <select id="dias" onchange="ver()"><option value="7">Últimos 7 dias</option><option value="14">Últimos 14 dias</option><option value="30">Últimos 30 dias</option></select>
+<label for="plano">Seguimento previsto para a próxima semana</label><textarea id="plano" rows="4" placeholder="Um próximo passo por linha. Escreve apenas o que planeias fazer." oninput="invalidar()"></textarea>
+<button class="sec" onclick="ver()">Atualizar resumo</button>
 <label>Assunto</label><input id="assunto" readonly onclick="this.select()">
-<button class="sec" onclick="copiarAssunto()">Copiar assunto</button><button onclick="copiarEmail()">Copiar email</button>
+<button class="sec" onclick="copiarAssunto()">Copiar assunto</button><button id="copiarEmail" disabled onclick="copiarEmail()">Copiar email</button>
 <div id="msg" class="ok"></div>
 <div id="prev">A preparar…</div>
-<p class="muted">Abre o webmail da Janela (janela.pt/webmail), cria uma mensagem para a Sara com a Júlia em Cc, cola o assunto e o email (Ctrl+V). Revê e envia tu.</p>
+<p class="muted">Abre o webmail da Janela (janela.pt/webmail), cria uma mensagem para a Sara com a Idília e a Júlia em Cc, cola o assunto e o email (Ctrl+V). Revê e envia tu.</p>
 <script>
-function ver(){document.getElementById('prev').textContent='A preparar…';google.script.run.withSuccessHandler(r=>{document.getElementById('prev').innerHTML=r.html;document.getElementById('assunto').value=r.assunto;}).withFailureHandler(e=>document.getElementById('prev').textContent=e.message).previewResumo(+document.getElementById('dias').value);}
+function invalidar(){document.getElementById('copiarEmail').disabled=true;document.getElementById('msg').textContent='Atualiza o resumo para incluir o plano.';}
+function ver(){document.getElementById('prev').textContent='A preparar…';document.getElementById('copiarEmail').disabled=true;google.script.run.withSuccessHandler(r=>{document.getElementById('prev').innerHTML=r.html;document.getElementById('assunto').value=r.assunto;document.getElementById('copiarEmail').disabled=!r.proximosPassos.length;document.getElementById('msg').textContent=r.proximosPassos.length?'Resumo atualizado. Revê antes de copiar.':'Preenche o seguimento da próxima semana e carrega em Atualizar resumo.';}).withFailureHandler(e=>document.getElementById('prev').textContent=e.message).previewResumo(+document.getElementById('dias').value,document.getElementById('plano').value);}
 function aviso(t){const m=document.getElementById('msg');m.textContent=t;setTimeout(()=>m.textContent='',4000);}
 function copiarAssunto(){const i=document.getElementById('assunto');i.select();document.execCommand('copy');aviso('Assunto copiado.');}
 function copiarEmail(){const el=document.getElementById('prev');const r=document.createRange();r.selectNodeContents(el);const s=window.getSelection();s.removeAllRanges();s.addRange(r);const ok=document.execCommand('copy');s.removeAllRanges();aviso(ok?'Email copiado, com a tabela. Cola no webmail.':'Não consegui copiar: seleciona o texto acima e usa Ctrl+C.');}

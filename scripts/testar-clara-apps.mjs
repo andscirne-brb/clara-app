@@ -174,3 +174,14 @@ try{
  assert.equal(f.context.mesmoValor_(new Date('2026-10-22'),'2026-10-22'),false);
  console.log('PASS datas nativas: Date perdido reproduzido, série numérica preserva valor e formato, repetição e rollback verificados sem relaxar comparação.');
 }finally{Range.prototype.setValue=setOriginal;}
+
+f=fixture();const rss=f.context.SpreadsheetApp.getActive();rss.getUrl=()=> 'https://example.invalid/sheet/edit';f.sheets.set('Dashboard',{getSheetId:()=>101});f.pend.getSheetId=()=>202;
+f.context.PropertiesService={getScriptProperties:()=>({getProperty:()=> '303'})};
+let weeklyReport=f.context.previewResumo(7,'Rever anúncios prioritários\nConfirmar <documentos>');
+assert.equal(weeklyReport.proximosPassos.length,2);assert.match(weeklyReport.html,/href="https:\/\/example.invalid\/sheet\/edit#gid=101"/);assert.match(weeklyReport.html,/#gid=202&amp;fvid=303/);assert.match(weeklyReport.html,/Confirmar &lt;documentos>/);assert.match(weeklyReport.html,/<table/);assert.match(weeklyReport.html,/Seguimento previsto para a próxima semana/);
+weeklyReport=f.context.previewResumo(7,'');assert.match(weeklyReport.html,/Planeamento por preencher/);assert.equal(weeklyReport.proximosPassos.length,0);
+f.context.PropertiesService={getScriptProperties:()=>({getProperty:()=> 'invalido'})};assert.equal(f.context.previewResumo(7,'Plano').links.filtrada,false);
+console.log('PASS resumo: links do documento ativo e vista filtrada privada, plano explícito escapado e ausência de compromissos inventados.');
+
+f=fixture();f.hist.seed(6,['2026-10-22','TESTE-001','','Andreia','Levantamento','Textos por idioma · PT · Descrição original','','Descrição completa privada']);f.hist.seed(7,['2026-10-22','TESTE-001','','Andreia','Levantamento','Textos por idioma · PT · Título original','','Título privado']);
+const compact=f.context.resumoSemanal(7);const work=compact.linhas.find(x=>x.ref==='TESTE-001').trabalho.join(' ');assert.match(work,/Registados textos por idioma: PT/);assert(!work.includes('Descrição completa privada'));assert.equal((work.match(/Registados textos por idioma/g)||[]).length,1);console.log('PASS tabela semanal: alterações por idioma agrupadas sem expor textos completos.');
