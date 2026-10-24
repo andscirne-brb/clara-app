@@ -8,4 +8,4 @@ Se o painel for fechado durante uma gravação, a recuperação pede primeiro a 
 
 O marcador inclui `marcadorVersao: 20261024.1` nas leituras eGO e Idealista. Leituras anteriores continuam aceites com aviso de atualização em Clara > Instalar o marcador. Não são alterados os nomes do menu.
 
-Testes: reabertura com escolhas, análise obrigatória, interrupção, troca de imóvel, limpeza, expiração, armazenamento recusado e aviso de versão. Dados de teste sintéticos. A recuperação no navegador real deve ser confirmada no painel sem executar uma gravação de teste em imóveis reais.
+Testes: reabertura com escolhas, análise obrigatória, interrupção, troca de imóvel, limpeza, expiração, armazenamento recusado e aviso de versão. Dados de teste sintéticos. Validação no documento real: fechar e reabrir recuperou a leitura sintética TESTE-RASCUNHO e a escolha documental. O painel exigiu nova análise; não foi feita qualquer gravação de teste na folha. A leitura sintética foi limpa no fim.
