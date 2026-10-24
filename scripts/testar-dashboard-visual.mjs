@@ -36,3 +36,16 @@ console.log('PASS histórico Rightmove: duplicação impedida mesmo com outra or
 
 const lr=(a,b,t,call,email,dt='2026-10-23')=>[a,b,'','Rightmove',t,'','','',dt,'',call,email];
 let ml=c.leadsMensaisRightmove_([lr('2026-07-01','2026-07-31',0,0,0),lr('2026-09-01','2026-09-30',1,0,1),lr('2026-10-01','2026-10-20',1,1,0),lr('2026-10-01','2026-10-23',2,1,1),lr('2026-10-01','2026-10-23',2,1,1)],'UTC');assert.equal(ml.length,3);assert.equal(ml[0].total,0);assert.equal(ml[2].total,2);assert.equal(ml[2].parcial,true);assert.equal(ml[1].parcial,false);assert.equal(c.leadsMensaisRightmove_([lr('2026-10-01','2026-10-23',3,1,1)],'UTC').length,0);assert.equal(c.leadsMensaisRightmove_([lr('2026-10-01','2026-10-23',0,'','')],'UTC').length,0);console.log('PASS leads Rightmove: meses parciais, zero real, revisão e repetição não somadas, totais incoerentes e canais desconhecidos rejeitados.');
+
+// Abertura: reutilização, alteração de valores, falha e alteração concorrente.
+const props=new Map();c.PropertiesService={getDocumentProperties:()=>({getProperty:k=>props.get(k),setProperty:(k,v)=>props.set(k,v),deleteProperty:k=>props.delete(k)})};
+let released=0,builds=0,sourceValue=1,failBuild=false,concurrent=false;
+c.LockService={getDocumentLock:()=>({tryLock:()=>true,releaseLock:()=>released++})};
+const ds={getSheetId:()=>1,getLastRow:()=>2,getLastColumn:()=>1,getRange:()=>({getValues:()=>[[sourceValue]],getValue:()=> 'Resultados dos portais'}),getCharts:()=>[]};
+c.SpreadsheetApp={getActive:()=>({getSheetByName:()=>ds,getSpreadsheetTimeZone:()=> 'UTC'})};
+c.atualizarDashboardVisual_=()=>{builds++;if(failBuild)throw Error('falha');if(concurrent)sourceValue++;return{graficos:3};};
+c.atualizarDashboardSeNecessario();assert.equal(builds,1);assert.equal(c.atualizarDashboardSeNecessario().reutilizado,true);assert.equal(builds,1);
+sourceValue=2;c.atualizarDashboardSeNecessario();assert.equal(builds,2);
+sourceValue=3;failBuild=true;assert.throws(()=>c.atualizarDashboardSeNecessario(),/falha/);failBuild=false;c.atualizarDashboardSeNecessario();assert.equal(builds,4);
+sourceValue=4;concurrent=true;c.atualizarDashboardSeNecessario();concurrent=false;c.atualizarDashboardSeNecessario();assert.equal(builds,6);assert.equal(c.atualizarDashboardSeNecessario().reutilizado,true);assert.equal(released,8);
+console.log('PASS abertura dashboard: reutiliza sem mudanças, deteta valor alterado, repete após falha e não oculta alteração concorrente.');

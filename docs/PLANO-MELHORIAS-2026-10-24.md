@@ -57,3 +57,7 @@ Aplicar uma fase de cada vez. Testar primeiro em dados fictícios/cópias, verif
 2026-10-24: implementado o terceiro ponto. Novas entradas do histórico usam o nome real da folha de destino em Onde foi alterado, em vez do valor fixo Levantamento. Registos antigos preservados. Testes abrangem Levantamento, Textos por idioma e Pendências da equipa, antes/depois e repetição sem duplicados.
 
 2026-10-24: quarto ponto implementado — capacidade de Textos por idioma e Pendências da equipa preparada antes da gravação, com reanálise após inserção. Validados registos, formatos e filtros em cópias nativas; testes de gravação após expansão e repetição.
+
+## Quinto ponto: abertura do dashboard
+
+Implementada verificação das fontes antes de reconstruir gráficos. Reutiliza a vista sem alterações, preserva datas e mantém atualização técnica forçada. Testes de alterações manuais, falhas e concorrência aprovados. Ver DESEMPENHO-DASHBOARD.md.

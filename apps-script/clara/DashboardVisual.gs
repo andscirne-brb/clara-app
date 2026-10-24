@@ -12,6 +12,23 @@ function leadsMensaisRightmove_(linhas,tz){
  });
  return Object.keys(meses).sort().map(k=>{const m=meses[k],day=Number(m.fim.slice(-2)),last=new Date(Date.UTC(Number(k.slice(0,4)),Number(k.slice(5,7)),0)).getUTCDate();m.parcial=day<last;m.mes=k;return m;});
 }
+/** A assinatura inclui valores, não apenas contagens: alterações manuais também invalidam a vista. */
+function assinaturaDashboard_(ss){
+ const fontes=[['Idealista - recolhas',2,13],['Leads por período',6,12],['Rightmove - anúncios',6,22],['Levantamento',9,100],['Histórico de indicadores',6,11],['Rightmove - histórico',1,22],['Pendências da equipa',5,17]];
+ const dados=fontes.map(([nome,inicio,largura])=>{const sh=ss.getSheetByName(nome);return[nome,sh?sh.getSheetId():null,sh&&sh.getLastRow()>=inicio?sh.getRange(inicio,1,sh.getLastRow()-inicio+1,Math.min(largura,sh.getLastColumn())).getValues():[]];});
+ const d=ss.getSheetByName('Dashboard'),v=ss.getSheetByName('Clara - dashboard');
+ const estado=[d?d.getRange('A2').getValue():null,v?v.getSheetId():null,d?d.getCharts().map(c=>String(c.getOptions().get('title')||'')).sort():[]];
+ return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,JSON.stringify(['dashboard-v3',ss.getSpreadsheetTimeZone(),dados,estado]),Utilities.Charset.UTF_8).map(b=>('0'+((b+256)%256).toString(16)).slice(-2)).join('');
+}
+function atualizarDashboardSeNecessario(){
+ const lock=LockService.getDocumentLock();if(!lock.tryLock(1000))return{adiado:true};
+ try{
+  const ss=SpreadsheetApp.getActive(),props=PropertiesService.getDocumentProperties(),key='clara.dashboard.assinatura.v3',assinatura=assinaturaDashboard_(ss);
+  if(props.getProperty(key)===assinatura)return{reutilizado:true};
+  // Não marcar como atualizada se os dados mudaram durante a construção.
+  const r=atualizarDashboardVisual_(ss);if(r){const depois=assinaturaDashboard_(ss);if(depois===assinatura)props.setProperty(key,depois);else props.deleteProperty(key);}return r;
+ }finally{lock.releaseLock();}
+}
 function atualizarDashboardVisual(){const lock=LockService.getDocumentLock();if(!lock.tryLock(1000))return;try{const r=atualizarDashboardVisual_(SpreadsheetApp.getActive());console.log(JSON.stringify(r));return r;}finally{lock.releaseLock();}}
 function prepararDashboardVisual(){
  const ss=SpreadsheetApp.getActive(),s=ss.getSheetByName('Dashboard');if(!s)throw Error('Dashboard não encontrado.');

@@ -89,7 +89,7 @@ function onOpen() {
     .addItem('Resumo semanal', 'abrirResumo')
     .addItem('Instalar o marcador', 'mostrarMarcador')
     .addToUi();
-  try {const ss=SpreadsheetApp.getActive(),d=ss.getSheetByName('Dashboard');if(d&&d.getRange('A2').getValue()==='Resultados dos portais')atualizarDashboardVisual();} catch(e){console.warn('Dashboard: '+e.message);}
+  try {const ss=SpreadsheetApp.getActive(),d=ss.getSheetByName('Dashboard');if(d&&d.getRange('A2').getValue()==='Resultados dos portais')atualizarDashboardSeNecessario();} catch(e){console.warn('Dashboard: '+e.message);}
 }
 
 function abrirPainel() {
