@@ -93,7 +93,7 @@ function onOpen() {
 }
 
 function abrirPainel() {
-  SpreadsheetApp.getUi().showSidebar(HtmlService.createHtmlOutput(PAINEL_HTML).setTitle('Clara'));
+  SpreadsheetApp.getUi().showSidebar(HtmlService.createHtmlOutput(PAINEL_HTML.replace('__CLARA_DOCUMENTO__',SpreadsheetApp.getActive().getId())).setTitle('Clara'));
 }
 
 function abrirLista() {

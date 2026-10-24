@@ -46,3 +46,14 @@ w.ver();wcalls.at(-1).fail({message:'Falha atual'});assert.equal(wfget('plano').
 w.ver();wcalls.at(-1).ok(reply('recuperado'));assert.equal(wfget('copiarEmail').disabled,false);wfget('plano').value='Alterado sem evento';w.copiarEmail();assert.equal(copies,1);assert.equal(wfget('copiarEmail').disabled,true);
 wfget('plano').value='';w.ver();wcalls.at(-1).ok(reply('sem plano',[]));assert.equal(wfget('copiarEmail').disabled,true);assert.equal(wfget('copiarAssunto').disabled,false);
 console.log('PASS resumo assíncrono: respostas fora de ordem, alterações durante carregamento, falha antiga ignorada, cópia protegida, pedido repetido e recuperação sem perder plano.');
+
+const store=new Map(),storage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v),removeItem:k=>store.delete(k)};
+function painelNovo(st=storage){const f=new Map(),get=id=>{if(!f.has(id))f.set(id,{value:'',hidden:false,events:{},addEventListener(k,v){this.events[k]=v;},focus(){}});return f.get(id);};const x={document:{getElementById:get},localStorage:st,google:{script:{run:rpc}}};vm.createContext(x);vm.runInContext(html.match(/<script>([\s\S]*?)<\/script>/)[1],x);return{x,get};}
+let draft=painelNovo();draft.get('txt').value=payload('EX2001');draft.x.entrada();draft.get('d_certificado').value='sem_dossier';draft.get('d_certificado').events.change();
+draft=painelNovo();assert.equal(draft.get('txt').value,payload('EX2001'));assert.equal(draft.get('d_certificado').value,'sem_dossier');assert.equal(draft.get('guardar').hidden,true);assert.match(draft.get('rascunho').textContent,/EX2001/);
+draft.x.guardarRascunho(true);draft=painelNovo();assert.match(draft.get('rascunho').textContent,/Confirma primeiro/);
+draft.get('txt').value=payload('EX2002');draft.x.entrada();assert.equal(draft.get('d_certificado').value,'');draft.x.novaLeitura();assert.equal(store.size,0);assert.equal(painelNovo().get('txt').value,'');
+draft=painelNovo({getItem(){throw Error('bloqueado');},setItem(){throw Error('bloqueado');},removeItem(){throw Error('bloqueado');}});draft.get('txt').value=payload('EX2003');draft.x.entrada();assert.equal(draft.get('analisar').disabled,false);assert.match(draft.get('rascunho').textContent,/não permitiu/);
+draft=painelNovo();draft.get('txt').value='CLARA1:'+JSON.stringify({ref:'EX2004',marcadorVersao:'20261024.1'});draft.x.entrada();assert.equal(draft.get('versao').hidden,true);draft.get('txt').value=payload('EX2004');draft.x.entrada();assert.equal(draft.get('versao').hidden,false);
+const k=[...store.keys()][0],expired=JSON.parse(store.get(k));expired.data=Date.now()-8*86400000;store.set(k,JSON.stringify(expired));assert.equal(painelNovo().get('txt').value,'');assert.equal(store.size,0);
+console.log('PASS rascunho: recuperação com documentos, revisão obrigatória, gravação interrompida, troca de imóvel, limpeza, expiração, armazenamento bloqueado e aviso de versão.');

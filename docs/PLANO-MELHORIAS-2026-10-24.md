@@ -61,3 +61,7 @@ Aplicar uma fase de cada vez. Testar primeiro em dados fictícios/cópias, verif
 ## Quinto ponto: abertura do dashboard
 
 Implementada verificação das fontes antes de reconstruir gráficos. Reutiliza a vista sem alterações, preserva datas e mantém atualização técnica forçada. Testes de alterações manuais, falhas e concorrência aprovados. Ver DESEMPENHO-DASHBOARD.md.
+
+## Sexto ponto: continuidade da recolha
+
+Rascunho local por documento, recuperação com nova análise obrigatória, aviso de gravação interrompida e identificação da versão do marcador. Testes aprovados. Ver RASCUNHOS-E-VERSAO.md.
