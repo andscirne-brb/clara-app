@@ -191,3 +191,18 @@ f=fixture();f.hist.maxRows=7;f.hist.seed(6,['2026-10-20','ANCIEN-1']).seed(7,['2
 const oldHistory=[...f.hist.cells].filter(([k])=>+k.split(',')[0]<=7);save(f,payload());assert(f.hist.getMaxRows()>=207);oldHistory.forEach(([k,v])=>assert.equal(f.hist.cells.get(k),v));assert.equal(f.hist.getRange(8,1).getNumberFormat(),'0.###############');assert.equal(get(f.hist,8,2),'TESTE-001');const grown=f.hist.getMaxRows();save(f,payload());assert.equal(f.hist.getMaxRows(),grown);
 f=fixture();f.hist.maxRows=6;f.hist.seed(6,['2026-10-20','ANCIEN']);f.hist.failGrowth=true;const unchanged=snapshot(f);assert.throws(()=>save(f,payload()),/Não foi possível ampliar/);assert.equal(snapshot(f),unchanged);
 console.log('PASS capacidade do histórico: amplia automaticamente, preserva registos e formatos, não amplia em repetição e aborta sem escrita se atingir limite.');
+
+// Uma fonte de responsabilidade; coluna interna nunca decide a destinatária.
+f=fixture();const pr=(owner,status,q='')=>['P001','TESTE-001','Documentos','Confirmar documento','Evidência','Próxima ação',owner,'Alta',status,'2026-10-22','','','','','',q];
+let gr=f.context.gestaoPendencia_(pr('Andreia','A aguardar esclarecimento'),9,'Por tratar');assert.equal(gr.responsavel,'Sara');
+gr=f.context.gestaoPendencia_(pr('Sara','Por tratar','Sara'),9,'A aguardar esclarecimento');assert.equal(gr.responsavel,'Andreia');assert.equal(gr.aguarda,'');
+gr=f.context.gestaoPendencia_(pr('Andreia','A aguardar esclarecimento','Sara'),7,'Sara');assert.equal(gr.estado,'Por tratar');
+gr=f.context.gestaoPendencia_(pr('Sara','Concluído','Sara'),9,'A aguardar esclarecimento');assert.equal(gr.aguarda,'');
+f.pend.seed(6,pr('Andreia','Por tratar','Sara'));assert.equal(f.context.resumoSemanal(7).aSara,0);
+f.pend.seed(6,pr('Sara','A aguardar esclarecimento',''));assert.equal(f.context.resumoSemanal(7).aSara,1);
+f.pend.seed(6,pr('Andreia','A aguardar esclarecimento',''));let sg=f.context.sincronizarGestaoPendencias_(f.context.SpreadsheetApp.getActive(),6,1,9,'Por tratar');assert.equal(get(f.pend,6,7),'Sara');assert.equal(get(f.pend,6,17),'Sara');assert(sg.alteracoes>0);const syn=snapshot(f);f.context.sincronizarGestaoPendencias_(f.context.SpreadsheetApp.getActive(),6,1,0);assert.equal(snapshot(f),syn);
+f.pend.cells.set('6,9','Por tratar');f.context.sincronizarGestaoPendencias_(f.context.SpreadsheetApp.getActive(),6,1,9,'A aguardar esclarecimento');assert.equal(get(f.pend,6,7),'Andreia');assert.equal(get(f.pend,6,17),'');assert.equal(f.context.resumoSemanal(7).aSara,0);assert([...f.hist.cells.values()].includes('Pendências da equipa'));
+f=fixture();d=payload();f.pend.seed(6,pr('Sara','A aguardar esclarecimento','Sara'));f.pend.cells.set('6,4','Documentos obrigatórios sem ficheiro no eGO');save(f,d,{...docs,licenca:'nao'});assert.equal(get(f.pend,6,7),'Andreia');assert.equal(get(f.pend,6,9),'Por tratar');assert.equal(get(f.pend,6,17),'');
+console.log('PASS gestão unificada: atribuição à Sara, devolução explícita à Andreia, conclusão, resumo sem dependência da coluna antiga, histórico e sincronização idempotente.');
+
+f=fixture();f.pend.seed(6,pr('Andreia','A aguardar esclarecimento',''));const beforeSync=snapshot(f);f.fail();assert.throws(()=>f.context.sincronizarGestaoPendencias_(f.context.SpreadsheetApp.getActive(),6,1,9,'Por tratar'),/Synthetic flush failure/);assert.equal(get(f.pend,6,7),'Andreia');assert.equal(get(f.pend,6,17),'');assert(![...f.hist.cells.values()].includes('Sara'));console.log('PASS recuperação da gestão: falha de escrita repõe os campos automáticos e não deixa histórico de alterações não aplicadas.');

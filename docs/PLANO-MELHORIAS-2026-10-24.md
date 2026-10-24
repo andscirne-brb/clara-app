@@ -47,3 +47,7 @@ Validação: abrir ligações como utilizador autorizado; confirmar filtros com 
 ## Regras de execução
 
 Aplicar uma fase de cada vez. Testar primeiro em dados fictícios/cópias, verificar o percurso afetado no Sheets e publicar código, testes e documentação no repositório. Preservar fórmulas, histórico, dados reais e possibilidade de recuperação. As correções de fiabilidade precedem novos indicadores ou decoração do dashboard.
+
+## Execução por pontos
+
+2026-10-24: implementado o primeiro ponto, gestão coerente de responsável/estado. As listas e o resumo deixaram de depender da coluna interna; dashboard segue a mesma regra, e edições manuais são sincronizadas por onEdit. Testados delegação, devolução, conclusão, repetição e recuperação; percursos confirmados em cópias nativas. Ver GESTAO-PENDENCIAS.md. Os restantes pontos continuam por executar.

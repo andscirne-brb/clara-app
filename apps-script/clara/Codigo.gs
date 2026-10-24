@@ -43,6 +43,43 @@ function simplificarPendenciasEquipa() {
   SpreadsheetApp.flush();
   return {colunasVisiveis:6,registos:Math.max(0,s.getLastRow()-5)};
 }
+function gestaoPendencia_(r,coluna,anterior){
+  let responsavel=String(r[6]||''),estado=String(r[8]||'');
+  const fechada=estado==='Concluído'||estado==='Não aplicável';
+  if(!fechada){
+    if(coluna===7&&responsavel==='Sara')estado='A aguardar esclarecimento';
+    else if(coluna===7&&responsavel==='Andreia'&&estado==='A aguardar esclarecimento')estado='Por tratar';
+    else if(coluna===9&&anterior==='A aguardar esclarecimento'&&estado!=='A aguardar esclarecimento'&&responsavel==='Sara')responsavel='Andreia';
+    if(estado==='A aguardar esclarecimento')responsavel='Sara';
+  }
+  return{responsavel:responsavel,estado:estado,aguarda:!fechada&&responsavel==='Sara'?'Sara':''};
+}
+function responsavelPendencia_(r){return gestaoPendencia_(r,0).responsavel;}
+function sincronizarGestaoPendencias_(ss,inicio,n,coluna,anterior){
+  const sh=ss.getSheetByName(PEND.nome),hs=estrutura_(ss,'Registo de alterações',['Data da alteração','Referência EGO','Autor','Onde foi alterado','Campo / assunto','Antes','Depois / alteração realizada','Motivo / fonte','Resultado da verificação']);
+  const linhas=sh.getRange(inicio,1,n,17).getValues(),plano=[],historico=[],hoje=dataHoje_();
+  function agendar(sheet,row,col,novo){const cel=sheet.getRange(row,col),antes=cel.getValue();if(mesmoValor_(antes,novo))return;if(cel.getFormula())throw Error('Há uma fórmula na célula de gestão.');plano.push({sh:sheet,linha:row,col:col,cel:cel,antes:antes,depois:novo,antesFormato:cel.getNumberFormat()});}
+  function nota(r,campo,antes,depois){historico.push({ref:r[1],id:r[0],campo:campo,antes:String(antes||''),depois:String(depois||'')});}
+  linhas.forEach(function(r,i){if(!r[0]||!r[1])return;const row=inicio+i,g=gestaoPendencia_(r,coluna,anterior),changes=[[7,g.responsavel,'Responsável'],[9,g.estado,'Estado'],[17,g.aguarda,'Aguarda análise de']];let mudou=false;
+    if(n===1&&(coluna===7||coluna===9)&&anterior!==undefined&&String(anterior)!==String(r[coluna-1])){nota(r,coluna===7?'Responsável':'Estado',anterior,r[coluna-1]);mudou=true;}
+    changes.forEach(function(x){if(String(r[x[0]-1]||'')!==x[1]){agendar(sh,row,x[0],x[1]);nota(r,x[2],r[x[0]-1],x[1]);mudou=true;}});
+    if(mudou)agendar(sh,row,11,hoje);
+  });
+  if(!historico.length)return{alteracoes:0};
+  const first=hs.sh.getLastRow()+1,last=first+historico.length-1,max=hs.sh.getMaxRows();
+  if(last>max){const add=Math.max(200,last-max);hs.sh.insertRowsAfter(max,add);hs.sh.getRange(max,1,1,hs.sh.getLastColumn()).copyFormatToRange(hs.sh,1,hs.sh.getLastColumn(),max+1,max+add);}
+  historico.forEach(function(h,i){const row=first+i,values={'Data da alteração':hoje,'Referência EGO':h.ref,'ID da pendência':h.id,'Autor':'Equipa','Onde foi alterado':PEND.nome,'Campo / assunto':h.campo,'Antes':h.antes,'Depois / alteração realizada':h.depois,'Motivo / fonte':'Sincronização de responsável e estado da pendência','Resultado da verificação':'Confirmado'};Object.keys(values).forEach(k=>{if(hs.col(k))agendar(hs.sh,row,hs.col(k),values[k]);});});
+  const lotes=lotesGravacaoClara_(plano),aplicados=[];conferirLotesClara_(lotes,true);
+  try{lotes.forEach(l=>{aplicados.push(l);escreverLoteClara_(l,false);});SpreadsheetApp.flush();conferirLotesClara_(lotes,false);}catch(e){aplicados.slice().reverse().forEach(l=>escreverLoteClara_(l,true));SpreadsheetApp.flush();conferirLotesClara_(aplicados,true);throw e;}
+  return{alteracoes:historico.length};
+}
+function sincronizarResponsaveisPendencias(){const lock=LockService.getDocumentLock();if(!lock.tryLock(5000))throw Error('Há outra gravação em curso.');try{const ss=SpreadsheetApp.getActive(),sh=ss.getSheetByName(PEND.nome);return sh.getLastRow()>5?sincronizarGestaoPendencias_(ss,6,sh.getLastRow()-5,0):{alteracoes:0};}finally{lock.releaseLock();}}
+function onEdit(e){
+  if(!e||!e.range)return;const r=e.range,sh=r.getSheet();if(sh.getName()!==PEND.nome||r.getLastRow()<6)return;
+  const first=r.getColumn(),last=r.getLastColumn();if(!(first<=7&&last>=7)&&!(first<=9&&last>=9))return;
+  const lock=LockService.getDocumentLock();if(!lock.tryLock(5000)){e.source.toast('Há uma gravação em curso. Confirma depois o responsável e o estado.','Clara',8);return;}
+  try{const inicio=Math.max(6,r.getRow()),col=r.getNumRows()===1&&r.getNumColumns()===1?first:0;sincronizarGestaoPendencias_(e.source,inicio,r.getLastRow()-inicio+1,col,e.oldValue);}catch(err){console.error('Gestão de pendências: '+err.message);e.source.toast('Não foi possível sincronizar a pendência. Confirma o responsável e o estado.','Clara',10);}finally{lock.releaseLock();}
+}
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Clara')
     .addItem('Progresso', 'abrirLista')
@@ -90,8 +127,8 @@ function listaTrabalho() {
   ps.getRange(PEND.titulos + 1, 1, Math.max(1, ps.getLastRow() - PEND.titulos), 17).getDisplayValues().forEach(function (r, i) {
     if (!r[1] || r[2] === 'Perfil do portal' || r[8] === 'Concluído' || r[8] === 'Não aplicável') return;
     const p = { id: r[0], ref: r[1], tema: r[2], assunto: r[3], acao: r[5], estado: r[8], linha: PEND.titulos + 1 + i };
-    if (r[6] === 'Andreia') { (minhas[r[1]] = minhas[r[1]] || []).push(p); }
-    else if (r[16] === 'Sara') sara.push(p);
+    if (responsavelPendencia_(r) === 'Andreia') { (minhas[r[1]] = minhas[r[1]] || []).push(p); }
+    else if (responsavelPendencia_(r) === 'Sara') sara.push(p);
   });
   const minhasLista = Object.keys(minhas).map(function (ref) { const im = imoveis[ref] || { ref: ref }; return { ref: ref, url: im.url || '', prioridade: im.prioridade || '', natureza: im.natureza || '', pendencias: minhas[ref] }; });
   const ordem = { 'Prioritária': 0, 'Alta': 1, 'Normal': 2 };
@@ -139,8 +176,8 @@ function resumoSemanal(dias) {
     if (!r[1]) return;
     const fechada = r[8] === 'Concluído' || r[8] === 'Não aplicável';
     if (r[8] === 'Concluído' && r[14] === 'Confirmado' && dentro(r[12])) { im(r[1]).trabalho.push((r[8] === 'Concluído' ? 'Corrigido: ' : 'Não aplicável: ') + r[3] + '.'); corrigidas++; }
-    else if (!fechada && r[16] === 'Sara') { im(r[1]).pendente.push(r[3] + (r[5] ? ' ' + r[5] : '')); aSara++; }
-    else if (!fechada && r[6] === 'Andreia' && dentro(r[9])) { im(r[1]).trabalho.push('Identificado, a tratar: ' + r[3] + '.'); novas++; }
+    else if (!fechada && responsavelPendencia_(r) === 'Sara') { im(r[1]).pendente.push(r[3] + (r[5] ? ' ' + r[5] : '')); aSara++; }
+    else if (!fechada && responsavelPendencia_(r) === 'Andreia' && dentro(r[9])) { im(r[1]).trabalho.push('Identificado, a tratar: ' + r[3] + '.'); novas++; }
   });
   // Registo de alterações
   const rg = ss.getSheetByName('Registo de alterações');
@@ -387,6 +424,9 @@ function analisar(texto, docs) {
     p.jaExiste = ex ? ex.id : ''; p.linhaExistente = ex ? ex.linha : 0;
     p.reabrir = !!ex && ex.estado === 'Concluído';
     p.atualizar = !!ex && ex.estado !== 'Concluído' && ex.estado !== 'Não aplicável' && (p.tema === 'Documentos' ? todosVistos : !!verificaveis[p.assunto]) && (ex.evidencia !== p.evidencia || ex.acao !== p.acao || (p.sara && (ex.aguarda !== 'Sara' || ex.responsavel !== 'Sara')));
+    p.retomarAndreia = !!ex && p.tema==='Documentos' && todosVistos && !p.sara && ex.estado==='A aguardar esclarecimento' && ex.responsavel==='Sara';
+    if(p.retomarAndreia)p.atualizar=true;
+    p.responsavelReabertura=p.sara?'Sara':ex&&ex.responsavel==='Sara'?'Andreia':ex?ex.responsavel:'Andreia';
     p.delegarSara = !!ex && ex.estado !== 'Concluído' && ex.estado !== 'Não aplicável' && p.sara;
     if (p.delegarSara && !todosVistos) {
       const aviso = 'Confirmado sem ficheiro no eGO nem no dossier; aguarda Sara: ' + semDossier.join(', ') + '.';
@@ -546,13 +586,13 @@ function gravar(texto, docs) {
     const criadas = [], reabertas = [], confirmadas = [];
     a.pendencias.forEach(function (p) {
       if (p.jaExiste && !p.reabrir) {
-        if (p.atualizar) [[5, p.evidencia], [6, p.acao], [11, hoje]].concat(p.delegarSara ? [[7, 'Sara'], [9, 'A aguardar esclarecimento'], [17, 'Sara']] : []).forEach(function (v) { agendar(ps, p.linhaExistente, v[0], v[1], p.assunto + ' · atualização (coluna ' + v[0] + ')', p.jaExiste); });
+        if (p.atualizar) [[5, p.evidencia], [6, p.acao], [11, hoje]].concat(p.delegarSara ? [[7, 'Sara'], [9, 'A aguardar esclarecimento'], [17, 'Sara']] : p.retomarAndreia?[[7,'Andreia'],[9,'Por tratar'],[17,'']]:[]).forEach(function (v) { agendar(ps, p.linhaExistente, v[0], v[1], p.assunto + ' · atualização (coluna ' + v[0] + ')', p.jaExiste); });
         return;
       }
       const linha = p.reabrir ? p.linhaExistente : livresP[ip++], id = p.reabrir ? p.jaExiste : 'P' + String(++maxId).padStart(4, '0');
       if (p.reabrir) {
         // Mantém a criação, responsável e prioridade; o histórico conserva a resolução anterior.
-        [[5, p.evidencia], [6, p.acao]].concat(p.sara ? [[7, 'Sara']] : []).concat([[9, p.sara ? 'A aguardar esclarecimento' : 'Por tratar'], [11, hoje], [12, ''], [13, ''], [15, 'Por verificar'], [17, p.sara ? 'Sara' : '']]).forEach(function (v) { agendar(ps, linha, v[0], v[1], p.assunto + ' · reabertura (coluna ' + v[0] + ')', id); });
+        [[5, p.evidencia], [6, p.acao]].concat([[7,p.responsavelReabertura||'Andreia']]).concat([[9, p.sara ? 'A aguardar esclarecimento' : 'Por tratar'], [11, hoje], [12, ''], [13, ''], [15, 'Por verificar'], [17, p.sara ? 'Sara' : '']]).forEach(function (v) { agendar(ps, linha, v[0], v[1], p.assunto + ' · reabertura (coluna ' + v[0] + ')', id); });
         reabertas.push(id + ' ' + p.assunto);
       } else {
         const values = [id, a.ref, p.tema, p.assunto, p.evidencia, p.acao, p.sara ? 'Sara' : 'Andreia', 'Normal', p.sara ? 'A aguardar esclarecimento' : 'Por tratar', hoje, hoje, '', '', p.onde, 'Por verificar'];
