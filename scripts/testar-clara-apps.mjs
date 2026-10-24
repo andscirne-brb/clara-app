@@ -17,13 +17,14 @@ const txh=['Referência EGO','Idioma','Título original','Descrição original',
 const hish=['Data da alteração','Referência EGO','ID da pendência','Autor','Onde foi alterado','Campo / assunto','Antes','Depois / alteração realizada','Motivo / fonte','Resultado da verificação','Data da verificação','Verificado por'];
 class Sheet {
  constructor(name,width=20){this.name=name;this.width=width;this.cells=new Map();this.forms=new Map();this.formats=new Map();}
- getName(){return this.name} getMaxRows(){return 2000} getLastColumn(){return this.width}
+ getName(){return this.name} getMaxRows(){return this.maxRows??2000} insertRowsAfter(after,n){assert.equal(after,this.getMaxRows());if(this.failGrowth)throw Error("Limite de células");this.maxRows=after+n;return this;} getLastColumn(){return this.width}
  getLastRow(){return Math.max(1,...[...this.cells.keys(),...this.forms.keys()].map(k=>+k.split(',')[0]))}
  getRange(r,c,n=1,m=1){return new Range(this,r,c,n,m)}
  seed(r,vs){vs.forEach((v,j)=>this.cells.set(`${r},${j+1}`,v));return this}
 }
 class Range {
  constructor(sh,r,c,n,m){Object.assign(this,{sh,r,c,n,m})}
+ copyFormatToRange(sh,start,end,first,last){for(let r=first;r<=last;r++)for(let c=start;c<=end;c++)sh.formats.set(`${r},${c}`,this.sh.formats.get(`${this.r},${this.c+c-start}`)??'0.###############');return this;}
  getValue(){return this.sh.cells.get(`${this.r},${this.c}`)??''}
  getFormula(){return this.sh.forms.get(`${this.r},${this.c}`)??''}
  getA1Notation(){return `${this.r}:${this.c}`}
@@ -185,3 +186,8 @@ console.log('PASS resumo: links do documento ativo e vista filtrada privada, pla
 
 f=fixture();f.hist.seed(6,['2026-10-22','TESTE-001','','Andreia','Levantamento','Textos por idioma · PT · Descrição original','','Descrição completa privada']);f.hist.seed(7,['2026-10-22','TESTE-001','','Andreia','Levantamento','Textos por idioma · PT · Título original','','Título privado']);
 const compact=f.context.resumoSemanal(7);const work=compact.linhas.find(x=>x.ref==='TESTE-001').trabalho.join(' ');assert.match(work,/Registados textos por idioma: PT/);assert(!work.includes('Descrição completa privada'));assert.equal((work.match(/Registados textos por idioma/g)||[]).length,1);console.log('PASS tabela semanal: alterações por idioma agrupadas sem expor textos completos.');
+
+f=fixture();f.hist.maxRows=7;f.hist.seed(6,['2026-10-20','ANCIEN-1']).seed(7,['2026-10-21','ANCIEN-2']);f.hist.formats.set('7,1','0.###############');
+const oldHistory=[...f.hist.cells].filter(([k])=>+k.split(',')[0]<=7);save(f,payload());assert(f.hist.getMaxRows()>=207);oldHistory.forEach(([k,v])=>assert.equal(f.hist.cells.get(k),v));assert.equal(f.hist.getRange(8,1).getNumberFormat(),'0.###############');assert.equal(get(f.hist,8,2),'TESTE-001');const grown=f.hist.getMaxRows();save(f,payload());assert.equal(f.hist.getMaxRows(),grown);
+f=fixture();f.hist.maxRows=6;f.hist.seed(6,['2026-10-20','ANCIEN']);f.hist.failGrowth=true;const unchanged=snapshot(f);assert.throws(()=>save(f,payload()),/Não foi possível ampliar/);assert.equal(snapshot(f),unchanged);
+console.log('PASS capacidade do histórico: amplia automaticamente, preserva registos e formatos, não amplia em repetição e aborta sem escrita se atingir limite.');

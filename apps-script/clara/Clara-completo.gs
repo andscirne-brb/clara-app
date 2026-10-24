@@ -499,14 +499,24 @@ function gravar(texto, docs) {
     }
     function vagas(sh, inicio, quantidade) {
       if (!quantidade) return [];
-      const limite=meta(sh).max,livres=[];
-      for(let cursor=inicio;cursor<=limite&&livres.length<quantidade;cursor+=200){
+      const limite=meta(sh).max,livres=[],primeira=sh===hs.sh?Math.max(inicio,sh.getLastRow()+1):inicio;
+      for(let cursor=primeira;cursor<=limite&&livres.length<quantidade;cursor+=200){
         const n=Math.min(200,limite-cursor+1),rg=sh.getRange(cursor,1,n,meta(sh).largura),values=rg.getValues(),formulas=rg.getFormulas();
         for(let i=0;i<n&&livres.length<quantidade;i++){
           const ocupada=values[i].some(function(v,j){return !celVazia_(v)&&!(sh.getName()===PEND.nome&&j===15&&formulas[i][j]);});
           const formula=formulas[i].some(function(v,j){return !!v&&!(sh.getName()===PEND.nome&&j===15);});
           if(!ocupada&&!formula)livres.push(cursor+i);
         }
+      }
+      if(livres.length<quantidade && sh===hs.sh){
+        const faltam=quantidade-livres.length,adicionar=Math.max(200,faltam);
+        try{
+          sh.insertRowsAfter(limite,adicionar);
+          // Copia apenas formatos, incluindo datas; nunca replica valores ou fórmulas do histórico.
+          sh.getRange(limite,1,1,meta(sh).largura).copyFormatToRange(sh,1,meta(sh).largura,limite+1,limite+adicionar);
+          meta(sh).max=sh.getMaxRows();
+          for(let i=1;i<=faltam;i++)livres.push(limite+i);
+        }catch(e){throw new Error('Não foi possível ampliar o Registo de alterações. Não gravei alterações. '+e.message);}
       }
       if (livres.length !== quantidade) throw new Error('Sem linhas livres em ' + sh.getName() + '. Não gravei alterações.');
       return livres;
