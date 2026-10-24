@@ -55,3 +55,5 @@ Aplicar uma fase de cada vez. Testar primeiro em dados fictícios/cópias, verif
 2026-10-24: implementado o segundo ponto, proteção assíncrona do resumo semanal. Alterações invalidam a cópia; respostas antigas não substituem a versão atual; pedidos iguais em curso não são duplicados; erros mantêm o plano. Validado por testes de respostas fora de ordem, plano/período alterados e recuperação.
 
 2026-10-24: implementado o terceiro ponto. Novas entradas do histórico usam o nome real da folha de destino em Onde foi alterado, em vez do valor fixo Levantamento. Registos antigos preservados. Testes abrangem Levantamento, Textos por idioma e Pendências da equipa, antes/depois e repetição sem duplicados.
+
+2026-10-24: quarto ponto implementado — capacidade de Textos por idioma e Pendências da equipa preparada antes da gravação, com reanálise após inserção. Validados registos, formatos e filtros em cópias nativas; testes de gravação após expansão e repetição.

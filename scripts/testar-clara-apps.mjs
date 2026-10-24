@@ -19,12 +19,14 @@ class Sheet {
  constructor(name,width=20){this.name=name;this.width=width;this.cells=new Map();this.forms=new Map();this.formats=new Map();}
  getName(){return this.name} getMaxRows(){return this.maxRows??2000} insertRowsAfter(after,n){assert.equal(after,this.getMaxRows());if(this.failGrowth)throw Error("Limite de células");this.maxRows=after+n;return this;} getLastColumn(){return this.width}
  getLastRow(){return Math.max(1,...[...this.cells.keys(),...this.forms.keys()].map(k=>+k.split(',')[0]))}
+ insertRowsBefore(at,n){for(const map of [this.cells,this.forms,this.formats]){const vals=[...map];map.clear();for(const [k,v] of vals){const [r,c]=k.split(',').map(Number);map.set(`${r>=at?r+n:r},${c}`,v);}}this.maxRows=this.getMaxRows()+n;return this;}
  getRange(r,c,n=1,m=1){return new Range(this,r,c,n,m)}
  seed(r,vs){vs.forEach((v,j)=>this.cells.set(`${r},${j+1}`,v));return this}
 }
 class Range {
  constructor(sh,r,c,n,m){Object.assign(this,{sh,r,c,n,m})}
  copyFormatToRange(sh,start,end,first,last){for(let r=first;r<=last;r++)for(let c=start;c<=end;c++)sh.formats.set(`${r},${c}`,this.sh.formats.get(`${this.r},${this.c+c-start}`)??'0.###############');return this;}
+ getDataValidations(){return Array.from({length:this.n},()=>Array(this.m).fill(null));} setDataValidation(){return this;} getFormulasR1C1(){return this.getFormulas();} setFormulasR1C1(rows){rows.forEach((r,i)=>r.forEach((f,j)=>this.sh.forms.set(`${this.r+i},${this.c+j}`,f)));return this;} setFormulaR1C1(f){for(let i=0;i<this.n;i++)this.sh.forms.set(`${this.r+i},${this.c}`,f);return this;}
  getValue(){return this.sh.cells.get(`${this.r},${this.c}`)??''}
  getFormula(){return this.sh.forms.get(`${this.r},${this.c}`)??''}
  getA1Notation(){return `${this.r}:${this.c}`}
@@ -45,8 +47,9 @@ function fixture(){
  const lev=new Sheet('Levantamento',headers.length).seed(9,headers).seed(10,['TESTE-001']);
  const tx=new Sheet('Textos por idioma',7).seed(5,txh);
  ['PT','EN','FR','DE','ES'].forEach((k,i)=>tx.seed(6+i,['TESTE-001',k,`Antigo ${k}`,`Texto antigo ${k}`,'',new Date('2026-10-21T00:00:00Z'),'Revisto']));
+ tx.cells.set('2000,1','');
  const hist=new Sheet('Registo de alterações',12).seed(5,hish);
- const pend=new Sheet('Pendências da equipa',17).seed(5,['ID','Referência EGO','Tema','Assunto']);
+ const pend=new Sheet('Pendências da equipa',17).seed(5,['ID','Referência EGO','Tema','Assunto']);pend.forms.set('2000,16','=IF(A2000="";"";"Por verificar")');
  const sheets=new Map([lev,tx,hist,pend].map(s=>[s.name,s]));
  let fail=false, releases=0, acquired=true;
  const ss={getSheetByName:n=>sheets.get(n),getSpreadsheetTimeZone:()=> 'Europe/Lisbon'};
@@ -210,3 +213,12 @@ f=fixture();f.pend.seed(6,pr('Andreia','A aguardar esclarecimento',''));const be
 f=fixture();f.hist.seed(6,['2026-10-20','ANTIGO','','Andreia','Levantamento','Textos por idioma · PT · Descrição original','Antes','Depois']);const oldAudit=f.hist.getRange(6,1,1,12).getValues()[0];d=payload();d.plantas=['pdf'];save(f,d);assert.deepEqual(f.hist.getRange(6,1,1,12).getValues()[0],oldAudit);
 const newAudit=f.hist.getRange(7,1,f.hist.getLastRow()-6,12).getValues().filter(r=>r[1]==='TESTE-001');assert(newAudit.length>0);const destinations=new Set(newAudit.map(r=>r[4]));assert(destinations.has('Levantamento'));assert(destinations.has('Textos por idioma'));assert(destinations.has('Pendências da equipa'));newAudit.forEach(r=>assert.equal(r[4],r[5].split(' · ')[0]));assert(!destinations.has('eGO'));
 const auditStable=snapshot(f);save(f,d);assert.equal(snapshot(f),auditStable);console.log('PASS origem do histórico: três folhas reais identificadas, antes/depois e registos antigos preservados, repetição não duplica nem sugere escrita no CRM.');
+
+f=fixture();const fullText=new Sheet('Textos por idioma',7).seed(5,txh).seed(6,['T1','PT']).seed(7,['T2','ES']);fullText.maxRows=7;fullText.formats.set('7,6','yyyy-mm-dd');const growth=f.context.reservarCapacidadeDestino_(fullText,5,5);assert.equal(growth.adicionadas,200);assert.equal(get(fullText,207,1),'T2');assert.equal(get(fullText,6,1),'T1');assert.equal(get(fullText,7,1),'');assert.equal(fullText.getRange(7,6).getNumberFormat(),'yyyy-mm-dd');assert.equal(f.context.reservarCapacidadeDestino_(fullText,5,5).adicionadas,0);
+const fullPend=new Sheet('Pendências da equipa',17).seed(5,['ID']).seed(6,['P1','T1']).seed(7,['P2','T2']);fullPend.forms.set('7,16','=IF(RC[-15]="";"";"Por verificar")');fullPend.maxRows=7;f.context.reservarCapacidadeDestino_(fullPend,5,2);assert.equal(get(fullPend,207,1),'P2');assert(fullPend.forms.has('7,16'));assert.equal(fullPend.forms.get('207,16'),'=IF(RC[-15]="";"";"Por verificar")');assert.equal(get(fullPend,7,1),'');
+const failSheet=new Sheet('Textos por idioma',7).seed(5,txh).seed(6,['T1']);failSheet.insertRowsBefore=()=>{throw Error('Limite de células');};assert.throws(()=>f.context.reservarCapacidadeDestino_(failSheet,5,2),/Não foi possível preparar espaço/);assert.equal(get(failSheet,6,1),'T1');console.log('PASS expansão de destinos: inserção dentro da tabela, último registo preservado, datas e fórmula de conferência mantidas, repetição sem expansão e falha sem escrita de dados.');
+
+
+f=fixture();const rules=new Map([[7,{owner:'Sara'}],[9,{estado:'aberto'}]]),initialRules=[...rules];const blocked=new Sheet('Pendências da equipa',17).seed(5,['ID']).seed(6,['P1']);blocked.getFilter=()=>({getRange:()=>({getColumn:()=>1,getNumColumns:()=>17}),getColumnFilterCriteria:c=>rules.get(c)||null,removeColumnFilterCriteria:c=>rules.delete(c),setColumnFilterCriteria:(c,v)=>rules.set(c,v)});blocked.insertRowsBefore=()=>{assert.equal(rules.size,0);throw Error('Falha de expansão');};assert.throws(()=>f.context.reservarCapacidadeDestino_(blocked,5,2),/Falha de expansão/);assert.deepEqual([...rules],initialRules);console.log('PASS reposição de filtros: critérios preservados mesmo se a expansão falhar.');
+
+f=fixture();f.tx.cells.delete('2000,1');f.tx.maxRows=10;f.pend.forms.delete('2000,16');f.pend.maxRows=6;f.pend.seed(6,['P0001','OUTRO-IMOVEL','Imagens','Preservar tarefa','','','Andreia','Normal','Por tratar']);d=payload();d.plantas=['pdf'];save(f,d);assert.equal(get(f.tx,210,2),'ES');assert.equal(get(f.tx,210,4),d.textos.ES.descricao);assert.equal(get(f.pend,206,2),'OUTRO-IMOVEL');assert.equal(get(f.pend,6,2),'TESTE-001');assert.equal(f.pend.getMaxRows(),206);assert.equal(f.tx.getMaxRows(),210);const expandedSnapshot=snapshot(f);save(f,d);assert.equal(snapshot(f),expandedSnapshot);console.log('PASS gravação após expansão: referências relidas, último idioma atualizado no local correto, tarefa anterior preservada e repetição sem crescer nem duplicar.');

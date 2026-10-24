@@ -454,6 +454,29 @@ function estrutura_(ss, nome, obrigatorias) {
   throw new Error('Os títulos de ' + nome + ' mudaram. Não gravei alterações.');
 }
 function celVazia_(v) { return v === '' || v == null; }
+function reservarCapacidadeDestino_(sh,titulos,quantidade,nomeDestino){
+  const pendencias=(nomeDestino||sh.getName())===PEND.nome;
+  const limite=Math.max(titulos+1,sh.getLastRow()),largura=sh.getLastColumn();if(!quantidade)return{limite:limite,adicionadas:0};
+  const inicio=Math.max(titulos+1,limite-199),n=limite-inicio+1,rg=sh.getRange(inicio,1,n,largura),vs=rg.getValues(),fs=rg.getFormulas();
+  let livres=0;vs.forEach((r,i)=>{if(r.every((v,j)=>celVazia_(v)||(pendencias&&j===15&&fs[i][j]))&&fs[i].every((v,j)=>!v||(pendencias&&j===15)))livres++;});
+  if(livres>=quantidade)return{limite:limite,adicionadas:0};
+  const add=Math.max(200,quantidade-livres);
+  const filtro=typeof sh.getFilter==='function'?sh.getFilter():null,criterios=[];
+  let fase='filtros';
+  try{
+    if(filtro){const fr=filtro.getRange();for(let col=fr.getColumn();col<fr.getColumn()+fr.getNumColumns();col++){const c=filtro.getColumnFilterCriteria(col);if(c){criterios.push([col,c]);filtro.removeColumnFilterCriteria(col);}}SpreadsheetApp.flush();}
+    fase='inserção';
+    // Inserção antes da última linha de dados mantém a expansão dentro da tabela e das vistas.
+    // Executa antes do planeamento; as referências dos registos são relidas depois.
+    sh.insertRowsBefore(limite,add);
+    const modelo=sh.getRange(limite+add,1,1,largura),validacoes=modelo.getDataValidations()[0];
+    fase='formatos';modelo.copyFormatToRange(sh,1,largura,limite,limite+add-1);
+    fase='validações';validacoes.forEach((v,j)=>{if(v)sh.getRange(limite,j+1,add,1).setDataValidation(v);});
+    fase='conferência';if(pendencias&&largura>=16){const f=modelo.getFormulasR1C1()[0][15],dest=sh.getRange(limite,16,add,1);if(f&&!dest.getFormulasR1C1().every(r=>r[0]===f))dest.setFormulasR1C1(Array.from({length:add},()=>[f]));}
+    SpreadsheetApp.flush();return{limite:limite+add,adicionadas:add};
+  }catch(e){throw Error('Não foi possível preparar espaço em '+sh.getName()+' ('+fase+'). Não gravei os dados da leitura. '+e.message);}
+  finally{if(filtro){criterios.forEach(x=>filtro.setColumnFilterCriteria(x[0],x[1]));SpreadsheetApp.flush();}}
+}
 function valorEscritaClara_(valor,formato) {
   if(valor instanceof Date && /[dy]/i.test(String(formato).replace(/"[^"]*"/g,''))){
     // Datas por número de série evitam a perda silenciosa de objetos Date em tabelas nativas.
@@ -511,10 +534,12 @@ function gravar(texto, docs) {
   const inicio=Date.now(),tempos={};let etapaInicio=inicio;
   function medir(fase){tempos[fase]=Date.now()-etapaInicio;etapaInicio=Date.now();console.log('Clara desempenho '+JSON.stringify({fase:fase,ms:tempos[fase]}));}
   try {
-    const a = analisar(texto, docs), ss = SpreadsheetApp.getActive(), hoje = dataHoje_();
+    let a = analisar(texto, docs); const ss = SpreadsheetApp.getActive(), hoje = dataHoje_();
     const lev = ss.getSheetByName(LEV.nome), ps = ss.getSheetByName(PEND.nome);
     const tx = estrutura_(ss, 'Textos por idioma', ['Referência EGO', 'Idioma', 'Título original', 'Descrição original', 'Origem / evidência', 'Data de recolha', 'Estado da recolha']);
     const hs = estrutura_(ss, 'Registo de alterações', ['Data da alteração', 'Referência EGO', 'Autor', 'Onde foi alterado', 'Campo / assunto', 'Antes', 'Depois / alteração realizada', 'Motivo / fonte', 'Resultado da verificação']);
+    const capacidadePend=reservarCapacidadeDestino_(ps,PEND.titulos,a.pendencias.filter(p=>!p.jaExiste).length),capacidadeTextos=reservarCapacidadeDestino_(tx.sh,tx.linha,a.textos.length);
+    if(capacidadePend.adicionadas||capacidadeTextos.adicionadas)a=analisar(texto,docs);
     medir('analise');
     const vistos = {}, historico = [], idOperacao = Utilities.getUuid(),cacheLinhas={},metadados={};
     function meta(sh){const k=sh.getName();return metadados[k]||(metadados[k]={max:sh.getMaxRows(),largura:sh.getLastColumn()});}
@@ -539,7 +564,7 @@ function gravar(texto, docs) {
     }
     function vagas(sh, inicio, quantidade) {
       if (!quantidade) return [];
-      const limite=meta(sh).max,livres=[],primeira=sh===hs.sh?Math.max(inicio,sh.getLastRow()+1):inicio;
+      const limite=sh===ps?capacidadePend.limite:sh===tx.sh?capacidadeTextos.limite:meta(sh).max,livres=[],primeira=sh===hs.sh?Math.max(inicio,sh.getLastRow()+1):inicio;
       for(let cursor=primeira;cursor<=limite&&livres.length<quantidade;cursor+=200){
         const n=Math.min(200,limite-cursor+1),rg=sh.getRange(cursor,1,n,meta(sh).largura),values=rg.getValues(),formulas=rg.getFormulas();
         for(let i=0;i<n&&livres.length<quantidade;i++){
