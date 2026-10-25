@@ -1,5 +1,14 @@
 # Clara: estado e plano
 
+## Último ponto de situação — 25 outubro: Excel do ranking Idealista
+
+Regra da Andreia: nas estatísticas, dar prioridade à exportação oficial CSV/Excel quando existe. Rightmove já prefere CSV; o ranking Idealista passa a obter o XLS completo pelo formulário oficial, na sessão local. Sem serviços externos ou bibliotecas remotas. Leitor restrito CFB/BIFF8, rejeita fórmulas, encriptação, formatos não reconhecidos e dados incoerentes. Não executa macros.
+
+O Excel inclui referência interna e contactos agregados. Não inventar separação chamadas/mensagens nas linhas que não foram conferidas na página. Período e filtros vêm da página e são conferidos antes/depois; todas as métricas das linhas visíveis têm de coincidir com o Excel. Exportação presente mas inválida bloqueia a recolha; sem exportação mantém leitura visível com cobertura explícita. Gráfico geral e comparativo da zona continuam separados.
+
+Validação local do ficheiro real: todas as 50 linhas visíveis coincidem; Excel contém 222 imóveis. Nenhum dado real foi incluído no repositório. Testes locais de parser, coerência, captura do formulário e regressão passaram. Código guardado no projeto ligado com leitura de volta idêntica. Falta teste do clique no novo marcador reinstalado pelo utilizador: a captura automática do formulário está testada com simulação, o download oficial e o cruzamento das linhas foram verificados na sessão real. Marcador 20261025.3 requer reinstalação após publicação.
+
+
 Documento de passagem de testemunho. Mantido atualizado no fim de cada sessão. Sem dados reais (repositório público).
 
 ## DECISÃO (21 out 2026, 23:55): a Clara passa a viver dentro do Google Sheet
@@ -250,3 +259,10 @@ A área A67 contém o bloco de pendências existente, preservado. As suas fórmu
 - Preferência de menus: plataforma: função, nomes curtos e claros. Perguntar antes de decidir em caso de ambiguidade; não renomear por iniciativa própria.
 
 Validação real: série de 90 dias importada com somas conferidas e gráfico combinado criado na primeira aba. Nova recolha usa o mesmo gráfico, sem criar cópias. Datas curtas no eixo; intervalo completo no título. Teste assíncrono verifica reposição dos controlos em sucesso e falha.
+
+### Correção eGO: colunas tipadas (substitui a tentativa com formato @)
+- Causa confirmada nas cópias reais das tabelas: setNumberFormat é rejeitado pelas colunas tipadas, incluindo durante a recuperação. A tentativa anterior com @ deve considerar-se substituída.
+- escreverLiteralClara_ usa escape nativo por apóstrofo para strings e mantém números/datas nos tipos originais. Não altera formatos na gravação nem na recuperação. Fórmulas, valores e formatos concorrentes continuam protegidos; erros mostram também a causa original.
+- Quatro cópias ocultas das folhas afetadas preservadas antes do diagnóstico. Teste em novas cópias reais confirmou escrita e reposição de texto numérico, zeros iniciais, texto que começa com = ou apóstrofo, estado e número, sem mudar formatos. Originais preservados nesse teste.
+- Testes sintéticos de gravação e rollback rejeitam qualquer chamada a setNumberFormat; regressões eGO e Idealista passaram. Código final relido no editor e igual ao bundle, sem função temporária.
+- Falta confirmar a transação completa com a leitura original do imóvel: painel do utilizador estava fechado, foi pedido que o deixasse com a leitura colada. Não declarar a gravação real concluída apenas pelos testes em cópias.
