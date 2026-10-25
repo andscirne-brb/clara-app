@@ -15,3 +15,14 @@ c.DOMParser=class{parseFromString(s){return{querySelector:()=>a(s==='builder'?'/
 const byId={206:'visitas',195:'emails',6026:'listas',208:'anuncios',4726:'mensal'};let fail=false;c.fetch=async url=>{if(fail)throw Error('Sessão expirada');const id=/ExportTableCsv\/(\d+)/.exec(url);return{ok:true,url,text:async()=>id?csv[byId[id[1]]]:url.includes('/Builder/')?'builder':'monthly'};};
 const captured=await c.recolherGreenAcres(doc,{estado(){}});assert.equal(captured.relatorios.length,5);assert.equal(restored,1);fail=true;await assert.rejects(()=>c.recolherGreenAcres(doc,{estado(){}}),/expirada/);assert.equal(restored,2);assert.throws(()=>c.parametrosExportacaoGreen('https://evil.invalid/ExportTableCsv/206',c.location.href));
 console.log('PASS Green-Acres: cinco CSV, datas PT, totais mensais, lacunas sem zero, validação, repetição, revisão, rollback, privacidade, captura e reposição do separador.');
+
+/* Regressão: não depender do HTML mensal inicial, que ainda não contém o CSV. */
+{
+ fail=false;let requests=[];const oldFetch=c.fetch;c.DOMParser=class{constructor(){throw Error('Não abrir HTML para localizar o CSV mensal');}};
+ c.fetch=async url=>{requests.push(url);return oldFetch(url);};
+ const result=await c.recolherGreenAcres(doc,{estado(){}});assert.equal(result.relatorios.length,5);assert.equal(requests.length,5);assert.ok(requests.every(u=>u.includes('/ExportTableCsv/')));assert.equal(restored,3);
+ const monthly=new URL(requests.find(u=>u.includes('/4726?'))),params=monthly.searchParams;assert.equal(params.get('reportParameters[0].Name'),'companyId');assert.equal(params.get('reportParameters[0].Value'),'42');assert.equal(params.get('reportParameters[1].Value'),'MONTH');
+ const originalMonthly=csv.mensal;csv.mensal='<html>Sessão expirada</html>';await assert.rejects(()=>c.recolherGreenAcres(doc,{estado(){}}),/colunas/);assert.equal(restored,4);csv.mensal=originalMonthly;
+ assert.throws(()=>c.exportacaoMensalGreen('42&outraConta=99'),/inválida/);
+ console.log('PASS regressão CSV mensal: cinco exportações diretas, mesma conta, sem HTML/renderização; ficheiro inválido e conta manipulada bloqueados; separador reposto.');
+}

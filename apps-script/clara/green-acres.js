@@ -21,6 +21,13 @@ function converterCSVGreen(text,codigo){
 function parametrosExportacaoGreen(href,base){
  const u=new URL(href,base);if(u.origin!=='https://back.green-acres.com'||!/^\/pt\/Report\/Viewer\/ExportTableCsv\/\d+$/.test(u.pathname))throw Error('Exportação Green-Acres não reconhecida.');const params={};for(const [k,v]of u.searchParams){const m=/^reportParameters\[(\d+)\]\.Name$/.exec(k);if(m)params[v]=u.searchParams.get('reportParameters['+m[1]+'].Value');}if(!/^\d+$/.test(params.companyId||''))throw Error('Conta da exportação não identificada.');return{url:u.href,conta:params.companyId,sites:params.siteId||'relatorio_mensal'};
 }
+/* Endereço observado no botão CSV do relatório mensal oficial (View/1792).
+   A conta vem da exportação visível atual; não depende do HTML ainda sem renderização. */
+function exportacaoMensalGreen(conta){
+ if(!/^\d{1,20}$/.test(String(conta)))throw Error('Conta da exportação mensal inválida.');
+ const u=new URL('https://back.green-acres.com/pt/Report/Viewer/ExportTableCsv/4726');
+ u.searchParams.set('reportParameters[0].Name','companyId');u.searchParams.set('reportParameters[0].Value',String(conta));u.searchParams.set('reportParameters[1].Name','groupBy');u.searchParams.set('reportParameters[1].Value','MONTH');return parametrosExportacaoGreen(u.href,u.href);
+}
 async function recolherGreenAcres(doc,ui){
  if(location.hostname!=='back.green-acres.com'||!/^\/pt\/Agent\/?$/.test(location.pathname))throw Error('Abre «Resumo da conta» no Green-Acres e volta a clicar na Clara.');
  const get=async url=>{const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);try{const res=await fetch(url,{credentials:'same-origin',cache:'no-store',signal:controller.signal});if(!res.ok||new URL(res.url).origin!=='https://back.green-acres.com')throw Error('A exportação Green-Acres falhou. Confirma a sessão.');return await res.text();}finally{clearTimeout(timer);}};
@@ -29,12 +36,10 @@ async function recolherGreenAcres(doc,ui){
  if(!email)throw Error('As estatísticas não terminaram de carregar.');email.click();for(let i=0;i<50&&!doc.querySelector('a[href*="ExportTableCsv/195?"]');i++)await new Promise(r=>setTimeout(r,100));
  const ids={visitas:206,emails:195,listas:6026,anuncios:208},exports=[];
  for(const [codigo,id]of Object.entries(ids)){const a=doc.querySelector('a[href*="ExportTableCsv/'+id+'?"]');if(!a)throw Error('CSV '+codigo+' indisponível; não substituí por uma leitura parcial.');exports.push({codigo,...parametrosExportacaoGreen(a.getAttribute('href'),location.href)});}
- ui.estado('A obter o relatório mensal oficial…');const builder=doc.querySelector('a[href$="/Report/Builder/Agent"]');if(!builder)throw Error('A ligação aos relatórios não está disponível.');const builderUrl=new URL(builder.getAttribute('href'),location.href);if(builderUrl.origin!==location.origin)throw Error('Origem de relatórios inválida.');
- const list=new DOMParser().parseFromString(await get(builderUrl.href),'text/html'),monthly=list.querySelector('a[href$="/Report/Viewer/View/1792"]');if(!monthly)throw Error('Relatório mensal não identificado.');const monthlyUrl=new URL(monthly.getAttribute('href'),location.href);if(monthlyUrl.origin!==location.origin)throw Error('Relatório mensal inválido.');
- const page=new DOMParser().parseFromString(await get(monthlyUrl.href),'text/html'),link=page.querySelector('a[href*="ExportTableCsv/4726?"]');if(!link)throw Error('O CSV mensal não ficou disponível.');exports.push({codigo:'mensal',...parametrosExportacaoGreen(link.getAttribute('href'),location.href)});
+ exports.push({codigo:'mensal',...exportacaoMensalGreen(exports[0].conta)});
  const conta=exports[0].conta;if(exports.some(x=>x.conta!==conta)||exports.filter(x=>x.codigo!=='mensal').some(x=>x.sites!=='all'))throw Error('Os relatórios pertencem a contas ou seleções diferentes.');
  ui.estado('A recolher cinco CSV oficiais…');const relatorios=await Promise.all(exports.map(async x=>converterCSVGreen(await get(x.url),x.codigo)));
  const current=doc.querySelector('a[href*="ExportTableCsv/206?"]');if(!current||parametrosExportacaoGreen(current.getAttribute('href'),location.href).conta!==conta)throw Error('A conta mudou durante a recolha.');
- return{v:4,origem:'green-acres',marcadorVersao:'20261025.5',lido:new Date().toISOString(),url:'https://back.green-acres.com/pt/Agent',conta,sites:'all',fonte:'CSV oficial Green-Acres',relatorios};
+ return{v:4,origem:'green-acres',marcadorVersao:'20261025.6',lido:new Date().toISOString(),url:'https://back.green-acres.com/pt/Agent',conta,sites:'all',fonte:'CSV oficial Green-Acres',relatorios};
  }finally{if(original&&!original.matches('[aria-selected="true"]'))original.click();}
 }

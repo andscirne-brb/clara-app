@@ -239,7 +239,7 @@ function irPara(separador, linha) {
 function mostrarMarcador() {
   const codigo = 'javascript:' + encodeURIComponent(MARCADOR_JS);
   const html = '<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5">' +
-    '<p style="font-size:12px;color:#526b78">Versão 20261025.5 · Green-Acres com CSV oficial</p><p><b>1.</b> Arrasta este botão para a barra de marcadores do navegador:</p>' +
+    '<p style="font-size:12px;color:#526b78">Versão 20261025.6 · Green-Acres com CSV oficial</p><p><b>1.</b> Arrasta este botão para a barra de marcadores do navegador:</p>' +
     '<p style="text-align:center"><a href="' + codigo + '" style="display:inline-block;padding:8px 18px;background:#1a73e8;color:#fff;border-radius:6px;text-decoration:none;font-weight:bold">Clara</a></p>' +
     '<p>Se não der para arrastar: cria um marcador novo, chama-lhe <b>Clara</b> e cola isto no endereço:</p>' +
     '<label for="codigoMarcador">Código para o endereço do marcador</label><textarea id="codigoMarcador" style="width:100%;height:72px;font-size:11px" onclick="this.select()">' + codigo.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</textarea>' +

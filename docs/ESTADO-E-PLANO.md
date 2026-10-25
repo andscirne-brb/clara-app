@@ -1,5 +1,12 @@
 # Clara: estado e plano
 
+## Último ponto de situação — 25 outubro: correção CSV mensal Green-Acres
+
+Erro reportado pela Andreia no marcador 20261025.5: O CSV mensal não ficou disponível. A procura no HTML inicial do relatório dependia de renderização JavaScript. Corrigido em 20261025.6: constrói o endereço oficial do botão CSV mensal (ExportTableCsv/4726, groupBy MONTH) com a conta lida da exportação visível atual. Endereço e parâmetros comparados no navegador com o botão real: idênticos. Não depende do gráfico nem de ler HTML de páginas intermédias; ficam apenas os cinco pedidos CSV em paralelo. Mantém validações de conta, cabeçalhos, datas e somas; rejeita dados incompatíveis e repõe o separador original em falha.
+
+Teste de regressão cobre HTML sem ligação CSV (não deve ser consultado), cinco pedidos diretos, conta correta e parâmetros mensais, CSV inválido e reposição do separador. Testes de interface e Green-Acres passaram. Marcador, indicação da versão no painel e instalação atualizados para 20261025.6. Falta novo teste do clique pela Andreia após reinstalar; sem novos dados importados nesta correção.
+
+
 ## Último ponto de situação — 25 outubro: Green-Acres
 
 Pedido da Andreia implementado: Green-Acres: estatísticas no menu, painel com logótipo e marcador 20261025.5. No Resumo da conta, recolhe cinco CSV oficiais (prioridade sobre a leitura visual e sobre Excel quando ambos existem): visitantes únicos diários, emails diários, visualizações em lista, anúncios Green-Acres/Vizzit e visitas/contactos mensais. Descobre as ligações oficiais na página e nos relatórios; usa a sessão local, confirma mesma conta e restaura o separador visual original. Não recolhe contactos individuais, nomes ou emails pessoais. Se faltar CSV requerido, bloqueia a recolha em vez de inventar cobertura; os cinco relatórios observados têm CSV e Excel.
