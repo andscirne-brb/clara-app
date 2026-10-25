@@ -46,3 +46,9 @@ await assert.rejects(()=>c.capturarCSVRightmove({querySelector:()=>({click(){thr
 await assert.rejects(()=>c.capturarCSVRightmove({querySelector:()=>({click(){}})}),/tempo previsto/);assert.equal(c.URL.createObjectURL,createOriginal);
 console.log('PASS CSV Rightmove: aspas, BOM, três janelas, códigos, somas da agência, repetição, rollback de dados e metadados, captura Blob e reposição após sucesso, erro e timeout.');
 
+
+const metaFields={'.property-count':'50 listings','.date-picker .divider.text':'Last 30 Days','.last-refresh':'Up to date as of October 23, 2026We are experiencing some difficulties providing you with the most up-to-date data.','.branch-average':'(5 branch avg views)'};
+const fakeRoot={querySelector:s=>metaFields[s]!==undefined?{textContent:metaFields[s]}:null,querySelectorAll:()=>[]},metadataDoc={querySelector:()=>fakeRoot};
+const gotMeta=c.lerPaginaPerformanceRightmove(metadataDoc);assert.equal(gotMeta.atualizado,'2026-10-23');assert.equal(gotMeta.total,50);assert.equal(gotMeta.janela,30);assert.match(gotMeta.avisoFonte,/dificuldades/);
+metaFields['.last-refresh']='Up to date as of October 23, 2026';assert.equal(c.lerPaginaPerformanceRightmove(metadataDoc).atualizado,'2026-10-23');metaFields['.last-refresh']='Up to date as of February 31, 2026Aviso';assert.throws(()=>c.lerPaginaPerformanceRightmove(metadataDoc),/data/);
+console.log('PASS data Rightmove: data isolada do aviso no mesmo elemento, aviso preservado e data impossível recusada.');

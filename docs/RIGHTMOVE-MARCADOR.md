@@ -40,3 +40,7 @@ Confere cabeçalhos, estrutura das linhas, aspas, total de anúncios, códigos �
 A revisão mostra 50 anúncios e janelas de 30, 60 e 90 dias. Guarda os indicadores em Rightmove - desempenho e o registo de origem, aviso do portal e data de atualização em Rightmove - importações CSV. Ambas as escritas são conferidas e repostas em falha. Repetir o mesmo CSV não soma dados. Não inventa datas de início e fim a partir das janelas. O dashboard continua a selecionar a janela de 30 dias.
 
 Validação: parser testado com o CSV real de 50 anúncios; testes sintéticos de estrutura, repetição, falha e captura Blob; teste nativo em folhas temporárias confirmou 150 linhas, 50 códigos em cada janela, repetição sem duplicação e aviso preservado. As folhas temporárias foram removidas. Falta o teste de aceitação da captura automática com o marcador reinstalado no navegador da utilizadora. Dados reais e capturas não são publicados.
+
+## Correção da data junto ao aviso (20261025.2)
+
+O portal apresenta data e aviso de atraso dentro do mesmo elemento. A leitura isola apenas a data após Up to date as of e continua a preservar o aviso. Teste de regressão cobre texto concatenado, data sem aviso e data impossível. Verificação do extrator na página real confirmou total, janela, data e aviso.
