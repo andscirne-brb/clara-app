@@ -1,14 +1,16 @@
 (async () => {
   /* CLARA_UI */
   const ui=painelMarcadorClara();if(!ui)return;
+  /* GREEN_COLLECTOR */
+  if(location.hostname==='back.green-acres.com'){try{const d=await recolherGreenAcres(document,ui);await ui.concluir('CLARA4:'+JSON.stringify(d),'5 CSV oficiais · visitas, emails, anúncios e evolução mensal','Green-Acres: estatísticas','Cola a leitura no painel Green-Acres: estatísticas, revê os períodos e guarda.');}catch(e){ui.falhar(e.name==='AbortError'?'A exportação demorou demasiado. Volta a tentar.':e.message);}return;}
   /* RIGHTMOVE_COLLECTOR */
   if(['admin.rightmove.co.uk','rmplusportal.rightmove.co.uk'].includes(location.hostname)){
-    try{const d=await recolherRightmove(document,ui);await ui.concluir('CLARA3:'+JSON.stringify(d),d.tipo==='leads'?d.totais.total+' leads · '+d.diarios.length+' dias conferidos':d.tipo==='performance_csv'?d.total+' anúncios · CSV com 30, 60 e 90 dias':d.total+' anúncios · janela de '+d.janela+' dias','Rightmove: estatísticas','Cola a leitura no painel Rightmove: estatísticas e revê antes de guardar.');}catch(e){ui.falhar(e.message);}return;
+    try{const d=await recolherRightmove(document,ui);d.marcadorVersao='20261025.5';await ui.concluir('CLARA3:'+JSON.stringify(d),d.tipo==='leads'?d.totais.total+' leads · '+d.diarios.length+' dias conferidos':d.tipo==='performance_csv'?d.total+' anúncios · CSV com 30, 60 e 90 dias':d.total+' anúncios · janela de '+d.janela+' dias','Rightmove: estatísticas','Cola a leitura no painel Rightmove: estatísticas e revê antes de guardar.');}catch(e){ui.falhar(e.message);}return;
   }
   /* IDEALISTA_COLLECTOR */
   if (/^(?:www\.)?idealista\.pt$/.test(location.hostname)) {
     try {ui.estado('A ler a página do Idealista…');let d=recolherIdealista(document,{url:location.href,lido:new Date().toISOString()});if(d.tipo==='ranking')d=await recolherExcelIdealista(document,d,ui);if(d.tipo==='geral'){ui.estado('A ler totais e gráfico diário de contactos…');try{await recolherDiariosIdealista(document,d);}catch(e){d.avisoSerie=e.message;}try{d.carteiraAtiva=await recolherAtivosIdealista(document,d,ui);}catch(e){d.avisoCarteira=e.name==='AbortError'?'A lista de ativos demorou demasiado; ficou por recolher.':e.message;}}
-    d.marcadorVersao='20261025.4';await ui.concluir('CLARA2:'+JSON.stringify(d),d.registos.length+' registos · '+d.cobertura+'.'+(d.carteiraAtiva?' Carteira ativa: '+d.carteiraAtiva.total+' de '+d.carteiraAtiva.total+' anúncios conferidos.':''),'Idealista: estatísticas',[d.avisoSerie?'O gráfico diário não foi recolhido; os totais mantêm-se disponíveis.':'',d.avisoCarteira?'Carteira ativa por recolher: '+d.avisoCarteira:''].filter(Boolean).join(' '));}catch(e){ui.falhar(e.message);}return;
+    d.marcadorVersao='20261025.5';await ui.concluir('CLARA2:'+JSON.stringify(d),d.registos.length+' registos · '+d.cobertura+'.'+(d.carteiraAtiva?' Carteira ativa: '+d.carteiraAtiva.total+' de '+d.carteiraAtiva.total+' anúncios conferidos.':''),'Idealista: estatísticas',[d.avisoSerie?'O gráfico diário não foi recolhido; os totais mantêm-se disponíveis.':'',d.avisoCarteira?'Carteira ativa por recolher: '+d.avisoCarteira:''].filter(Boolean).join(' '));}catch(e){ui.falhar(e.message);}return;
   }
   if (!/^(?:www\.)?janela-imobiliaria\.com$/.test(location.hostname)){ui.falhar('Abre a página pública do imóvel no site da Janela, ou uma página de lista/estatísticas do Idealista.');return;}
   try {
@@ -17,7 +19,7 @@
   const me = ld(document);
   if(!me){ui.falhar('Esta página não é uma ficha de imóvel. Abre o anúncio e volta a clicar no marcador.');return;}
   const ext = x => ((JSON.stringify(x).match(/\.(pdf|jpe?g|png|webp|gif)\b/i) || [])[1] || '?').toLowerCase().replace('jpeg', 'jpg');
-  const out = { v: 1, marcadorVersao: '20261025.4', origem: 'site', lido: new Date().toISOString(), url: location.href.split('?')[0], ref: null, idiomaCaracteristicas: (document.documentElement.lang || '').slice(0,2).toUpperCase(), textos: {} };
+  const out = { v: 1, marcadorVersao: '20261025.5', origem: 'site', lido: new Date().toISOString(), url: location.href.split('?')[0], ref: null, idiomaCaracteristicas: (document.documentElement.lang || '').slice(0,2).toUpperCase(), textos: {} };
   let p = null;
   const u = performance.getEntriesByType('resource').map(e => e.name).find(n => /websiteapi\.egorealestate\.com\/v1\/Properties\/\d+\?.*propertyid=/.test(n));
   if (u) { try { p = await fetchClara(u,true); } catch (e) {} }

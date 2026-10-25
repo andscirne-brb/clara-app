@@ -1,5 +1,5 @@
 import fs from 'node:fs';import vm from 'node:vm';import assert from 'node:assert/strict';
-const c={console,Utilities:{formatDate:d=>d.toISOString().slice(0,10)}};vm.createContext(c);vm.runInContext(fs.readFileSync(new URL('../apps-script/clara/Rightmove.gs',import.meta.url),'utf8'),c);vm.runInContext(fs.readFileSync(new URL('../apps-script/clara/DashboardVisual.gs',import.meta.url),'utf8'),c);
+const c={console,Utilities:{formatDate:d=>d.toISOString().slice(0,10)}};vm.createContext(c);vm.runInContext(fs.readFileSync(new URL('../apps-script/clara/Rightmove.gs',import.meta.url),'utf8'),c);vm.runInContext((fs.readFileSync(new URL('../apps-script/clara/GreenAcres.gs',import.meta.url),'utf8')+'\n'+fs.readFileSync(new URL('../apps-script/clara/DashboardVisual.gs',import.meta.url),'utf8')),c);
 const r=(id,a,b,val,k='contactos')=>['2026-10-23','geral',a,b,'["Venda e arrendamento"]','','',k,val,'',id];
 assert.equal(c.periodo30Dashboard_([r('a','2026-07-25','2026-10-22',246),r('b','2026-09-22','2026-10-21',61)],'UTC').metricas.contactos,61);
 assert.equal(c.periodo30Dashboard_([r('a','2026-09-22','2026-10-21',61),r('b','2026-09-22','2026-10-21',0)],'UTC').metricas.contactos,0);
@@ -62,7 +62,7 @@ console.log('PASS desempenho dashboard: 60/90 e lotes equivalentes não reconstr
 {
  const r=(hash,id,key,val)=>['2026-10-25','carteira_ativa','','','',id?'TESTE-001':'',id||'carteira',key,val,'',hash,'https://www.idealista.pt/tools/publicacion/idealista?ScopeId=1',''];
  const first=[r('a','101','ativo',1),r('a','102','ativo',1),r('a','','totalAtivos',2)],second=[r('b','101','ativo',1),r('b','103','ativo',1),r('b','','totalAtivos',2)];
- const code=fs.readFileSync(new URL('../apps-script/clara/DashboardVisual.gs',import.meta.url),'utf8'),test={};vm.createContext(test);vm.runInContext(code,test);
+ const code=(fs.readFileSync(new URL('../apps-script/clara/GreenAcres.gs',import.meta.url),'utf8')+'\n'+fs.readFileSync(new URL('../apps-script/clara/DashboardVisual.gs',import.meta.url),'utf8')),test={};vm.createContext(test);vm.runInContext(code,test);
  assert.equal(test.carteiraAtivaDashboardIdealista_(first).primeira,true);const result=test.carteiraAtivaDashboardIdealista_(first.concat(second));assert.equal(result.total,2);assert.equal(result.entradas,1);assert.equal(result.saidas,1);assert.equal(test.carteiraAtivaDashboardIdealista_([r('bad','','totalAtivos',2)]),null);
  console.log('PASS dashboard carteira: primeira recolha, entradas/saídas e carteira incompleta excluída.');
 }

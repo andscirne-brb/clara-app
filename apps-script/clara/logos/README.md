@@ -8,3 +8,5 @@ Fontes consultadas em 25/10/2026:
 - Rightmove: https://hub.rightmove.co.uk/brand-guidelines/ e pacote https://hub.rightmove.co.uk/content/uploads/2024/11/Rightmove-Logos.zip
 
 logos.json contém imagens incorporadas no painel pelo gerador; não faz pedidos externos nem transmite dados da folha aos portais. Ficheiros brutos locais são referências de preparação; a distribuição usa apenas logos.json.
+
+- Green-Acres: https://back.green-acres.com/net/Content/Responsive/assets/global/img/Logo/GA_PRO_PIN_NEON.svg

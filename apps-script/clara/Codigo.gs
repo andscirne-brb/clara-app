@@ -89,6 +89,8 @@ function onOpen() {
     .addSeparator()
     .addItem('Rightmove: estatísticas', 'abrirRightmove')
     .addSeparator()
+    .addItem('Green-Acres: estatísticas', 'abrirGreenAcres')
+    .addSeparator()
     .addItem('Progresso', 'abrirLista')
     .addItem('Resumo semanal', 'abrirResumo')
     .addItem('Instalar o marcador', 'mostrarMarcador')
@@ -98,8 +100,8 @@ function onOpen() {
 
 function abrirPainel(){abrirPainelPlataforma_('ego');}
 function abrirPainelPlataforma_(tipo){
-  if(!['ego','idealista','rightmove'].includes(tipo))throw Error('Plataforma inválida.');
-  const titulo=tipo==='idealista'?'Idealista: estatísticas':tipo==='rightmove'?'Rightmove: estatísticas':'eGO: estado';
+  if(!['ego','idealista','rightmove','green-acres'].includes(tipo))throw Error('Plataforma inválida.');
+  const titulo=tipo==='green-acres'?'Green-Acres: estatísticas':tipo==='idealista'?'Idealista: estatísticas':tipo==='rightmove'?'Rightmove: estatísticas':'eGO: estado';
   let html=PAINEL_HTML.replace('__CLARA_DOCUMENTO__',SpreadsheetApp.getActive().getId()).split('__CLARA_MARCA__').join(tipo).replace('id="titulo">eGO: estado','id="titulo">'+titulo);
   if(tipo!=='ego')html=html.replace('<fieldset id="blocoDocs">','<fieldset id="blocoDocs" hidden>');
   SpreadsheetApp.getUi().showSidebar(HtmlService.createHtmlOutput(html).setTitle('Clara'));
@@ -237,13 +239,13 @@ function irPara(separador, linha) {
 function mostrarMarcador() {
   const codigo = 'javascript:' + encodeURIComponent(MARCADOR_JS);
   const html = '<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5">' +
-    '<p style="font-size:12px;color:#526b78">Versão 20261025.4 · Idealista com carteira ativa e Excel</p><p><b>1.</b> Arrasta este botão para a barra de marcadores do navegador:</p>' +
+    '<p style="font-size:12px;color:#526b78">Versão 20261025.5 · Green-Acres com CSV oficial</p><p><b>1.</b> Arrasta este botão para a barra de marcadores do navegador:</p>' +
     '<p style="text-align:center"><a href="' + codigo + '" style="display:inline-block;padding:8px 18px;background:#1a73e8;color:#fff;border-radius:6px;text-decoration:none;font-weight:bold">Clara</a></p>' +
     '<p>Se não der para arrastar: cria um marcador novo, chama-lhe <b>Clara</b> e cola isto no endereço:</p>' +
     '<label for="codigoMarcador">Código para o endereço do marcador</label><textarea id="codigoMarcador" style="width:100%;height:72px;font-size:11px" onclick="this.select()">' + codigo.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</textarea>' +
     '<button style="background:#087f8c;color:white;border:0;border-radius:6px;padding:9px 14px" onclick="var t=document.getElementById(&quot;codigoMarcador&quot;),e=document.getElementById(&quot;estadoCopia&quot;);t.focus();t.select();if(navigator.clipboard&amp;&amp;navigator.clipboard.writeText){navigator.clipboard.writeText(t.value).then(function(){e.textContent=&quot;Código copiado. Substitui o endereço do marcador Clara que já tens.&quot;;},function(){t.focus();t.select();e.textContent=&quot;Código selecionado. Copia com Ctrl+C.&quot;;});}else{e.textContent=&quot;Código selecionado. Copia com Ctrl+C.&quot;;}">Copiar código</button><p id="estadoCopia" role="status" style="font-size:12px;color:#526b78">Atualiza o marcador existente para usar a recolha guiada.</p>' +
-    '<p><b>2.</b> No site da Janela, Idealista ou Rightmove Plus com sessão iniciada, carrega no marcador <b>Clara</b>. Para atualizar um marcador antigo, substitui o seu endereço por este.</p>' +
-    '<p><b>3.</b> Para o Idealista: <b>Clara &gt; Idealista: estatísticas</b>, cola (Ctrl+V), revê e guarda. Para Rightmove: <b>Clara &gt; Rightmove: estatísticas</b>. Para imóveis do site da Janela: <b>Clara &gt; eGO: estado</b>.</p></div>';
+    '<p><b>2.</b> No site da Janela, Idealista, Rightmove Plus ou Green-Acres com sessão iniciada, carrega no marcador <b>Clara</b>. Para atualizar um marcador antigo, substitui o seu endereço por este.</p>' +
+    '<p><b>3.</b> Para o Idealista: <b>Clara &gt; Idealista: estatísticas</b>, cola (Ctrl+V), revê e guarda. Para Rightmove: <b>Clara &gt; Rightmove: estatísticas</b>. Para Green-Acres: <b>Clara &gt; Green-Acres: estatísticas</b>. Para imóveis do site da Janela: <b>Clara &gt; eGO: estado</b>.</p></div>';
   SpreadsheetApp.getUi().showModalDialog(HtmlService.createHtmlOutput(html).setWidth(520).setHeight(600), 'Instalar o marcador Clara');
 }
 
@@ -279,6 +281,7 @@ function cruzarCaracteristicasClara_(d){
 }
 function analisar(texto, docs) {
   texto = String(texto || '').trim();
+  if(texto.indexOf('CLARA4:')===0)return analisarGreenAcres(texto);
   if(texto.indexOf('CLARA3:')===0)return analisarRightmove(texto);
   if(texto.indexOf('CLARA2:')===0)return analisarIdealista(texto);
   if (texto.indexOf('CLARA1:') !== 0) throw new Error('Isto não é uma leitura da Clara. Carrega no marcador Clara na página do imóvel e cola outra vez.');
@@ -537,6 +540,7 @@ function textoHistorico_(v) {
   return v == null ? '' : String(v);
 }
 function gravar(texto, docs) {
+  if(String(texto||'').trim().indexOf('CLARA4:')===0)return gravarGreenAcres(texto);
   if(String(texto||'').trim().indexOf('CLARA3:')===0)return gravarRightmove(texto);
   if(String(texto||'').trim().indexOf('CLARA2:')===0)return gravarIdealista(texto);
   const lock = LockService.getDocumentLock();

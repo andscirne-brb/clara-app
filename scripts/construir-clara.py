@@ -4,6 +4,7 @@ apps-script/clara/Clara-completo.gs, para colar no editor do Apps Script ligado 
 import json, pathlib, re
 base = pathlib.Path(__file__).resolve().parent.parent / 'apps-script' / 'clara'
 codigo = (base / 'Codigo.gs').read_text(encoding='utf-8')
+codigo += '\n' + (base / 'GreenAcres.gs').read_text(encoding='utf-8')
 codigo += '\n' + (base / 'RightmoveCSV.gs').read_text(encoding='utf-8')
 codigo += '\n' + (base / 'Rightmove.gs').read_text(encoding='utf-8')
 codigo += '\n' + (base / 'Idealista.gs').read_text(encoding='utf-8')
@@ -17,6 +18,7 @@ for marca, uri in json.loads((base / 'logos' / 'logos.json').read_text(encoding=
 lista = (base / 'Lista.html').read_text(encoding='utf-8')
 resumo = (base / 'Resumo.html').read_text(encoding='utf-8')
 marc = (base / 'marcador.js').read_text(encoding='utf-8')
+marc = marc.replace('/* GREEN_COLLECTOR */', (base / 'green-acres.js').read_text(encoding='utf-8'))
 marc = marc.replace('/* CLARA_UI */', (base / 'marcador-ui.js').read_text(encoding='utf-8'))
 marc = marc.replace('/* RIGHTMOVE_COLLECTOR */', (base / 'rightmove-csv.js').read_text(encoding='utf-8') + '\n' + (base / 'rightmove.js').read_text(encoding='utf-8'))
 marc = marc.replace('/* IDEALISTA_COLLECTOR */', (base / 'idealista.js').read_text(encoding='utf-8') + '\n' + (base / 'idealista-excel.js').read_text(encoding='utf-8') + '\n' + (base / 'idealista-ativos.js').read_text(encoding='utf-8'))
