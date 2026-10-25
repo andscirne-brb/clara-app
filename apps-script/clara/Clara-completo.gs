@@ -82,11 +82,14 @@ function onEdit(e){
 }
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Clara')
-    .addItem('Progresso', 'abrirLista')
     .addItem('eGO: estado', 'abrirPainel')
+    .addSeparator()
     .addItem('Idealista: estatísticas', 'colarLeituraIdealista')
     .addItem('Idealista: ranking dos anúncios', 'conferirPaginasIdealista')
+    .addSeparator()
     .addItem('Rightmove: estatísticas', 'abrirRightmove')
+    .addSeparator()
+    .addItem('Progresso', 'abrirLista')
     .addItem('Resumo semanal', 'abrirResumo')
     .addItem('Instalar o marcador', 'mostrarMarcador')
     .addToUi();

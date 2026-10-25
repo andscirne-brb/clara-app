@@ -1,5 +1,10 @@
 # Clara: estado e plano
 
+## Último ponto de situação — 25 outubro: organização do menu
+
+Andreia aprovou manter o menu nativo, com acesso direto e separadores entre plataformas, em vez de acrescentar um painel de navegação. Ordem: eGO; Idealista (duas funções juntas); Rightmove; opções gerais (Progresso, Resumo semanal, Instalar o marcador). Nomes das funções preservados. Green-Acres só entra quando existir funcionalidade disponível, sem opção vazia ou sem ação. Logótipos continuam nos painéis laterais. Sem alteração do marcador ou dos dados.
+
+
 ## Último ponto de situação — 25 outubro: logótipos nos painéis
 
 Andreia aprovou logótipos oficiais nos painéis laterais; o menu nativo mantém os nomes Plataforma: função, sem imagens (limitação Google). eGO, Idealista e Rightmove no cabeçalho, com proporções preservadas e texto acessível; a marca acompanha a origem da leitura. Imagens incorporadas via logos/logos.json, sem pedidos externos ou partilha de dados. Fontes oficiais documentadas na pasta logos.
