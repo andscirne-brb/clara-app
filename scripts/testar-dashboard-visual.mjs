@@ -49,3 +49,12 @@ sourceValue=2;c.atualizarDashboardSeNecessario();assert.equal(builds,2);
 sourceValue=3;failBuild=true;assert.throws(()=>c.atualizarDashboardSeNecessario(),/falha/);failBuild=false;c.atualizarDashboardSeNecessario();assert.equal(builds,4);
 sourceValue=4;concurrent=true;c.atualizarDashboardSeNecessario();concurrent=false;c.atualizarDashboardSeNecessario();assert.equal(builds,6);assert.equal(c.atualizarDashboardSeNecessario().reutilizado,true);assert.equal(released,8);
 console.log('PASS abertura dashboard: reutiliza sem mudanças, deteta valor alterado, repete após falha e não oculta alteração concorrente.');
+
+// Importações de detalhe não devem invalidar uma vista com os mesmos indicadores.
+let perfRows=[];const mkPerf=(janela,media,hash)=>['2026-10-25','2026-10-23',janela,'101','12345_101','Local',100000,12,1,2,media,'New entry','-20%',5,hash,'https://example.invalid'];
+const sigSheet=(name)=>({getSheetId:()=>name==='Rightmove - desempenho'?1:2,getLastRow:()=>perfRows.length+1,getLastColumn:()=>16,getRange:()=>({getValues:()=>perfRows,getValue:()=> 'Resultados dos portais'}),getCharts:()=>[]});
+const sigSS={getSpreadsheetTimeZone:()=> 'UTC',getSheetByName:name=>['Rightmove - desempenho','Dashboard','Clara - dashboard'].includes(name)?sigSheet(name):null};
+perfRows=[mkPerf(30,4,'a')];const sig1=c.assinaturaDashboard_(sigSS);perfRows.push(mkPerf(60,9,'b'),mkPerf(90,10,'c'));assert.equal(c.assinaturaDashboard_(sigSS),sig1);perfRows.push(mkPerf(30,4,'novo-lote'));assert.equal(c.assinaturaDashboard_(sigSS),sig1);perfRows.push(mkPerf(30,5,'correcao'));assert.notEqual(c.assinaturaDashboard_(sigSS),sig1);
+const range={getSheet:()=>({getSheetId:()=>1}),getA1Notation:()=> 'A1:B3',getValues:()=>[['Dia','Total'],['2026-10-23',3]]};const chartSig=c.assinaturaGraficoDashboard_('Leads',range,19,1,'COLUMN',{colors:['blue']});
+assert.equal(c.podeReutilizarGraficoDashboard_(JSON.stringify({assinatura:chartSig,id:10}),chartSig,{getChartId:()=>10}),true);assert.equal(c.podeReutilizarGraficoDashboard_(JSON.stringify({assinatura:chartSig,id:10}),chartSig,{getChartId:()=>11}),false);assert.notEqual(c.assinaturaGraficoDashboard_('Leads',range,19,1,'COLUMN',{colors:['green']}),chartSig);assert.equal(c.podeReutilizarGraficoDashboard_('corrompido',chartSig,{getChartId:()=>10}),false);
+console.log('PASS desempenho dashboard: 60/90 e lotes equivalentes não reconstruem vista de 30 dias; correções reais invalidam; identidade, dados e opções protegem reutilização dos gráficos.');

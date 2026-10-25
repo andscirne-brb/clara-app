@@ -14,11 +14,15 @@ function leadsMensaisRightmove_(linhas,tz){
 }
 /** A assinatura inclui valores, não apenas contagens: alterações manuais também invalidam a vista. */
 function assinaturaDashboard_(ss){
- const fontes=[['Idealista - recolhas',2,13],['Leads por período',6,12],['Rightmove - anúncios',6,22],['Levantamento',9,100],['Histórico de indicadores',6,11],['Rightmove - histórico',1,22],['Rightmove - leads diárias',2,9],['Rightmove - desempenho',2,16],['Pendências da equipa',5,17]];
+ const fontes=[['Idealista - recolhas',2,13],['Leads por período',6,12],['Rightmove - anúncios',6,22],['Levantamento',9,100],['Histórico de indicadores',6,11],['Rightmove - leads diárias',2,9],['Rightmove - desempenho',2,16],['Pendências da equipa',5,17]];
  const dados=fontes.map(([nome,inicio,largura])=>{const sh=ss.getSheetByName(nome);return[nome,sh?sh.getSheetId():null,sh&&sh.getLastRow()>=inicio?sh.getRange(inicio,1,sh.getLastRow()-inicio+1,Math.min(largura,sh.getLastColumn())).getValues():[]];});
+ // O detalhe de 60/90 dias e os IDs de importação não alteram a vista de 30 dias.
+ const entrada=nome=>{const x=dados.find(r=>r[0]===nome);return x?x[2]:[];};
+ const perf=dados.find(r=>r[0]==='Rightmove - desempenho');if(perf)perf[2]=anunciosPerformanceRightmove_(entrada('Rightmove - desempenho'),entrada('Rightmove - anúncios').filter(r=>r[2])).map(r=>[r[0],r[2],r[5],r[6],r[7],r[17]]);
+ const lead=dados.find(r=>r[0]==='Rightmove - leads diárias');if(lead){const serie=serieLeadsRightmoveDiarias_(lead[2]);lead[2]=serie?{inicio:serie.inicio,fim:serie.fim,diarios:serie.diarios}:null;}
  const d=ss.getSheetByName('Dashboard'),v=ss.getSheetByName('Clara - dashboard');
  const estado=[d?d.getRange('A2').getValue():null,v?v.getSheetId():null,d?d.getCharts().map(c=>String(c.getOptions().get('title')||'')).sort():[]];
- return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,JSON.stringify(['dashboard-v4',ss.getSpreadsheetTimeZone(),dados,estado]),Utilities.Charset.UTF_8).map(b=>('0'+((b+256)%256).toString(16)).slice(-2)).join('');
+ return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,JSON.stringify(['dashboard-v5',ss.getSpreadsheetTimeZone(),dados,estado]),Utilities.Charset.UTF_8).map(b=>('0'+((b+256)%256).toString(16)).slice(-2)).join('');
 }
 function atualizarDashboardSeNecessario(){
  const lock=LockService.getDocumentLock();if(!lock.tryLock(1000))return{adiado:true};
@@ -29,6 +33,8 @@ function atualizarDashboardSeNecessario(){
   const r=atualizarDashboardVisual_(ss);if(r){const depois=assinaturaDashboard_(ss);if(depois===assinatura)props.setProperty(key,depois);else props.deleteProperty(key);}return r;
  }finally{lock.releaseLock();}
 }
+function assinaturaGraficoDashboard_(titulo,range,row,col,type,opts){return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,JSON.stringify(['grafico-v1',titulo,range.getSheet().getSheetId(),range.getA1Notation(),range.getValues(),row,col,String(type),opts]),Utilities.Charset.UTF_8).map(b=>('0'+(b&255).toString(16)).slice(-2)).join('');}
+function podeReutilizarGraficoDashboard_(guardado,assinatura,chart){try{const c=JSON.parse(guardado||'null'),id=chart&&chart.getChartId();return !!c&&id!==null&&id!==undefined&&c.assinatura===assinatura&&String(c.id)===String(id);}catch(e){return false;}}
 function atualizarDashboardVisual(){const lock=LockService.getDocumentLock();if(!lock.tryLock(1000))return;try{const r=atualizarDashboardVisual_(SpreadsheetApp.getActive());console.log(JSON.stringify(r));return r;}finally{lock.releaseLock();}}
 function prepararDashboardVisual(){
  const ss=SpreadsheetApp.getActive(),s=ss.getSheetByName('Dashboard');if(!s)throw Error('Dashboard não encontrado.');
@@ -68,7 +74,7 @@ function atualizarDashboardVisual_(ss){
  v.getRange('A1:D1').setValues([['Dia','Contactos','Emails e mensagens','Chamadas']]);if(dailyOk)v.getRange(2,1,daily.length,4).setValues(daily.map(r=>[Utilities.parseDate(r.data,tz,'yyyy-MM-dd'),r.contactos,r.mensagens,r.chamadas]));v.getRange('A2:A32').setNumberFormat('dd/MM');
  v.getRange('F1:G1').setValues([['Mês','Contactos únicos']]);if(green.length)v.getRange(2,6,green.length,2).setValues(green.map(r=>[iso(r[0]).slice(0,7)+(/parcial/i.test(String(r[9]))?' *':''),r[4]]));
  SpreadsheetApp.flush();
- function chart(title,range,row,col,type,opts){const own=s.getCharts().filter(c=>String(c.getOptions().get('title')||'')===title);if(own.length>1)throw Error('Gráfico repetido: '+title);let b=s.newChart();b=b.setChartType(type).addRange(range).setNumHeaders(1).setHiddenDimensionStrategy(Charts.ChartHiddenDimensionStrategy.SHOW_BOTH).setPosition(row,col,0,0).setOption('title',title).setOption('width',col===1&&row===36?1100:364).setOption('height',280).setOption('fontName','Arial').setOption('backgroundColor','#ffffff').setOption('titleTextStyle',{fontSize:12,color:ink,bold:true}).setOption('legend',{position:'bottom',textStyle:{fontSize:9}});Object.keys(opts||{}).forEach(k=>b.setOption(k,opts[k]));s.insertChart(b.build());if(own.length)s.removeChart(own[0]);}
+ function chart(title,range,row,col,type,opts){const own=s.getCharts().filter(c=>String(c.getOptions().get('title')||'')===title);if(own.length>1)throw Error('Gráfico repetido: '+title);const props=PropertiesService.getDocumentProperties(),key='clara.dashboard.grafico.'+title,assinatura=assinaturaGraficoDashboard_(title,range,row,col,type,opts);if(own.length===1&&podeReutilizarGraficoDashboard_(props.getProperty(key),assinatura,own[0]))return;let b=s.newChart();b=b.setChartType(type).addRange(range).setNumHeaders(1).setHiddenDimensionStrategy(Charts.ChartHiddenDimensionStrategy.SHOW_BOTH).setPosition(row,col,0,0).setOption('title',title).setOption('width',col===1&&row===36?1100:364).setOption('height',280).setOption('fontName','Arial').setOption('backgroundColor','#ffffff').setOption('titleTextStyle',{fontSize:12,color:ink,bold:true}).setOption('legend',{position:'bottom',textStyle:{fontSize:9}});Object.keys(opts||{}).forEach(k=>b.setOption(k,opts[k]));s.insertChart(b.build());if(own.length)s.removeChart(own[0]);const atual=s.getCharts().find(c=>String(c.getOptions().get('title')||'')===title);if(atual)props.setProperty(key,JSON.stringify({assinatura:assinatura,id:atual.getChartId()}));}
  block(19,1,4,12,dailyOk?'':'Falta uma série diária completa para estes 30 dias.',11,muted,false,'#ffffff');block(19,5,4,12,green.length?'':'Falta histórico de contactos.',11,muted,false,'#ffffff');block(19,9,4,12,rmDaily||rmLeads.length?'':'Falta histórico Rightmove.',11,muted,false,'#ffffff');
  if(dailyOk)chart('Idealista · contactos nos 30 dias',v.getRange(1,1,31,4),19,1,Charts.ChartType.COMBO,{seriesType:'bars',series:{0:{type:'line',color:teal,lineWidth:2},1:{color:'#87cbd9'},2:{color:purple}},hAxis:{format:'dd/MM',showTextEvery:5},vAxis:{minValue:0,format:'0'}});
  if(green.length)chart('Green-Acres · contactos únicos por mês',v.getRange(1,6,green.length+1,2),19,5,Charts.ChartType.COLUMN,{colors:[blue],legend:{position:'none'},hAxis:{slantedText:true,slantedTextAngle:45},vAxis:{minValue:0,format:'0'}});

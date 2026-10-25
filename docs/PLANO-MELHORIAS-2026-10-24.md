@@ -73,3 +73,7 @@ Implementada leitura de leads por data e de Property Performance, revisão no pa
 ## Oitavo ponto: exportação CSV Rightmove
 
 CSV oficial como primeira opção; três janelas numa só leitura, validação de cobertura, histórico e metadados transacionais. Testes locais e nativos aprovados; captura no navegador da utilizadora por confirmar.
+
+## Nono ponto: desempenho da gravação Rightmove
+
+Preparação partilhada do CSV, assinatura da vista com dados efetivamente apresentados, reutilização individual dos gráficos e tempos por etapa no painel e nos registos. Testes automatizados aprovados. Ver DESEMPENHO-DASHBOARD.md.
