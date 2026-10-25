@@ -1,6 +1,6 @@
 const RM_LEADS_HEADERS=['Data da recolha','Início do período','Fim do período','Dia','Chamadas','Emails','Total','ID da recolha','Ligação'];
 const RM_PERF_HEADERS=['Data da recolha','Dados atualizados até','Janela (dias)','ID Rightmove','Referência do portal','Localidade','Preço','Fotografias','Plantas','Dias desde atualização','Visitas diárias médias','Comparação período anterior','Comparação agência','Média da agência','ID da recolha','Ligação'];
-function abrirRightmove(){const html=PAINEL_HTML.replace('__CLARA_DOCUMENTO__',SpreadsheetApp.getActive().getId()).replace('id="titulo">eGO: estado','id="titulo">Rightmove: estatísticas').replace('<fieldset id="blocoDocs">','<fieldset id="blocoDocs" hidden>');SpreadsheetApp.getUi().showSidebar(HtmlService.createHtmlOutput(html).setTitle('Clara'));}
+function abrirRightmove(){abrirPainelPlataforma_('rightmove');}
 function validarLeituraRightmove_(texto){
  if(typeof texto!=='string'||texto.length>2000000||!texto.trim().startsWith('CLARA3:'))throw Error('Leitura Rightmove inválida.');const x=JSON.parse(texto.trim().slice(7)),iso=s=>typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&Number.isFinite(Date.parse(s+'T00:00:00Z'))&&new Date(s+'T00:00:00Z').toISOString().slice(0,10)===s,num=(n,inteiro=false)=>typeof n==='number'&&Number.isFinite(n)&&n>=0&&(!inteiro||Number.isInteger(n)),txt=(s,n=200)=>typeof s==='string'&&s.length<=n;
  if(x.v!==3||x.origem!=='rightmove'||!iso(String(x.lido||'').slice(0,10)))throw Error('Origem ou data inválida.');const lido=x.lido.slice(0,10);

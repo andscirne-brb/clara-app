@@ -93,8 +93,13 @@ function onOpen() {
   try {const ss=SpreadsheetApp.getActive(),d=ss.getSheetByName('Dashboard');if(d&&d.getRange('A2').getValue()==='Resultados dos portais')atualizarDashboardSeNecessario();} catch(e){console.warn('Dashboard: '+e.message);}
 }
 
-function abrirPainel() {
-  SpreadsheetApp.getUi().showSidebar(HtmlService.createHtmlOutput(PAINEL_HTML.replace('__CLARA_DOCUMENTO__',SpreadsheetApp.getActive().getId())).setTitle('Clara'));
+function abrirPainel(){abrirPainelPlataforma_('ego');}
+function abrirPainelPlataforma_(tipo){
+  if(!['ego','idealista','rightmove'].includes(tipo))throw Error('Plataforma inválida.');
+  const titulo=tipo==='idealista'?'Idealista: estatísticas':tipo==='rightmove'?'Rightmove: estatísticas':'eGO: estado';
+  let html=PAINEL_HTML.replace('__CLARA_DOCUMENTO__',SpreadsheetApp.getActive().getId()).split('__CLARA_MARCA__').join(tipo).replace('id="titulo">eGO: estado','id="titulo">'+titulo);
+  if(tipo!=='ego')html=html.replace('<fieldset id="blocoDocs">','<fieldset id="blocoDocs" hidden>');
+  SpreadsheetApp.getUi().showSidebar(HtmlService.createHtmlOutput(html).setTitle('Clara'));
 }
 
 function abrirLista() {

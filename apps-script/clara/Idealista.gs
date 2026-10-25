@@ -1,5 +1,6 @@
 const IDEALISTA_CABECALHOS=['Data da recolha','Tipo de página','Início do período','Fim do período','Filtros','Referência EGO','Código Idealista','Indicador','Valor','Cobertura','ID da recolha','Ligação','Observação'];
-function colarLeituraIdealista() {
+function colarLeituraIdealista(){abrirPainelPlataforma_('idealista');}
+function colarLeituraIdealistaDialogo_() {
   const ui=SpreadsheetApp.getUi(), p=ui.prompt('Clara · Idealista','Cola aqui a leitura copiada pelo botão Clara no Idealista.',ui.ButtonSet.OK_CANCEL);
   if(p.getSelectedButton()!==ui.Button.OK)return;
   const texto=p.getResponseText().trim();

@@ -1,5 +1,16 @@
 # Clara: estado e plano
 
+## Último ponto de situação — 25 outubro: logótipos nos painéis
+
+Andreia aprovou logótipos oficiais nos painéis laterais; o menu nativo mantém os nomes Plataforma: função, sem imagens (limitação Google). eGO, Idealista e Rightmove no cabeçalho, com proporções preservadas e texto acessível; a marca acompanha a origem da leitura. Imagens incorporadas via logos/logos.json, sem pedidos externos ou partilha de dados. Fontes oficiais documentadas na pasta logos.
+
+Idealista: estatísticas passa da caixa nativa de colagem para o painel lateral existente Colar/Rever/Guardar, usando os mesmos analisador e gravador. Abertura comum escolhe marca e oculta documentos fora do eGO. Caixa antiga mantida em função interna como alternativa, sem item novo no menu. Corrigida correspondência do aviso da versão do marcador para 20261025.4; marcador não foi alterado e não precisa de reinstalação nesta atualização visual.
+
+Testes de marca ao trocar de leitura, abertura por plataforma e regressão. Verificação visual efetuada nos três painéis reais no Sheets, com logótipos e títulos corretos; código guardado com leitura de volta idêntica. Testes passaram. Esta validação é de apresentação e abertura dos painéis, não uma nova importação de dados.
+
+
+
+
 ## Último ponto de situação: 25 outubro (Claude): tarefas dos perfis
 
 Pedido da Andreia (22/10, registado a 25/10): informação dos perfis dos portais no Sheet, no formato atual (tarefas em Pendências da equipa, Tema "Perfil do portal", Referência = portal; Perfis dos portais com uma linha por portal).
