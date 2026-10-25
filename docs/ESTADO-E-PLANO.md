@@ -1,5 +1,15 @@
 # Clara: estado e plano
 
+## Último ponto de situação: 25 outubro (Claude): tarefas dos perfis
+
+Pedido da Andreia (22/10, registado a 25/10): informação dos perfis dos portais no Sheet, no formato atual (tarefas em Pendências da equipa, Tema "Perfil do portal", Referência = portal; Perfis dos portais com uma linha por portal).
+- P0026 (green-acres, nome e logótipo): nome público já alterado para "Janela Imobiliária" pela Andreia; falta centrar o logótipo (continua a aguardar a Sara para versões do logótipo e manual de marca).
+- P0028 (green-acres) e P0033 (rightmove), Apresentação e idiomas: ação atualizada para "atualizar a descrição e verificar se é possível inserir noutros idiomas".
+- Novas P0065 (idealista: atualizar o logótipo) e P0066 (idealista: atualizar a descrição), Andreia, Por tratar, com ligação ao perfil e a fórmula de Conferência copiada de uma tarefa de portal existente.
+- Perfis dos portais: idealista passou de "Por levantar" a "Por rever" (22/10), com ligação.
+- Notado, não alterado: P0030 e P0034 estão Concluído mas a Conferência pede "Validar conclusão" (falta resposta, data de resolução ou Confirmado).
+- Código do projeto Apps Script reposto exatamente como estava (função temporária removida). A versão da Clara desta sessão de 22/10 (eeeb547) já tinha sido incorporada e ultrapassada pelo trabalho do Codex; não colar versões antigas.
+
 ## Último ponto de situação — 25 outubro: carteira ativa Idealista
 
 Aprovado pela Andreia: um clique no gráfico recolhe estatísticas e tenta obter a carteira atual através da ligação dos anúncios ativos. Lista oficial de publicação, ScopeId=1; percorre as páginas, confere total, IDs únicos e primeira página no fim. Não navega a página principal nem altera o período. Prefere HTML direto; se a lista depender de JavaScript, aguarda renderização numa janela interna temporária da mesma origem e remove-a em sucesso/falha. Se falhar, copia estatísticas com aviso explícito, sem registar carteira parcial nem inferir saídas.
