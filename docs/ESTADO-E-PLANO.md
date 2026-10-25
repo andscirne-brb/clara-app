@@ -4,7 +4,7 @@
 
 Erro reportado pela Andreia no marcador 20261025.5: O CSV mensal não ficou disponível. A procura no HTML inicial do relatório dependia de renderização JavaScript. Corrigido em 20261025.6: constrói o endereço oficial do botão CSV mensal (ExportTableCsv/4726, groupBy MONTH) com a conta lida da exportação visível atual. Endereço e parâmetros comparados no navegador com o botão real: idênticos. Não depende do gráfico nem de ler HTML de páginas intermédias; ficam apenas os cinco pedidos CSV em paralelo. Mantém validações de conta, cabeçalhos, datas e somas; rejeita dados incompatíveis e repõe o separador original em falha.
 
-Teste de regressão cobre HTML sem ligação CSV (não deve ser consultado), cinco pedidos diretos, conta correta e parâmetros mensais, CSV inválido e reposição do separador. Testes de interface e Green-Acres passaram. Marcador, indicação da versão no painel e instalação atualizados para 20261025.6. Falta novo teste do clique pela Andreia após reinstalar; sem novos dados importados nesta correção.
+Teste de regressão cobre HTML sem ligação CSV (não deve ser consultado), cinco pedidos diretos, conta correta e parâmetros mensais, CSV inválido e reposição do separador. Testes de interface e Green-Acres passaram. Marcador, indicação da versão no painel e instalação atualizados para 20261025.6. Teste do marcador 20261025.6 confirmado pela Andreia e pelo print: cinco CSV reconhecidos, aviso de recolha já guardada correto. Conferência direta no Sheets confirmou uma única importação, indicadores e gráfico mensal coerentes, sem duplicação; lacuna diária preservada sem zero. A recolha corresponde aos CSV já importados no teste anterior. Sem novos dados importados nesta correção.
 
 
 ## Último ponto de situação — 25 outubro: Green-Acres
