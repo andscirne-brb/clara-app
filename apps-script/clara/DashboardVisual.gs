@@ -22,7 +22,7 @@ function assinaturaDashboard_(ss){
  const lead=dados.find(r=>r[0]==='Rightmove - leads diárias');if(lead){const serie=serieLeadsRightmoveDiarias_(lead[2]);lead[2]=serie?{inicio:serie.inicio,fim:serie.fim,diarios:serie.diarios}:null;}
  const d=ss.getSheetByName('Dashboard'),v=ss.getSheetByName('Clara - dashboard');
  const estado=[d?d.getRange('A2').getValue():null,v?v.getSheetId():null,d?d.getCharts().map(c=>String(c.getOptions().get('title')||'')).sort():[]];
- return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,JSON.stringify(['dashboard-v5',ss.getSpreadsheetTimeZone(),dados,estado]),Utilities.Charset.UTF_8).map(b=>('0'+((b+256)%256).toString(16)).slice(-2)).join('');
+ return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,JSON.stringify(['dashboard-v6',ss.getSpreadsheetTimeZone(),dados,estado]),Utilities.Charset.UTF_8).map(b=>('0'+((b+256)%256).toString(16)).slice(-2)).join('');
 }
 function atualizarDashboardSeNecessario(){
  const lock=LockService.getDocumentLock();if(!lock.tryLock(1000))return{adiado:true};
@@ -48,7 +48,7 @@ function atualizarDashboardVisual_(ss){
  const s=ss.getSheetByName('Dashboard');if(!s)return;
  prepararEspacoProgressao_(ss,s);
  const tz=ss.getSpreadsheetTimeZone(),rows=(name,start,width)=>{const sh=ss.getSheetByName(name);return sh&&sh.getLastRow()>=start?sh.getRange(start,1,sh.getLastRow()-start+1,Math.min(width,sh.getLastColumn())).getValues():[];};
- const raw=rows('Idealista - recolhas',2,13),p=periodo30Dashboard_(raw,tz),allDaily=dadosGraficoContactosIdealista_(raw,tz);
+ const raw=rows('Idealista - recolhas',2,13),carteira=carteiraAtivaDashboardIdealista_(raw),p=periodo30Dashboard_(raw,tz),allDaily=dadosGraficoContactosIdealista_(raw,tz);
  const rmDaily=serieLeadsRightmoveDiarias_(rows('Rightmove - leads diárias',2,9));
  const leads=rows('Leads por período',6,12),rmLeads=leadsMensaisRightmove_(leads,tz),rmUltimo=rmLeads.length?rmLeads[rmLeads.length-1]:null;
  const green=leads.filter(r=>String(r[3]).toLowerCase()==='green-acres'&&typeof r[4]==='number');
@@ -61,7 +61,7 @@ function atualizarDashboardVisual_(ss){
  function card(col,name,value,label,period,detail,footer,color){block(6,col,4,1,name,12,color,true,'#ffffff');block(7,col,4,2,value,32,ink,true,'#ffffff');block(9,col,4,1,label,11,muted,false,'#ffffff');block(10,col,4,2,period,10,muted,false,'#ffffff');block(12,col,4,2,detail,11,ink,true,'#ffffff');block(14,col,4,2,footer,9,muted,false,'#ffffff');}
  block(2,1,12,2,'Resultados dos portais',23,ink,true);block(4,1,12,1,'Dados por portal · consultar as datas de cada fonte antes de comparar',11,muted);
  const fmt=v=>typeof v==='number'?v.toLocaleString('pt-PT'):'Não recolhido';
- card(1,'IDEALISTA',p?fmt(p.metricas.contactos):'Sem dados','contactos recebidos',p?p.inicio+' a '+p.fim+'\n'+(()=>{try{return JSON.parse(p.filtros).join(' · ');}catch(e){return p.filtros;}})():'Falta recolha de 30 dias',p?fmt(p.metricas.visitasDetalhes)+' visitas aos anúncios\n'+fmt(p.metricas.anunciosAtivosHoje)+' anúncios ativos na recolha':'Registar estatísticas no menu Clara',p?'Recolha: '+p.recolha+' · '+fmt(p.metricas.mensagens)+' mensagens / '+fmt(p.metricas.chamadas)+' chamadas':'',teal);
+ card(1,'IDEALISTA',p?fmt(p.metricas.contactos):'Sem dados','contactos recebidos',p?p.inicio+' a '+p.fim+'\n'+(()=>{try{return JSON.parse(p.filtros).join(' · ');}catch(e){return p.filtros;}})():'Falta recolha de 30 dias',p?fmt(p.metricas.visitasDetalhes)+' visitas aos anúncios\n'+fmt(carteira?carteira.total:p.metricas.anunciosAtivosHoje)+' anúncios ativos na recolha':'Registar estatísticas no menu Clara',p?'Recolha: '+p.recolha+' · '+fmt(p.metricas.mensagens)+' mensagens / '+fmt(p.metricas.chamadas)+' chamadas'+(carteira?'\nCarteira '+iso(carteira.data)+': '+(carteira.primeira?'primeira recolha':carteira.entradas+' entradas / '+carteira.saidas+' saídas'):''):'',teal);
  card(5,'GREEN-ACRES',lastGreen?fmt(lastGreen[4]):'Sem dados','contactos únicos · último dado disponível',lastGreen?iso(lastGreen[0])+' a '+iso(lastGreen[1]):'Sem recolha',lastGreen?'Sem janela de 30 dias recolhida':'Falta relatório de contactos','O gráfico mensal mantém o histórico. Período distinto do Idealista.',blue);
  if(rmDaily)card(9,'RIGHTMOVE',fmt(rmDaily.diarios.reduce((n,x)=>n+x.total,0)),'leads · período recolhido',rmDaily.inicio+' a '+rmDaily.fim,fmt(activeRM.length)+' anúncios · '+(views.length?(views.reduce((a,b)=>a+b,0)/views.length).toFixed(2).replace('.',','):'—')+' visitas/dia/anúncio (30 dias)',rmDaily.diarios.reduce((n,x)=>n+x.chamadas,0)+' chamadas · '+rmDaily.diarios.reduce((n,x)=>n+x.emails,0)+' emails',purple);
  else card(9,'RIGHTMOVE',rmLeads.length?fmt(rmLeads.reduce((n,x)=>n+x.total,0)):'Sem dados','leads · meses registados',rmUltimo?rmLeads[0].inicio+' a '+rmUltimo.fim+(rmUltimo.parcial?' · mês final parcial':''):'Sem relatório de leads',fmt(activeRM.length)+' anúncios · '+(views.length?(views.reduce((a,b)=>a+b,0)/views.length).toFixed(2).replace('.',','):'—')+' visitas/dia/anúncio (30 dias)',rmUltimo?rmLeads.reduce((n,x)=>n+x.chamadas,0)+' chamadas · '+rmLeads.reduce((n,x)=>n+x.emails,0)+' emails. Sem janela de 30 dias de leads.':'Contactos por recolher.',purple);
@@ -106,3 +106,8 @@ function atualizarDashboardVisual_(ss){
 
 function verificarDashboardVisual(){const ss=SpreadsheetApp.getActive(),s=ss.getSheetByName('Dashboard'),v=ss.getSheetByName('Clara - dashboard');console.log(JSON.stringify({cartoes:s.getRange('A55:L58').getDisplayValues(),fontes:v.getRange('A1:G4').getDisplayValues(),progressao:v.getRange('J1:N3').getDisplayValues(),historicoRightmove:Math.max(0,ss.getSheetByName('Rightmove - histórico').getLastRow()-1),graficos:s.getCharts().map(c=>({titulo:c.getOptions().get('title'),ranges:c.getRanges().map(r=>r.getSheet().getName()+'!'+r.getA1Notation())})),erros:s.getRange('A1:L80').getDisplayValues().flat().filter(x=>/^#(ERROR!|REF!|VALUE!|DIV\/0!|NAME\?|N\/A|NUM!)/.test(x))}));}
 
+
+function carteiraAtivaDashboardIdealista_(rows){
+ const snapshots=[];rows.filter(r=>r[1]==='carteira_ativa'&&r[7]==='totalAtivos').forEach(m=>{const ids=new Set(rows.filter(r=>r[1]==='carteira_ativa'&&r[7]==='ativo'&&r[10]===m[10]&&r[11]===m[11]).map(r=>String(r[6])));if(ids.size===Number(m[8]))snapshots.push({ids,total:Number(m[8]),data:m[0],url:m[11]});});
+ if(!snapshots.length)return null;const last=snapshots.pop(),prior=snapshots.filter(x=>x.url===last.url).pop();return{total:last.total,data:last.data,primeira:!prior,entradas:prior?[...last.ids].filter(x=>!prior.ids.has(x)).length:0,saidas:prior?[...prior.ids].filter(x=>!last.ids.has(x)).length:0};
+}

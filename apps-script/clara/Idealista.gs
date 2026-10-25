@@ -27,27 +27,32 @@ function lerIdealista_(texto) {
   if(d.tipo!=='lista'&&d.periodo.inicio>d.periodo.fim)throw new Error('Período inválido.');
   d.registos.forEach(function(r){if(!r.metricas||typeof r.metricas!=='object'||Array.isArray(r.metricas))throw new Error('Indicadores inválidos.');Object.keys(r.metricas).forEach(function(k){const v=r.metricas[k];if(v!==null&&(typeof v!=='number'||!Number.isFinite(v)||v<0))throw new Error('Valor inválido em '+k);if(k==='qualidade'&&v>100)throw new Error('Qualidade fora da escala.');});});
   if(d.paginacao){['pagina','porPagina','totalAtivos'].forEach(function(k){const n=d.paginacao[k];if(n!==null&&(!Number.isInteger(n)||n<1||n>100000))throw new Error('Paginação inválida.');});}
+  validarCarteiraAtivaIdealista_(d);
   validarContactosDiariosIdealista_(d);
   return d;
 }
 function prepararIdealista_(texto, ss) {
   const d=lerIdealista_(texto), sh=ss.getSheetByName('Idealista - recolhas');
   if(sh && sh.getRange(1,1,1,13).getDisplayValues()[0].join('|')!==IDEALISTA_CABECALHOS.join('|'))throw new Error('A estrutura das recolhas Idealista mudou. Não gravei.');
-  const assinatura=JSON.stringify({data:String(d.lido||'').slice(0,10),tipo:d.tipo,url:d.url,periodo:d.periodo,filtros:d.filtros,registos:d.registos,cobertura:d.cobertura,paginacao:d.paginacao,diarios:d.diarios});
+  const assinatura=JSON.stringify({data:String(d.lido||'').slice(0,10),tipo:d.tipo,url:d.url,periodo:d.periodo,filtros:d.filtros,registos:d.registos,cobertura:d.cobertura,paginacao:d.paginacao,diarios:d.diarios,carteiraAtiva:d.carteiraAtiva});
   const hash=Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,assinatura).map(function(b){return('0'+(b&255).toString(16)).slice(-2);}).join('');
-  const mapa={},existentes=ss.getSheetByName('Idealista - recolhas');
-  if(existentes&&existentes.getLastRow()>1)existentes.getRange(2,6,existentes.getLastRow()-1,2).getDisplayValues().forEach(function(r){if(r[1]&&r[0]){if(mapa[r[1]]&&mapa[r[1]]!==r[0])mapa[r[1]]='';else mapa[r[1]]=r[0];}});
-  let duplicada=false;if(sh&&sh.getLastRow()>1)duplicada=sh.getRange(2,11,sh.getLastRow()-1,1).getDisplayValues().some(function(r){return r[0]===hash;});
+  const historico=sh&&sh.getLastRow()>1?sh.getRange(2,1,sh.getLastRow()-1,13).getValues():[],mapa={};
+  historico.forEach(function(r){const id=String(r[6]||''),ref=String(r[5]||'');if(id&&ref){if(mapa[id]&&mapa[id]!==ref)mapa[id]='';else mapa[id]=ref;}});
+  const duplicada=historico.some(function(r){return r[10]===hash;});
   const linhas=[],observacao=d.fonte==='Excel oficial Idealista'?'Excel oficial Idealista; ranking completo, contactos agregados.':d.tipo==='zona'?'Comparativo da zona; não associar automaticamente à carteira. '+(d.periodo.etiqueta||'')+(!d.periodo.inicio?'; datas exatas não indicadas na página.':''):'';
   d.registos.forEach(function(r){const ref=r.ref||(d.tipo==='ranking'?mapa[r.id]||'':'');const campos=Object.assign({},r.metricas);['publicacao','rendimento','aviso','posicao'].forEach(function(k){if(r[k]!==undefined&&r[k]!==null&&r[k]!=='')campos[k]=r[k];});Object.keys(campos).forEach(function(k){if(campos[k]===null)return;linhas.push([dataTexto_(String(d.lido).slice(0,10),ss.getSpreadsheetTimeZone()),d.tipo,d.periodo.inicio||'',d.periodo.fim||'',JSON.stringify(d.filtros||[]),ref,r.id||'',k,campos[k],d.cobertura||'Página atual',hash,d.url,observacao]);});});
   if(d.diarios)d.diarios.forEach(function(r){['contactos','mensagens','chamadas'].forEach(function(k){linhas.push([dataTexto_(String(d.lido).slice(0,10),ss.getSpreadsheetTimeZone()),'contactos_diarios',d.periodo.inicio,d.periodo.fim,JSON.stringify(d.filtros), '',r.data,k,r[k], 'Série diária completa; somas conferidas com os totais',hash,d.url,'Pontos vetoriais do gráfico de contactos']);});});
   if(d.tipo==='lista'&&d.paginacao)linhas.forEach(function(r){r[12]='PAGINACAO:'+JSON.stringify(d.paginacao);});
+  if(d.carteiraAtiva){const c=d.carteiraAtiva,base=[dataTexto_(String(d.lido).slice(0,10),ss.getSpreadsheetTimeZone()),'carteira_ativa','','',JSON.stringify(['Carteira atual publicada no Idealista'])];
+    c.registos.forEach(function(r){linhas.push(base.concat([r.ref,r.id,'ativo',1,'Carteira completa; '+c.paginas+' páginas conferidas',hash,c.url,'Fotografia da carteira no dia da recolha; independente do período estatístico.']));});
+    linhas.push(base.concat(['','carteira','totalAtivos',c.total,'Carteira completa',hash,c.url,'Marcador da recolha completa, incluindo carteira vazia.']));
+  }
   if(!linhas.length)throw new Error('Não há indicadores para registar.');
-  return {d:d,linhas:linhas,hash:hash,duplicada:duplicada};
+  return {d:d,linhas:linhas,hash:hash,duplicada:duplicada,carteira:d.carteiraAtiva?compararCarteiraAtivaIdealista_(d.carteiraAtiva,historico):null};
 }
 function analisarIdealista(texto) {
   const p=prepararIdealista_(texto,SpreadsheetApp.getActive());
-  return {origem:'idealista',tipo:p.d.tipo,periodo:p.d.periodo,cobertura:p.d.cobertura,filtros:p.d.filtros,quantidade:p.d.registos.length,indicadores:p.linhas.length,duplicada:p.duplicada,amostra:p.d.registos.slice(0,5),dias:p.d.diarios?p.d.diarios.length:0,avisoSerie:p.d.avisoSerie||'',estatisticas:p.d.tipo==='geral'?estatisticasIdealista_(p.d.registos[0].metricas):null};
+  return {origem:'idealista',tipo:p.d.tipo,periodo:p.d.periodo,cobertura:p.d.cobertura,filtros:p.d.filtros,quantidade:p.d.registos.length,indicadores:p.linhas.length,duplicada:p.duplicada,amostra:p.d.registos.slice(0,5),carteira:p.carteira,avisoCarteira:p.d.avisoCarteira||'',dias:p.d.diarios?p.d.diarios.length:0,avisoSerie:p.d.avisoSerie||'',estatisticas:p.d.tipo==='geral'?estatisticasIdealista_(p.d.registos[0].metricas):null};
 }
 function gravarIdealista(texto) {
   const lock=LockService.getDocumentLock();if(!lock.tryLock(30000))throw new Error('Outra gravação em curso.');
@@ -59,7 +64,7 @@ function gravarIdealista(texto) {
     const seguro=p.linhas.map(function(r){return r.map(function(v){return typeof v==='string'&&/^[=+@-]/.test(v)?"'"+v:v;});});
     try {sh.getRange(inicio,1,n,13).setValues(seguro);sh.getRange(inicio,1,n,1).setNumberFormat('yyyy-mm-dd');SpreadsheetApp.flush();const a=sh.getRange(inicio,11,n,1).getValues();if(a.some(function(r){return r[0]!==p.hash;}))throw new Error('Conferência da gravação falhou.');}
     catch(e){sh.getRange(inicio,1,n,13).clearContent();throw e;}
-    let aviso='';if(p.d.tipo==='geral')try{atualizarDashboardIdealista_(ss);atualizarGraficoContactosIdealista_(ss);}catch(e){aviso=' A recolha ficou guardada, mas o Dashboard não foi atualizado: '+e.message;}
+    let aviso='';if(p.carteira)try{atualizarVistaAtivosIdealista_(ss,p.d,p.carteira);}catch(e){aviso=' A carteira ficou guardada no histórico, mas a vista de consulta não foi atualizada: '+e.message;}if(p.d.tipo==='geral')try{atualizarDashboardIdealista_(ss);atualizarGraficoContactosIdealista_(ss);}catch(e){aviso=' A recolha ficou guardada, mas o Dashboard não foi atualizado: '+e.message;}
     return{origem:'idealista',duplicada:false,escritos:n,quantidade:p.d.registos.length,cobertura:p.d.cobertura+(aviso||'')};
   } finally {lock.releaseLock();}
 }
@@ -107,5 +112,27 @@ function estatisticasIdealista_(m){
 }
 function resumoEstatisticasIdealista_(a){
   const formato=function(v){return v===null?'Não recolhido':String(v).replace(/\B(?=(\d{3})+(?!\d))/g,' ');};
-  return 'Estatísticas da carteira\nPeríodo: '+a.periodo.inicio+' a '+a.periodo.fim+'\nFiltros: '+(a.filtros||[]).join(' · ')+'\n\n'+a.estatisticas.map(function(x){return x.nome+': '+formato(x.valor);}).join('\n')+'\n\n'+(a.dias?'Gráfico diário: '+a.dias+' dias completos.':'Gráfico diário não recolhido. '+(a.avisoSerie||'Atualiza o marcador e volta a recolher.'))+'\nTotais da carteira no período. Os anúncios ativos são o valor atual. Os últimos 2 dias podem sofrer ajustes.\nGuardar no histórico Idealista - recolhas?';
+  return 'Estatísticas da carteira\nPeríodo: '+a.periodo.inicio+' a '+a.periodo.fim+'\nFiltros: '+(a.filtros||[]).join(' · ')+'\n\n'+a.estatisticas.map(function(x){return x.nome+': '+formato(x.valor);}).join('\n')+'\n\n'+(a.dias?'Gráfico diário: '+a.dias+' dias completos.':'Gráfico diário não recolhido. '+(a.avisoSerie||'Atualiza o marcador e volta a recolher.'))+'\n'+(a.carteira?resumoCarteiraAtivaIdealista_(a.carteira):'Carteira ativa não recolhida. '+(a.avisoCarteira||''))+'\nTotais da carteira no período. Os anúncios ativos são o valor atual. Os últimos 2 dias podem sofrer ajustes.\nGuardar no histórico Idealista - recolhas?';
+}
+
+function validarCarteiraAtivaIdealista_(d){
+ if(!d.carteiraAtiva)return;
+ const c=d.carteiraAtiva;if(d.tipo!=='geral'||!/^https:\/\/(?:www\.)?idealista\.pt\/tools\/publicacion\/idealista\?ScopeId=1$/.test(c.url||'')||!Number.isInteger(c.total)||c.total<0||c.total>1000||!Number.isInteger(c.paginas)||c.paginas<1||c.paginas>50||!Array.isArray(c.registos)||c.registos.length!==c.total||c.total!==d.registos[0].metricas.anunciosAtivosHoje)throw Error('Carteira ativa inválida ou incompleta.');
+ const ids=new Set();c.registos.forEach(function(r){if(typeof r.id!=='string'||!/^\d+$/.test(r.id||'')||typeof r.ref!=='string'||!r.ref.trim()||r.ref.length>100||ids.has(r.id))throw Error('Anúncio ativo inválido ou repetido.');ids.add(r.id);});
+}
+function compararCarteiraAtivaIdealista_(c,rows){
+ const markers=rows.filter(function(r){return r[1]==='carteira_ativa'&&r[7]==='totalAtivos'&&r[11]===c.url;});let prior=null;
+ for(let i=markers.length-1;i>=0;i--){const m=markers[i],records=rows.filter(function(r){return r[1]==='carteira_ativa'&&r[7]==='ativo'&&r[10]===m[10]&&r[11]===c.url;}).map(function(r){return{id:String(r[6]),ref:String(r[5])};});if(records.length===Number(m[8])&&new Set(records.map(function(r){return r.id;})).size===records.length){prior=records;break;}}
+ const current=new Set(c.registos.map(function(r){return r.id;})),old=new Set((prior||[]).map(function(r){return r.id;}));
+ return{total:c.total,primeira:prior===null,entradas:prior===null?[]:c.registos.filter(function(r){return !old.has(r.id);}),saidas:prior===null?[]:prior.filter(function(r){return !current.has(r.id);}),registos:c.registos};
+}
+function resumoCarteiraAtivaIdealista_(c){return 'Carteira ativa: '+c.total+' de '+c.total+' anúncios conferidos. '+(c.primeira?'Primeira recolha completa; comparação disponível na próxima recolha.':c.entradas.length+' entradas e '+c.saidas.length+' saídas desde a recolha anterior.');}
+function atualizarVistaAtivosIdealista_(ss,d,c){
+ const name='Idealista - ativos',headers=['Referência eGO','Código Idealista','Estado na recolha','Data da recolha'];let sh=ss.getSheetByName(name);
+ if(sh&&sh.getLastRow()&&sh.getRange(1,1,1,4).getDisplayValues()[0].join('|')!==headers.join('|'))throw Error('Os cabeçalhos da vista mudaram.');
+ if(!sh)sh=ss.insertSheet(name);const added=new Set(c.entradas.map(function(r){return r.id;})),date=String(d.lido).slice(0,10);
+ const rows=[headers].concat(c.registos.map(function(r){return[r.ref,r.id,c.primeira?'Ativo — primeira recolha':added.has(r.id)?'Entrada':'Ativo',date];}),c.saidas.map(function(r){return[r.ref,r.id,'Saída desde a anterior',date];}));
+ if(sh.getMaxRows()<rows.length)sh.insertRowsAfter(sh.getMaxRows(),rows.length-sh.getMaxRows());
+ sh.getRange(1,1,rows.length,4).setValues(rows.map(function(r){return r.map(function(v){return typeof v==='string'&&/^[=+@-]/.test(v)?"'"+v:v;});}));
+ if(sh.getLastRow()>rows.length)sh.getRange(rows.length+1,1,sh.getLastRow()-rows.length,4).clearContent();sh.setFrozenRows(1);sh.setColumnWidth(1,150);sh.setColumnWidth(2,140);sh.setColumnWidth(3,240);sh.setColumnWidth(4,140);sh.getRange(1,1,rows.length,4).setWrap(true);sh.getRange(1,1,1,4).setFontWeight('bold').setBackground('#155c53').setFontColor('#ffffff');
 }

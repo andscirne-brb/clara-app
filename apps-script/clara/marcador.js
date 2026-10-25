@@ -7,8 +7,8 @@
   }
   /* IDEALISTA_COLLECTOR */
   if (/^(?:www\.)?idealista\.pt$/.test(location.hostname)) {
-    try {ui.estado('A ler a página do Idealista…');let d=recolherIdealista(document,{url:location.href,lido:new Date().toISOString()});if(d.tipo==='ranking')d=await recolherExcelIdealista(document,d,ui);if(d.tipo==='ranking')d=await recolherExcelIdealista(document,d,ui);if(d.tipo==='geral'){ui.estado('A ler totais e gráfico diário de contactos…');try{await recolherDiariosIdealista(document,d);}catch(e){d.avisoSerie=e.message;}}
-    d.marcadorVersao='20261025.3';await ui.concluir('CLARA2:'+JSON.stringify(d),d.registos.length+' registos · '+d.cobertura+'.','Idealista: estatísticas',d.avisoSerie?'O gráfico diário não foi recolhido; os totais mantêm-se disponíveis.':'');}catch(e){ui.falhar(e.message);}return;
+    try {ui.estado('A ler a página do Idealista…');let d=recolherIdealista(document,{url:location.href,lido:new Date().toISOString()});if(d.tipo==='ranking')d=await recolherExcelIdealista(document,d,ui);if(d.tipo==='geral'){ui.estado('A ler totais e gráfico diário de contactos…');try{await recolherDiariosIdealista(document,d);}catch(e){d.avisoSerie=e.message;}try{d.carteiraAtiva=await recolherAtivosIdealista(document,d,ui);}catch(e){d.avisoCarteira=e.name==='AbortError'?'A lista de ativos demorou demasiado; ficou por recolher.':e.message;}}
+    d.marcadorVersao='20261025.4';await ui.concluir('CLARA2:'+JSON.stringify(d),d.registos.length+' registos · '+d.cobertura+'.'+(d.carteiraAtiva?' Carteira ativa: '+d.carteiraAtiva.total+' de '+d.carteiraAtiva.total+' anúncios conferidos.':''),'Idealista: estatísticas',[d.avisoSerie?'O gráfico diário não foi recolhido; os totais mantêm-se disponíveis.':'',d.avisoCarteira?'Carteira ativa por recolher: '+d.avisoCarteira:''].filter(Boolean).join(' '));}catch(e){ui.falhar(e.message);}return;
   }
   if (!/^(?:www\.)?janela-imobiliaria\.com$/.test(location.hostname)){ui.falhar('Abre a página pública do imóvel no site da Janela, ou uma página de lista/estatísticas do Idealista.');return;}
   try {
@@ -17,7 +17,7 @@
   const me = ld(document);
   if(!me){ui.falhar('Esta página não é uma ficha de imóvel. Abre o anúncio e volta a clicar no marcador.');return;}
   const ext = x => ((JSON.stringify(x).match(/\.(pdf|jpe?g|png|webp|gif)\b/i) || [])[1] || '?').toLowerCase().replace('jpeg', 'jpg');
-  const out = { v: 1, marcadorVersao: '20261025.3', origem: 'site', lido: new Date().toISOString(), url: location.href.split('?')[0], ref: null, idiomaCaracteristicas: (document.documentElement.lang || '').slice(0,2).toUpperCase(), textos: {} };
+  const out = { v: 1, marcadorVersao: '20261025.4', origem: 'site', lido: new Date().toISOString(), url: location.href.split('?')[0], ref: null, idiomaCaracteristicas: (document.documentElement.lang || '').slice(0,2).toUpperCase(), textos: {} };
   let p = null;
   const u = performance.getEntriesByType('resource').map(e => e.name).find(n => /websiteapi\.egorealestate\.com\/v1\/Properties\/\d+\?.*propertyid=/.test(n));
   if (u) { try { p = await fetchClara(u,true); } catch (e) {} }

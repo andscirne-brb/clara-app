@@ -1,5 +1,14 @@
 # Clara: estado e plano
 
+## Último ponto de situação — 25 outubro: carteira ativa Idealista
+
+Aprovado pela Andreia: um clique no gráfico recolhe estatísticas e tenta obter a carteira atual através da ligação dos anúncios ativos. Lista oficial de publicação, ScopeId=1; percorre as páginas, confere total, IDs únicos e primeira página no fim. Não navega a página principal nem altera o período. Prefere HTML direto; se a lista depender de JavaScript, aguarda renderização numa janela interna temporária da mesma origem e remove-a em sucesso/falha. Se falhar, copia estatísticas com aviso explícito, sem registar carteira parcial nem inferir saídas.
+
+Sheets: carteira completa guardada no histórico existente com tipo carteira_ativa, marcador totalAtivos (inclui zero), referências e códigos. Comparação apenas entre recolhas completas da mesma seleção. Pré-visualização e dashboard distinguem primeira recolha de entradas/saídas. Vista derivada Idealista - ativos mostra lista atual e saídas desde a anterior; histórico permanece intacto. Gravação dos dados em lote, uma leitura do histórico para preparar a importação.
+
+Marcador 20261025.4 requer reinstalação. Corrigida também uma chamada duplicada à exportação Excel detetada no marcador anterior. Testes automáticos de cobertura, repetição, zero, mudanças da lista, renderização dinâmica e restauro. Lista real conferida no navegador: total 50, segunda página 20 e última página 10. Código guardado no projeto ligado com conferência da versão anterior. Falta teste completo com o marcador reinstalado e confirmação de gravação da primeira carteira pelo utilizador. Não afirmar que a primeira carteira real já foi importada.
+
+
 ## Último ponto de situação — 25 outubro: Excel do ranking Idealista
 
 Regra da Andreia: nas estatísticas, dar prioridade à exportação oficial CSV/Excel quando existe. Rightmove já prefere CSV; o ranking Idealista passa a obter o XLS completo pelo formulário oficial, na sessão local. Sem serviços externos ou bibliotecas remotas. Leitor restrito CFB/BIFF8, rejeita fórmulas, encriptação, formatos não reconhecidos e dados incoerentes. Não executa macros.

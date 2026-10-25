@@ -58,3 +58,11 @@ perfRows=[mkPerf(30,4,'a')];const sig1=c.assinaturaDashboard_(sigSS);perfRows.pu
 const range={getSheet:()=>({getSheetId:()=>1}),getA1Notation:()=> 'A1:B3',getValues:()=>[['Dia','Total'],['2026-10-23',3]]};const chartSig=c.assinaturaGraficoDashboard_('Leads',range,19,1,'COLUMN',{colors:['blue']});
 assert.equal(c.podeReutilizarGraficoDashboard_(JSON.stringify({assinatura:chartSig,id:10}),chartSig,{getChartId:()=>10}),true);assert.equal(c.podeReutilizarGraficoDashboard_(JSON.stringify({assinatura:chartSig,id:10}),chartSig,{getChartId:()=>11}),false);assert.notEqual(c.assinaturaGraficoDashboard_('Leads',range,19,1,'COLUMN',{colors:['green']}),chartSig);assert.equal(c.podeReutilizarGraficoDashboard_('corrompido',chartSig,{getChartId:()=>10}),false);
 console.log('PASS desempenho dashboard: 60/90 e lotes equivalentes não reconstruem vista de 30 dias; correções reais invalidam; identidade, dados e opções protegem reutilização dos gráficos.');
+
+{
+ const r=(hash,id,key,val)=>['2026-10-25','carteira_ativa','','','',id?'TESTE-001':'',id||'carteira',key,val,'',hash,'https://www.idealista.pt/tools/publicacion/idealista?ScopeId=1',''];
+ const first=[r('a','101','ativo',1),r('a','102','ativo',1),r('a','','totalAtivos',2)],second=[r('b','101','ativo',1),r('b','103','ativo',1),r('b','','totalAtivos',2)];
+ const code=fs.readFileSync(new URL('../apps-script/clara/DashboardVisual.gs',import.meta.url),'utf8'),test={};vm.createContext(test);vm.runInContext(code,test);
+ assert.equal(test.carteiraAtivaDashboardIdealista_(first).primeira,true);const result=test.carteiraAtivaDashboardIdealista_(first.concat(second));assert.equal(result.total,2);assert.equal(result.entradas,1);assert.equal(result.saidas,1);assert.equal(test.carteiraAtivaDashboardIdealista_([r('bad','','totalAtivos',2)]),null);
+ console.log('PASS dashboard carteira: primeira recolha, entradas/saídas e carteira incompleta excluída.');
+}

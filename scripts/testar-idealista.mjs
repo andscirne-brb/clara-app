@@ -87,3 +87,23 @@ const automatic=structuredClone(chartPayload);delete automatic.diarios;await cc.
 assert.equal(automatic.diarios.length,2);assert.equal(automatic.diarios[1].chamadas,1);assert.equal(selected,'email');assert.equal(enabled,false);
 const failedAuto=structuredClone(automatic);failedAuto.registos[0].metricas.contactos=99;delete failedAuto.diarios;await assert.rejects(()=>cc.recolherDiariosIdealista(svgMock,failedAuto),/soma diária/);assert.equal(selected,'email');assert.equal(enabled,false);
 console.log('PASS marcador: recolhe as duas séries, espera estabilização e repõe rádios/checkbox após sucesso ou falha.');
+
+{
+ const d={v:2,origem:'idealista',tipo:'geral',lido:'2026-10-25T12:00:00Z',url:'https://www.idealista.pt/webtool/stats/loadImpactStats',periodo:{inicio:'2026-09-25',fim:'2026-10-24'},filtros:['30 dias'],cobertura:'Totais',registos:[{id:'carteira',metricas:{anunciosAtivosHoje:2}}],carteiraAtiva:{url:'https://www.idealista.pt/tools/publicacion/idealista?ScopeId=1',total:2,paginas:1,registos:[{id:'101',ref:'TESTE-001'},{id:'102',ref:'TESTE-002'}]}};
+ sh=null;let result=ctx.analisarIdealista(enc(d));assert.equal(result.carteira.primeira,true);ctx.gravarIdealista(enc(d));assert.equal(ctx.gravarIdealista(enc(d)).duplicada,true);
+ const changed=structuredClone(d);changed.carteiraAtiva.registos[1]={id:'103',ref:'TESTE-003'};result=ctx.analisarIdealista(enc(changed));assert.equal(result.carteira.primeira,false);assert.equal(result.carteira.entradas[0].id,'103');assert.equal(result.carteira.saidas[0].id,'102');
+ for(const change of [x=>x.carteiraAtiva.registos.pop(),x=>x.carteiraAtiva.registos[1].id='101',x=>x.carteiraAtiva.url='https://evil.invalid/',x=>x.registos[0].metricas.anunciosAtivosHoje=3]){const bad=structuredClone(d);change(bad);assert.throws(()=>ctx.analisarIdealista(enc(bad)));}
+ const empty=structuredClone(d);empty.carteiraAtiva.total=0;empty.carteiraAtiva.registos=[];empty.registos[0].metricas.anunciosAtivosHoje=0;result=ctx.analisarIdealista(enc(empty));assert.equal(result.carteira.total,0);assert.equal(result.carteira.saidas.length,2);
+ assert.match(ctx.resumoEstatisticasIdealista_(ctx.analisarIdealista(enc(d))),/Carteira ativa: 2 de 2/);
+ console.log('PASS carteira ativa: primeira recolha, entradas/saídas, zero, cobertura, duplicados, validação e histórico separado do ranking.');
+}
+await import('./testar-idealista-ativos.mjs');
+
+{
+ class View extends Sheet{setColumnWidth(){return this}getRange(...args){const g=super.getRange(...args);g.setWrap=()=>g;return g;}}
+ let view=null;const target={getSheetByName:()=>view,insertSheet:()=>view=new View};
+ const c={primeira:false,total:1,entradas:[{id:'103',ref:'TESTE-003'}],saidas:[{id:'102',ref:'TESTE-002'}],registos:[{id:'103',ref:'TESTE-003'}]};
+ ctx.atualizarVistaAtivosIdealista_(target,{lido:'2026-10-25T12:00:00Z'},c);assert.equal(view.rows[1][2],'Entrada');assert.equal(view.rows[2][2],'Saída desde a anterior');assert.equal(view.rows[1][3],'2026-10-25');
+ view.rows[0][0]='Cabeçalho manual';assert.throws(()=>ctx.atualizarVistaAtivosIdealista_(target,{lido:'2026-10-25'},c),/cabeçalhos/);
+ console.log('PASS vista de ativos: referências, entradas/saídas, datas sem horas e cabeçalhos alterados protegidos.');
+}
