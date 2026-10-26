@@ -91,6 +91,8 @@ function onOpen() {
     .addSeparator()
     .addItem('Green-Acres: estatísticas', 'abrirGreenAcres')
     .addSeparator()
+    .addItem('Portais: imóveis', 'abrirImoveisPortais')
+    .addSeparator()
     .addItem('Progresso', 'abrirLista')
     .addItem('Resumo semanal', 'abrirResumo')
     .addItem('Instalar o marcador', 'mostrarMarcador')

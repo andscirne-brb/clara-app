@@ -14,6 +14,7 @@ a{color:#1a73e8}
 button{background:#fff;color:#1a73e8;border:1px solid #dadce0;border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;margin-top:8px}
 </style></head>
 <body>
+<button onclick="google.script.run.abrirImoveisPortais()">Ficha por imóvel · eGO e portais</button><p class="muted">Consulta ligações confirmadas e resultados por plataforma.</p>
 <label for="pesquisa"><b>Procurar referência ou localidade</b></label><div class="muted">Pesquisa nos imóveis e pendências apresentados neste painel.</div><input id="pesquisa" placeholder="Ex.: APT14077 ou Faro" type="search"><div id="filtro" class="muted" role="status"></div><div id="out" aria-live="polite">A carregar…</div>
 <button onclick="carregar()">Atualizar</button>
 <script>

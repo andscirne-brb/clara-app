@@ -76,3 +76,5 @@ console.log('PASS logótipos: origem seleciona uma marca, troca de leitura atual
 }
 
 await import('./testar-green-acres.mjs');
+
+await import('./testar-imoveis-portais.mjs');
