@@ -75,7 +75,7 @@ function sincronizarGestaoPendencias_(ss,inicio,n,coluna,anterior){
 }
 function sincronizarResponsaveisPendencias(){const lock=LockService.getDocumentLock();if(!lock.tryLock(5000))throw Error('Há outra gravação em curso.');try{const ss=SpreadsheetApp.getActive(),sh=ss.getSheetByName(PEND.nome);return sh.getLastRow()>5?sincronizarGestaoPendencias_(ss,6,sh.getLastRow()-5,0):{alteracoes:0};}finally{lock.releaseLock();}}
 function onEdit(e){
-  if(!e||!e.range)return;const r=e.range,sh=r.getSheet();if(sh.getName()!==PEND.nome||r.getLastRow()<6)return;
+  if(!e||!e.range)return;const r=e.range,sh=r.getSheet();if(sh.getName()==='Ficha do imóvel'){if(r.getRow()===3&&r.getColumn()===2)try{mostrarFichaImovel(r.getDisplayValue());}catch(err){e.source.toast(err.message,'Clara',10);}return;}if(sh.getName()!==PEND.nome||r.getLastRow()<6)return;
   const first=r.getColumn(),last=r.getLastColumn();if(!(first<=7&&last>=7)&&!(first<=9&&last>=9))return;
   const lock=LockService.getDocumentLock();if(!lock.tryLock(5000)){e.source.toast('Há uma gravação em curso. Confirma depois o responsável e o estado.','Clara',8);return;}
   try{const inicio=Math.max(6,r.getRow()),col=r.getNumRows()===1&&r.getNumColumns()===1?first:0;sincronizarGestaoPendencias_(e.source,inicio,r.getLastRow()-inicio+1,col,e.oldValue);}catch(err){console.error('Gestão de pendências: '+err.message);e.source.toast('Não foi possível sincronizar a pendência. Confirma o responsável e o estado.','Clara',10);}finally{lock.releaseLock();}
@@ -92,6 +92,7 @@ function onOpen() {
     .addItem('Green-Acres: estatísticas', 'abrirGreenAcres')
     .addSeparator()
     .addItem('Portais: imóveis', 'abrirImoveisPortais')
+    .addItem('Portais: identificar anúncios', 'identificarAnunciosPortais')
     .addSeparator()
     .addItem('Progresso', 'abrirLista')
     .addItem('Resumo semanal', 'abrirResumo')
@@ -235,7 +236,7 @@ function previewResumo(dias,plano) {
 
 function irPara(separador, linha) {
   const sh = SpreadsheetApp.getActive().getSheetByName(separador);
-  sh.activate(); sh.setActiveRange(sh.getRange(linha, 1, 1, Math.min(sh.getLastColumn(), 6)));
+  sh.showSheet(); sh.activate(); sh.setActiveRange(sh.getRange(linha, 1, 1, Math.min(sh.getLastColumn(), 6)));
 }
 
 function mostrarMarcador() {

@@ -44,8 +44,8 @@ function ipTexto_(s){return String(s||'').replace(/<[^>]*>/g,' ').replace(/&nbsp
 function ipExtrairRef_(portal,html){
  if(typeof html!=='string'||html.length>4000000)throw Error('Ficha demasiado extensa.');let refs=[];
  if(portal==='Green-Acres'){const blocks=html.match(/<div\b[^>]*class=["'][^"']*\blabel-value\b[^"']*["'][^>]*>[\s\S]{0,2000}?<\/div>/gi)||[];blocks.forEach(b=>{const label=/<label[^>]*>([\s\S]*?)<\/label>/i.exec(b);if(label&&ipTexto_(label[1]).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()==='numero de mandato'){const m=/<p[^>]*>([\s\S]*?)<\/p>/i.exec(b);if(m)refs.push(ipRef_(ipTexto_(m[1])));}});}
- else if(portal==='Rightmove'){const pattern=/#ref\s*:\s*([A-Za-z]{1,6}[ _-]?\d{3,10})(?![A-Za-z0-9_-])/gi;let m;while((m=pattern.exec(html)))refs.push(ipRef_(m[1]));}
- refs=[...new Set(refs)].filter(x=>/^[A-Z]{1,6}[ _-]?\d{3,10}$/.test(x));if(refs.length>1)throw Error('A ficha contém referências divergentes.');return refs[0]||'';
+ else if(portal==='Rightmove'){const pattern=/#ref\s*:\s*([A-Za-z]{0,6}[ _-]?\d{3,10}(?:[_-][A-Za-z0-9]{1,8})?)(?![A-Za-z0-9_-])/gi;let m;while((m=pattern.exec(html)))refs.push(ipRef_(m[1]));}
+ refs=[...new Set(refs)].filter(x=>/^[A-Z]{0,6}[ _-]?\d{3,10}(?:[_-][A-Z0-9]{1,8})?$/.test(x));if(refs.length>1)throw Error('A ficha contém referências divergentes.');return refs[0]||'';
 }
 /* LEITURA_PUBLICA_PORTAIS */
 function identificarProximosImoveisPortais(){
@@ -59,4 +59,4 @@ function ipResultados_(ss,r){
  const rows=ipTabela_(ss,'Rightmove - desempenho',16,RM_PERF_HEADERS).filter(x=>String(x[3])===String(r[1])&&Number(x[2])===30);if(!rows.length)return{periodo:'Sem estatísticas de 30 dias'};const x=rows[rows.length-1];return{periodo:'Janela de 30 dias; dados até '+ipData_(x[1]),recolha:ipData_(x[0]),metricas:[{nome:'Visitas diárias médias',valor:x[10]}],preco:x[6],fotos:x[7],planta:typeof x[8]==='number'?x[8]+' plantas':'Por confirmar',aviso:'Média diária; não equivale a visitas totais nem a leads.'};
 }
 function fichaImovelPortais(ref){ref=ipRef_(ref);if(!/^[A-Z0-9 _-]{1,40}$/.test(ref))throw Error('Indica a referência eGO completa.');const ss=SpreadsheetApp.getActive(),ego=ipEgo_(ss),e=ego[ref];if(!e)return{ref,erro:'Referência não encontrada no levantamento.'};if(e.linhas.length!==1)return{ref,erro:'Referência duplicada no levantamento. É necessário rever.'};const lig=ipTabela_(ss,'Ligações dos portais',9,IP_LIGACOES).filter(r=>ipRef_(r[3])===ref),portais=lig.map(r=>({portal:r[0],id:String(r[1]),estado:r[4],url:r[6],fonte:r[5],data:ipData_(r[7]),nota:r[8],dados:r[4]==='Confirmada'?ipResultados_(ss,r):null}));return{ref,natureza:e.natureza,concelho:e.concelho,estado:e.estado,faltas:e.faltas,linha:e.linhas[0],portais,aviso:'Não somar períodos ou métricas diferentes. Sem ligação confirmada não significa ausência de publicação. Os resultados ainda não criam pendências nem alteram o eGO.'};}
-function abrirImoveisPortais(){SpreadsheetApp.getUi().showSidebar(HtmlService.createHtmlOutput(PORTAIS_HTML).setTitle('Clara · imóveis nos portais'));}
+function abrirImoveisPortaisPainel_(){SpreadsheetApp.getUi().showSidebar(HtmlService.createHtmlOutput(PORTAIS_HTML).setTitle('Clara · imóveis nos portais'));}

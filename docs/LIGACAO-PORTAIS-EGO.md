@@ -1,3 +1,13 @@
+
+## Validação final e organização diária — 26/10/2026
+
+- Consulta pública validada no Chrome autorizado. Das 380 ligações de anúncios, 363 estão confirmadas e 17 exigem revisão: Green-Acres 147/156, Idealista 169/174, Rightmove 47/50. São ligações por portal, não imóveis únicos. Repetição da atualização: zero alterações; fila inicial: zero candidatos ainda não tentados.
+- Ficha nativa com seletor B3 e três portais lado a lado. Leitura de dados medida em 2,2 s; primeira renderização nativa em 5,9 s, repetição em cerca de 4,5 s. Valores são medições de um ensaio, não garantia. Painel HTML opcional não foi validado no Chrome automático (iframe vazio); menu principal abre a ficha nativa.
+- Referências com separadores, sufixos ou apenas números são preservadas literalmente; sem inferir correspondências por morada ou preço. Falha de acesso público não aborta outras fichas. Marcador 20261026.2 permite confirmar pela página pública quando o serviço Google não a consegue consultar.
+- Auditoria de dependências das três folhas antigas de teste de gravação: nenhuma referência em fórmulas, gráficos ou intervalos nomeados; limpeza autorizada pela utilizadora. Cópias anteriores reais preservadas.
+- A vista diária mantém apenas Dashboard, Levantamento e Pendências da equipa visíveis. Fontes, históricos, ligações e ficha ficam ocultos; a ficha é mostrada quando solicitada pelo menu. Cópias de segurança são preservadas.
+- Fases seguintes ainda por implementar: diferenças entre fontes, publicação esperada, alertas de desempenho e geração de pendências/relatório a partir desses alertas. Nenhum email enviado.
+
 # Ligação entre anúncios dos portais e o eGO
 
 ## Verificação de 26 outubro 2026
