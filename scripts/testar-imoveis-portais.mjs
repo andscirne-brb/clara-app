@@ -31,3 +31,18 @@ assert.equal(c.ipExtrairRef_('Green-Acres','<div class="label-value"><label>N&#x
 assert.equal(c.ipExtrairRef_('Green-Acres','<div class="label-value"><label>Número de mandato</label><p>10001</p></div>'),'10001');assert.equal(c.ipExtrairRef_('Rightmove','#ref:10001'),'10001');
 
 vm.runInContext(fs.readFileSync(new URL('../apps-script/clara/FichaImovel.gs',import.meta.url),'utf8'),c);const visual=c.ipModeloFicha_({ref:'APT10001',estado:'Em curso',portais:[{portal:'Idealista',id:'123',estado:'Confirmada',fonte:'Excel',data:'2026-10-26',url:'https://www.idealista.pt/imovel/123/',dados:{periodo:'2026-09-27 a 2026-10-26',metricas:[{nome:'Contactos',valor:0}]}}]});assert.equal(visual[1][1],'APT10001');assert.equal(visual[10][0],'Contactos: 0');assert.equal(visual[7][3],'Sem ligação confirmada');assert.match(visual[8][3],/verificar/);assert.match(visual[9][0],/2026-09-27/);console.log('PASS ficha visual: seletor por referência, zero preservado, períodos explícitos e ausência de associação distinta da ausência de publicação.');
+
+vm.runInContext(fs.readFileSync(new URL('../apps-script/clara/AutomacaoPortais.gs',import.meta.url),'utf8'),c);
+const pack=x=>'CLARA2:'+JSON.stringify(x);
+assert.equal(c.respostaAutomacaoPortais_({duplicada:false},pack({v:2,tipo:'ranking'})).automacaoPortais,true);
+assert.equal(c.respostaAutomacaoPortais_({duplicada:true},pack({v:2,tipo:'ranking'})).automacaoPortais,false);
+assert.equal(c.respostaAutomacaoPortais_({},pack({v:2,tipo:'geral'})).automacaoPortais,false);
+assert.equal(c.respostaAutomacaoPortais_({},pack({origem:'rightmove',tipo:'leads'})).automacaoPortais,false);
+assert.equal(c.respostaAutomacaoPortais_({},pack({origem:'green-acres',tipo:'anuncios'})).automacaoPortais,true);
+const quality=c.conferirAnalisePortal_({origem:'idealista',duplicada:true},pack({v:2,tipo:'geral',lido:'2026-10-25'}));assert.equal(quality.conferencia.avisos.length,3);assert.match(quality.conferencia.notas[0],/duplicada/);
+const gaps=c.conferirAnalisePortal_({origem:'green-acres',relatorios:[{codigo:'visitas',faltamDias:1}]},pack({lido:'2026-10-26'}));assert.match(gaps.conferencia.avisos[0],/não são zeros/);
+const complete=c.conferirAnalisePortal_({origem:'rightmove',tipo:'leads'},pack({lido:'2026-10-26'}));assert.equal(complete.conferencia.avisos.length,0);
+assert.match(c.acaoRevisaoLigacao_(['','','','','Referência ausente no levantamento']),/Não criar correspondência aproximada/);
+console.log('PASS automação: só inventários novos iniciam ligação; repetição e leads não iniciam; avisos de idade e lacunas preservados; revisão sem inferências.');
+
+const unchanged=c.ipEscrever_(ss,'Vista sintética',['Campo'],[['valor']]);unchanged.fail=true;c.ipEscrever_(ss,'Vista sintética',['Campo'],[['valor']]);assert.equal(unchanged.fail,true);console.log('PASS desempenho: vista idêntica não é regravada.');

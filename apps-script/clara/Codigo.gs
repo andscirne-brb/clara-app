@@ -93,6 +93,7 @@ function onOpen() {
     .addSeparator()
     .addItem('Portais: imóveis', 'abrirImoveisPortais')
     .addItem('Portais: identificar anúncios', 'identificarAnunciosPortais')
+    .addItem('Portais: conferência', 'abrirConferenciaPortais')
     .addSeparator()
     .addItem('Progresso', 'abrirLista')
     .addItem('Resumo semanal', 'abrirResumo')
@@ -285,9 +286,9 @@ function cruzarCaracteristicasClara_(d){
 function analisar(texto, docs) {
   texto = String(texto || '').trim();
   if(texto.indexOf('CLARA5:')===0)return analisarLigacaoPortal(texto);
-  if(texto.indexOf('CLARA4:')===0)return analisarGreenAcres(texto);
-  if(texto.indexOf('CLARA3:')===0)return analisarRightmove(texto);
-  if(texto.indexOf('CLARA2:')===0)return analisarIdealista(texto);
+  if(texto.indexOf('CLARA4:')===0)return conferirAnalisePortal_(analisarGreenAcres(texto),texto);
+  if(texto.indexOf('CLARA3:')===0)return conferirAnalisePortal_(analisarRightmove(texto),texto);
+  if(texto.indexOf('CLARA2:')===0)return conferirAnalisePortal_(analisarIdealista(texto),texto);
   if (texto.indexOf('CLARA1:') !== 0) throw new Error('Isto não é uma leitura da Clara. Carrega no marcador Clara na página do imóvel e cola outra vez.');
   const d = JSON.parse(texto.slice(7));
   const ref = String(d.ref || '').trim().toUpperCase();
@@ -545,9 +546,9 @@ function textoHistorico_(v) {
 }
 function gravar(texto, docs) {
   if(String(texto||'').trim().indexOf('CLARA5:')===0)return gravarLigacaoPortal(texto);
-  if(String(texto||'').trim().indexOf('CLARA4:')===0)return gravarGreenAcres(texto);
-  if(String(texto||'').trim().indexOf('CLARA3:')===0)return gravarRightmove(texto);
-  if(String(texto||'').trim().indexOf('CLARA2:')===0)return gravarIdealista(texto);
+  if(String(texto||'').trim().indexOf('CLARA4:')===0)return respostaAutomacaoPortais_(gravarGreenAcres(texto),texto);
+  if(String(texto||'').trim().indexOf('CLARA3:')===0)return respostaAutomacaoPortais_(gravarRightmove(texto),texto);
+  if(String(texto||'').trim().indexOf('CLARA2:')===0)return respostaAutomacaoPortais_(gravarIdealista(texto),texto);
   const lock = LockService.getDocumentLock();
   if (!lock.tryLock(30000)) throw new Error('Há outra gravação da Clara em curso. Tenta novamente.');
   let aplicados = [], plano = [];

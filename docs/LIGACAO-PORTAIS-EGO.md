@@ -1,4 +1,14 @@
 
+## Automação após recolha e conferência — 26/10/2026
+
+- Dispatcher devolve sinal de identificação apenas após gravação válida de inventário novo (Idealista lista/ranking/carteira, anúncios Green-Acres, desempenho Rightmove). Repetições e séries agregadas de leads não iniciam consultas desnecessárias.
+- Painel confirma primeiro a gravação; depois processa as ligações em pedidos separados de cinco fichas, enquanto estiver aberto. Pedidos simultâneos no mesmo painel são reunidos. Fechar o painel interrompe a continuação; retoma pelo menu Portais: identificar anúncios. Falha de identificação não invalida dados guardados e não pede nova importação. Não há acionador agendado nem recolha autónoma de sessões dos portais.
+- Resumo comum de conferência na revisão: duplicação, data anterior à atual, lacunas, lista parcial, ranking sem Excel, ausência de série diária/carteira e avisos da fonte. Os validadores específicos continuam a bloquear dados incoerentes. Períodos mantêm-se separados; idade da leitura é aviso, não rejeição de histórico válido.
+- Menu Portais: conferência abre vista gerada com os casos pendentes e próximo passo. Fontes preservadas; não cria pendências da equipa. Verificação nativa: 363 confirmadas, zero novas por identificar, 17 por rever (9 referências ausentes no levantamento e 8 fichas públicas por confirmar). A verificação e geração da vista terminaram em cerca de 13 s; não representa tempo de gravação nem garantia.
+- Vistas idênticas não são regravadas. Testes cobrem repetição, conservação de zeros, conflitos, avisos, falha depois da gravação, concorrência no painel, retoma e ausência de escrita redundante.
+- Mantidas apenas três abas visíveis: Dashboard, Levantamento e Pendências da equipa. Vista de revisão fica oculta até ser solicitada. Marcador permanece 20261026.2: esta alteração não exige reinstalação.
+- Não foi efetuada nova importação real pelos painéis nesta validação; fluxo pós-gravação testado localmente e chamada nativa conferida com a fila real vazia. Os 17 casos não foram forçados a correspondências. Próxima fase: comparar eGO e portais e definir publicação esperada antes de gerar alertas.
+
 ## Validação final e organização diária — 26/10/2026
 
 - Consulta pública validada no Chrome autorizado. Das 380 ligações de anúncios, 363 estão confirmadas e 17 exigem revisão: Green-Acres 147/156, Idealista 169/174, Rightmove 47/50. São ligações por portal, não imóveis únicos. Repetição da atualização: zero alterações; fila inicial: zero candidatos ainda não tentados.
