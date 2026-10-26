@@ -1,5 +1,14 @@
 # Clara: estado e plano
 
+## 26 outubro — Green-Acres: estatísticas por anúncio
+
+Marcador 20261026.1 mantém os cinco CSV oficiais no Resumo da conta e acrescenta a Lista dos anúncios. Nesta lista não foi encontrada exportação CSV/Excel: lê a pesquisa oficial com os filtros atuais, sem ações de publicação, sem navegar a página visível e sem recolher contactos individuais. Consulta páginas em grupos de três, reconfirma a primeira e a página original, bloqueia referências repetidas, páginas em falta, alterações de filtros e somas divergentes. Fotografias sem contagem visível ficam desconhecidas.
+
+Validação DOM real: oito páginas, 156 referências únicas, 28 sem planta; quatro somas iguais aos totais da lista. Testes sintéticos cobrem duplicação, validação, cobertura, rollback, pesquisa sem publicação e reconferência. Importação revista no painel existente Green-Acres: estatísticas; destino Green-Acres - anúncios, histórico separado, sem somar recolhas repetidas nem substituir os CSV mensais no dashboard. Referências são do portal; não presumir correspondência eGO. Estatísticas por anúncio atualizadas pelo portal a cada 24 horas e período guardado tal como selecionado. A seleção Este mês é parcial; não equivale aos últimos 30 dias.
+
+Para usar: reinstalar marcador; abrir Lista dos anúncios; clicar Clara; colar em Green-Acres: estatísticas; rever cobertura e guardar. Teste integral do novo marcador na sessão da utilizadora ainda por confirmar; parser e somas reais verificados. Teste nativo no Apps Script gravou e releu 156 linhas na nova aba: preparação 29 ms e escrita/conferência 1155 ms. Função temporária privada removida e código final relido; transporte do marcador coberto por teste sintético.
+
+
 ## Último ponto de situação — 25 outubro: correção CSV mensal Green-Acres
 
 Erro reportado pela Andreia no marcador 20261025.5: O CSV mensal não ficou disponível. A procura no HTML inicial do relatório dependia de renderização JavaScript. Corrigido em 20261025.6: constrói o endereço oficial do botão CSV mensal (ExportTableCsv/4726, groupBy MONTH) com a conta lida da exportação visível atual. Endereço e parâmetros comparados no navegador com o botão real: idênticos. Não depende do gráfico nem de ler HTML de páginas intermédias; ficam apenas os cinco pedidos CSV em paralelo. Mantém validações de conta, cabeçalhos, datas e somas; rejeita dados incompatíveis e repõe o separador original em falha.

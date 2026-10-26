@@ -29,6 +29,7 @@ function exportacaoMensalGreen(conta){
  u.searchParams.set('reportParameters[0].Name','companyId');u.searchParams.set('reportParameters[0].Value',String(conta));u.searchParams.set('reportParameters[1].Name','groupBy');u.searchParams.set('reportParameters[1].Value','MONTH');return parametrosExportacaoGreen(u.href,u.href);
 }
 async function recolherGreenAcres(doc,ui){
+ if(location.pathname==='/pt/Agent/Advert/List')return recolherAnunciosGreen(doc,ui);
  if(location.hostname!=='back.green-acres.com'||!/^\/pt\/Agent\/?$/.test(location.pathname))throw Error('Abre «Resumo da conta» no Green-Acres e volta a clicar na Clara.');
  const get=async url=>{const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);try{const res=await fetch(url,{credentials:'same-origin',cache:'no-store',signal:controller.signal});if(!res.ok||new URL(res.url).origin!=='https://back.green-acres.com')throw Error('A exportação Green-Acres falhou. Confirma a sessão.');return await res.text();}finally{clearTimeout(timer);}};
  const original=doc.querySelector('[role="tab"][aria-selected="true"][id^="visibility-tab-"]'),email=doc.querySelector('#visibility-tab-emails');
@@ -40,6 +41,6 @@ async function recolherGreenAcres(doc,ui){
  const conta=exports[0].conta;if(exports.some(x=>x.conta!==conta)||exports.filter(x=>x.codigo!=='mensal').some(x=>x.sites!=='all'))throw Error('Os relatórios pertencem a contas ou seleções diferentes.');
  ui.estado('A recolher cinco CSV oficiais…');const relatorios=await Promise.all(exports.map(async x=>converterCSVGreen(await get(x.url),x.codigo)));
  const current=doc.querySelector('a[href*="ExportTableCsv/206?"]');if(!current||parametrosExportacaoGreen(current.getAttribute('href'),location.href).conta!==conta)throw Error('A conta mudou durante a recolha.');
- return{v:4,origem:'green-acres',marcadorVersao:'20261025.6',lido:new Date().toISOString(),url:'https://back.green-acres.com/pt/Agent',conta,sites:'all',fonte:'CSV oficial Green-Acres',relatorios};
+ return{v:4,origem:'green-acres',marcadorVersao:'20261026.1',lido:new Date().toISOString(),url:'https://back.green-acres.com/pt/Agent',conta,sites:'all',fonte:'CSV oficial Green-Acres',relatorios};
  }finally{if(original&&!original.matches('[aria-selected="true"]'))original.click();}
 }

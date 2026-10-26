@@ -1,0 +1,29 @@
+/* Lista de anúncios: pesquisa oficial sem executar ações de publicação. */
+function paginaAnunciosGreen(doc){
+ const clean=s=>String(s||'').replace(/\s+/g,' ').trim(),num=s=>{s=clean(s).replace(/[.\s]/g,'');if(!/^\d+$/.test(s)||!Number.isSafeInteger(+s))throw Error('Número inválido na lista Green-Acres.');return +s;};
+ const form=doc.querySelector('#SearchForm');if(!form)throw Error('Lista Green-Acres indisponível. Confirma a sessão.');
+ const fields=[...form.querySelectorAll('input[name],select[name]')].filter(e=>e.name.startsWith('SearchCriteria.')).map(e=>[e.name,e.value]).sort((a,b)=>a[0].localeCompare(b[0]));
+ const periodo=form.querySelector('[name="SearchCriteria.Period"]');if(!periodo||!['yesterday','this_month','last_month','full'].includes(periodo.value))throw Error('Período Green-Acres não reconhecido.');
+ const filters=fields.map(([name,value])=>{const e=form.querySelector('[name="'+name+'"]');return[name,e.tagName==='SELECT'?clean(e.options[e.selectedIndex].textContent):value];});
+ const table=doc.querySelector('tr[id^="row_"]')?.closest('table');if(!table)throw Error('A lista está vazia ou ainda não carregou.');
+ const headers=[...table.querySelectorAll('thead th')].map(e=>clean(e.textContent).toUpperCase());if(headers.length!==14||!headers[8].includes('VISUALIZAÇÕES')||!headers[9].includes('VISITAS')||!headers[10].includes('EMAILS')||!headers[11].includes('FAVORITOS'))throw Error('As colunas da lista Green-Acres mudaram.');
+ const paging=clean(form.textContent).match(/(\d+) a (\d+) em (\d+)\s*$/);if(!paging)throw Error('Não identifiquei a cobertura da lista.');
+ const start=num(paging[1]),end=num(paging[2]),total=num(paging[3]),page=Math.floor((start-1)/20)+1;
+ const totalsRow=[...table.querySelectorAll('tr')].find(r=>clean(r.cells?.[0]?.textContent)==='Todos');if(!totalsRow||totalsRow.cells.length!==8)throw Error('Totais da lista indisponíveis.');const totais=[...totalsRow.cells].slice(2,6).map(e=>num(e.textContent));
+ const anuncios=[...table.querySelectorAll('tr[id^="row_"]')].map(r=>{const c=[...r.cells],a=c[1]?.querySelector('a'),url=new URL(a?.getAttribute('href')||'', 'https://www.green-acres.pt');if(c.length!==14||!/^https:\/\/(www\.)?green-acres\.pt\/pt\/properties\/A[a-z0-9]+\.htm$/i.test(url.href)||!/^\d+$/.test(clean(a.textContent)))throw Error('Anúncio Green-Acres inválido.');return{ref:clean(a.textContent),url:url.href,estado:clean(c[2].textContent),difusao:clean(c[3].textContent),criado:dataCSVGreen(clean(c[4].textContent)),preco:num(c[5].textContent.replace('€','')),cidade:clean(c[6].textContent),pais:clean(c[7].textContent),fotos:clean(c[0].textContent)?num(c[0].textContent):null,semPlanta:/Sem planta/i.test(c[2].textContent),valores:c.slice(8,12).map(e=>num(e.textContent))};});
+ if(total<1||total>10000||start!==(page-1)*20+1||end!==Math.min(page*20,total)||anuncios.length!==end-start+1)throw Error('Página Green-Acres incompleta.');
+ return{page,start,end,total,totais,anuncios,fields,filtros:filters,periodo:periodo.value,periodoNome:clean(periodo.options[periodo.selectedIndex].textContent)};
+}
+function conferirAnunciosGreen(paginas){
+ const first=paginas[0],seen=new Set(),all=[];if(!first||paginas.length!==Math.ceil(first.total/20))throw Error('Faltam páginas Green-Acres.');
+ paginas.forEach((p,i)=>{if(p.page!==i+1||p.total!==first.total||JSON.stringify(p.fields)!==JSON.stringify(first.fields)||JSON.stringify(p.totais)!==JSON.stringify(first.totais))throw Error('Páginas ou filtros mudaram durante a recolha.');p.anuncios.forEach(a=>{if(seen.has(a.ref))throw Error('Anúncio repetido entre páginas. Volta a recolher.');seen.add(a.ref);all.push(a);});});
+ if(all.length!==first.total||first.totais.some((v,i)=>all.reduce((n,a)=>n+a.valores[i],0)!==v))throw Error('A soma dos anúncios não coincide com os totais da lista.');return all;
+}
+async function recolherAnunciosGreen(doc,ui){
+ const original=paginaAnunciosGreen(doc),form=doc.querySelector('#SearchForm'),action=new URL(form.getAttribute('action'),location.href);if(action.origin!=='https://back.green-acres.com'||action.pathname!=='/pt/Agent/Advert/List')throw Error('Pesquisa Green-Acres não reconhecida.');
+ const body=new URLSearchParams();for(const [k,v]of new FormData(form)){if(typeof v==='string')body.append(k,v);}body.set('Action','');body.set('FromFirstPage','false');
+ const get=async n=>{const b=new URLSearchParams(body);b.set('Page',String(n));const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20000);try{const r=await fetch(action.href,{method:'POST',body:b,credentials:'same-origin',cache:'no-store',signal:controller.signal});if(!r.ok||new URL(r.url).pathname!==action.pathname)throw Error('A sessão ou pesquisa Green-Acres mudou.');return paginaAnunciosGreen(new DOMParser().parseFromString(await r.text(),'text/html'));}finally{clearTimeout(timer);}};
+ ui.estado('A conferir todas as páginas dos anúncios…');const count=Math.ceil(original.total/20),pages=[];for(let n=1;n<=count;n+=3){const part=await Promise.all(Array.from({length:Math.min(3,count-n+1)},(_,i)=>get(n+i)));pages.push(...part);ui.estado('Anúncios: '+Math.min(n+2,count)+' de '+count+' páginas conferidas…');}
+ const anuncios=conferirAnunciosGreen(pages),again=await get(1),now=paginaAnunciosGreen(doc);if(JSON.stringify(again)!==JSON.stringify(pages[0])||JSON.stringify(now)!==JSON.stringify(original)||JSON.stringify(pages[original.page-1])!==JSON.stringify(original))throw Error('A lista mudou durante a recolha. Não copiei dados parciais.');
+ return{v:4,origem:'green-acres',tipo:'anuncios',marcadorVersao:'20261026.1',lido:new Date().toISOString(),url:'https://back.green-acres.com/pt/Agent/Advert/List',periodo:original.periodo,periodoNome:original.periodoNome,filtros:original.filtros,total:original.total,paginas:count,totais:original.totais,anuncios,fonte:'Lista oficial Green-Acres; sem CSV/Excel disponível'};
+}
