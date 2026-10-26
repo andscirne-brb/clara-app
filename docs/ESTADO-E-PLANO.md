@@ -1,5 +1,14 @@
 # Clara: estado e plano
 
+## 26 outubro — ligações e ficha por imóvel
+
+Disponível «Clara > Portais: imóveis»: ligações por referência explícita, histórico, vista geral por eGO e ficha que separa os indicadores e períodos de Idealista, Green-Acres e Rightmove. Identificação pública em lotes de cinco, guardados para retoma; atualização inicial em curso. Consulta pública autorizada pela Andreia e testada no Chrome. O navegador integrado continua a recusar essa autorização; não representa falha da conta no Chrome.
+
+Marcador 20261026.2 acrescenta recuperação CLARA5 nas fichas públicas para anúncios cujo acesso pelo Google falha. Confere ID/endereço e referência única no levantamento, sem associação por preço/localização. Casos ausentes, duplicados ou divergentes ficam por rever. Não afirmar publicação atual a partir de um ranking histórico. Ver detalhes, testes e limites em [LIGACAO-PORTAIS-EGO.md](LIGACAO-PORTAIS-EGO.md).
+
+Próximas fases, ainda não implementadas: comparação de atributos, publicação esperada, alertas de desempenho, tarefas derivadas e integração desses alertas no resumo semanal. Nada foi enviado por email.
+
+
 ## 26 outubro — Green-Acres: estatísticas por anúncio
 
 Marcador 20261026.1 mantém os cinco CSV oficiais no Resumo da conta e acrescenta a Lista dos anúncios. Nesta lista não foi encontrada exportação CSV/Excel: lê a pesquisa oficial com os filtros atuais, sem ações de publicação, sem navegar a página visível e sem recolher contactos individuais. Consulta páginas em grupos de três, reconfirma a primeira e a página original, bloqueia referências repetidas, páginas em falta, alterações de filtros e somas divergentes. Fotografias sem contagem visível ficam desconhecidas.

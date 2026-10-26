@@ -41,6 +41,6 @@ async function recolherGreenAcres(doc,ui){
  const conta=exports[0].conta;if(exports.some(x=>x.conta!==conta)||exports.filter(x=>x.codigo!=='mensal').some(x=>x.sites!=='all'))throw Error('Os relatórios pertencem a contas ou seleções diferentes.');
  ui.estado('A recolher cinco CSV oficiais…');const relatorios=await Promise.all(exports.map(async x=>converterCSVGreen(await get(x.url),x.codigo)));
  const current=doc.querySelector('a[href*="ExportTableCsv/206?"]');if(!current||parametrosExportacaoGreen(current.getAttribute('href'),location.href).conta!==conta)throw Error('A conta mudou durante a recolha.');
- return{v:4,origem:'green-acres',marcadorVersao:'20261026.1',lido:new Date().toISOString(),url:'https://back.green-acres.com/pt/Agent',conta,sites:'all',fonte:'CSV oficial Green-Acres',relatorios};
+ return{v:4,origem:'green-acres',marcadorVersao:'20261026.2',lido:new Date().toISOString(),url:'https://back.green-acres.com/pt/Agent',conta,sites:'all',fonte:'CSV oficial Green-Acres',relatorios};
  }finally{if(original&&!original.matches('[aria-selected="true"]'))original.click();}
 }

@@ -8,6 +8,7 @@ on:
       - 'scripts/testar-dashboard-visual.mjs'
       - 'scripts/testar-interface-clara.mjs'
       - 'scripts/testar-green-acres.mjs'
+      - 'scripts/testar-imoveis-portais.mjs'
       - 'scripts/construir-clara.py'
       - '.github/workflows/apps-script.yml'
   workflow_dispatch:
