@@ -243,7 +243,7 @@ function irPara(separador, linha) {
 function mostrarMarcador() {
   const codigo = 'javascript:' + encodeURIComponent(MARCADOR_JS);
   const html = '<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5">' +
-    '<p style="font-size:12px;color:#526b78">Versão 20261026.2 · Green-Acres: CSV oficiais e anúncios</p><p><b>1.</b> Arrasta este botão para a barra de marcadores do navegador:</p>' +
+    '<p style="font-size:12px;color:#526b78">Versão 20261026.3 · Green-Acres: CSV oficiais e anúncios</p><p><b>1.</b> Arrasta este botão para a barra de marcadores do navegador:</p>' +
     '<p style="text-align:center"><a href="' + codigo + '" style="display:inline-block;padding:8px 18px;background:#1a73e8;color:#fff;border-radius:6px;text-decoration:none;font-weight:bold">Clara</a></p>' +
     '<p>Se não der para arrastar: cria um marcador novo, chama-lhe <b>Clara</b> e cola isto no endereço:</p>' +
     '<label for="codigoMarcador">Código para o endereço do marcador</label><textarea id="codigoMarcador" style="width:100%;height:72px;font-size:11px" onclick="this.select()">' + codigo.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</textarea>' +
@@ -324,7 +324,7 @@ function analisar(texto, docs) {
     if (c.col('N.º de imagens')) prop('N.º de imagens', d.fotos, '');
     if (d.fotos === 0) nova('Imagens', 'Imóvel sem fotografias', 'O site não mostra fotografias' + fonte + '.', 'Carregar fotografias no eGO.');
   }
-  if (!d.parcial && d.fotosComAlt != null && d.fotos > 0) {
+  if ((!d.parcial || d.fotosComAltCompletos === true) && d.fotosComAlt != null && d.fotos > 0) {
     const ok = d.fotosComAlt === d.fotos;
     prop('Alt-text', ok ? 'Preenchido' : 'Em falta', d.fotosComAlt + ' de ' + d.fotos + ' com texto alternativo');
     if (!ok) nova('Imagens', 'Fotografias sem texto alternativo', 'No site, ' + (d.fotos - d.fotosComAlt) + ' de ' + d.fotos + ' fotografias sem texto alternativo; ' + d.fotosComLegenda + ' com legenda' + fonte + '.', 'Preencher o texto alternativo e a legenda das fotografias no eGO.');
@@ -348,7 +348,7 @@ function analisar(texto, docs) {
       nova('Textos', 'Título em ' + IDIOMAS[k] + ' em falta', 'No site, o título em ' + IDIOMAS[k] + ' é igual ao inglês' + fonte + '.', 'Preencher o título em ' + IDIOMAS[k] + ' no eGO.');
   });
   // Características, vídeo, visita virtual, planta, folheto
-  if (!d.parcial && d.caracteristicas != null) prop('Características', d.caracteristicas > 0 ? 'Preenchido' : 'Em falta', d.caracteristicas + ' características assinaladas');
+  if ((!d.parcial || d.nomesCaracteristicasCompletos === true) && d.caracteristicas != null) prop('Características', d.caracteristicas > 0 ? 'Preenchido' : 'Em falta', d.caracteristicas + ' características assinaladas');
   const cruzamento=cruzarCaracteristicasClara_(d);
   if(c.col('Campos de características em falta')){
     if(cruzamento.avaliadas)prop('Campos de características em falta',cruzamento.sugestoes.length?'Sugestões por confirmar: '+cruzamento.sugestoes.map(function(x){return x.nome;}).join(', '):'Sem divergências nos itens avaliados','Comparação da descrição PT com os itens assinalados; requer revisão.');
@@ -393,8 +393,8 @@ function analisar(texto, docs) {
   // Uma falha de leitura não substitui um estado conhecido por desconhecido.
   const desconhecido = function (coluna) { preservar(coluna, 'Este bloco não foi verificado nesta leitura.'); };
   if (d.fotos == null) desconhecido('Imagens');
-  if (d.fotosComAlt == null || d.parcial) desconhecido('Alt-text');
-  if (d.caracteristicas == null || d.parcial) desconhecido('Características');
+  if (d.fotosComAlt == null || (d.parcial && d.fotosComAltCompletos !== true)) desconhecido('Alt-text');
+  if (d.caracteristicas == null || (d.parcial && d.nomesCaracteristicasCompletos !== true)) desconhecido('Características');
   if (d.videos == null) desconhecido('Vídeo');
   if (!Array.isArray(d.plantas)) desconhecido('Planta');
   if (d.folhetos == null) desconhecido('Folheto');
@@ -407,13 +407,13 @@ function analisar(texto, docs) {
   const completa = !d.parcial && docsCompletos && textosCompletos && mediaCompletos;
   if (c.col('Estado da verificação')) prop('Estado da verificação', completa ? 'Verificado' : 'Em curso', completa ? 'Todos os blocos foram revistos.' : 'Há blocos por verificar; esta leitura não conclui o levantamento.');
   if (!completa) notas.push('Levantamento em curso: confirma os quatro documentos, os cinco idiomas e os dados de imagens, planta, vídeo e folheto.');
-  if (d.parcial) notas.push('Leitura parcial: o site não devolveu todos os dados; texto alternativo e características não foram verificados.');
+  if (d.parcial) notas.push('Leitura parcial: apenas os blocos confirmados nesta leitura são atualizados; os restantes mantêm a informação anterior.');
 
   // Assuntos que esta leitura consegue verificar (para confirmar correções)
   const verificaveis = {};
   const pode = function (a) { verificaveis[a] = true; };
   if (d.fotos != null) pode('Imóvel sem fotografias');
-  if (!d.parcial && d.fotosComAlt != null) pode('Fotografias sem texto alternativo');
+  if ((!d.parcial || d.fotosComAltCompletos === true) && d.fotosComAlt != null) pode('Fotografias sem texto alternativo');
   Object.keys(IDIOMAS).forEach(function (k) {
     const t = T[k]; if (!t || t.erro) return;
     pode('Descrição em ' + IDIOMAS[k] + ' em falta');

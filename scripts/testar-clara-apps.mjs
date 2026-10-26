@@ -64,6 +64,18 @@ const snapshot=f=>JSON.stringify([...f.sheets].map(([n,s])=>[n,[...s.cells], [..
 let f=fixture(),d=payload();
 assert.equal(analyse(f,d).completa,true);
 d.parcial=true;assert.equal(analyse(f,d).campos.find(p=>p.coluna==='Estado da verificação').novo,'Em curso');
+{
+ const partial={...payload(),parcial:true,fotosComAltCompletos:true,nomesCaracteristicasCompletos:true,nomesCaracteristicas:['Varanda','Garagem']};
+ const pf=fixture(),preview=analyse(pf,partial,{});
+ for(const field of ['Alt-text','Características','Vídeo'])assert.equal(preview.campos.find(p=>p.coluna===field).novo,'Preenchido',field+' confirmado mesmo com leitura parcial');
+ assert.equal(preview.completa,false);
+ save(pf,partial,{});
+ assert.equal(get(pf.lev,10,headers.indexOf('Características')+1),'Preenchido');
+ assert.equal(get(pf.lev,10,headers.indexOf('Alt-text')+1),'Preenchido');
+ const unknown={...partial,fotosComAltCompletos:false,nomesCaracteristicasCompletos:false,videos:null};
+ const after=analyse(pf,unknown,{});
+ for(const field of ['Alt-text','Características','Vídeo'])assert.ok(!after.campos.some(p=>p.coluna===field&&p.novo==='Em falta'),'Campo desconhecido não significa ausente');
+}
 delete d.parcial;delete d.textos.FR;assert.equal(analyse(f,d).campos.find(p=>p.coluna==='Descrição FR').novo,'Por verificar');assert.equal(analyse(f,d).completa,false);
 assert.equal(analyse(f,payload(),{...docs,licenca:''}).completa,false);
 f=fixture();d=payload();d.textos.FR.descricao=d.textos.EN.descricao;
