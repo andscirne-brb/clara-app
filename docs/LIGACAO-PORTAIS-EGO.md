@@ -16,3 +16,13 @@ DOM observado: `.agency-details .label-value`, com `label` igual a «Número de 
 6. Investigar separadamente as referências originais em Idealista e Rightmove antes de prometer cobertura entre todos os portais.
 
 A amostra prova viabilidade na Green-Acres, não que todos os anúncios tenham mandato preenchido. Ainda não há análise holística implementada.
+
+## Idealista e Rightmove — verificação de 26 outubro
+
+Idealista: descarregada a exportação oficial Excel do ranking atual. O cabeçalho inclui COD. IDEALISTA e REFERÊNCIA INTERNA. Foram lidas 222 linhas, todas com referência interna distinta e não vazia. Leitura direta da coluna do levantamento confirmou 188 correspondências exatas únicas, 34 referências ausentes e nenhuma ambiguidade no levantamento. Não presumir que as ausentes são erro ou imóveis ativos: ranking histórico não equivale à carteira atual. Devem ficar por rever, sem criação automática de imóveis nem alterações ao eGO. O coletor Excel existente já preserva ambos os identificadores.
+
+Rightmove: CSV Property Performance contém Rightmove URL e Agent Reference. Nesta conta, Agent Reference é um código técnico composto, não a referência eGO apresentada à equipa. Em três fichas públicas, a descrição contém uma marca explícita `#ref:` com a referência original. As três correspondem exatamente a uma única linha do levantamento. Guardar separadamente ID Rightmove, Agent Reference e referência eGO; não substituir um pelo outro.
+
+As três plataformas têm uma fonte viável de identificação. A amostra de três fichas Rightmove não prova cobertura total; uma descrição sem referência explícita deve ficar por rever. No Idealista, preferir sempre o Excel oficial às fichas individuais. No Rightmove, verificar primeiro se outra exportação oficial já contém a referência original antes de ler descrições. A ligação persistente e a vista transversal por imóvel continuam propostas, ainda não implementadas.
+
+Verificação realizada sem alterar dados do levantamento. Função temporária de leitura removida; código final reposto. Este documento não contém identificadores reais, dados individuais, URLs privadas nem conteúdos das descrições.
