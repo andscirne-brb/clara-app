@@ -39,3 +39,5 @@ Confirmação específica da utilizadora: a planta MI14372 permanece Digitalizad
 Google Sheets API ativada com autorização explícita da utilizadora. Configuração dos dropdowns executada com sucesso no projeto ligado ao documento. Fórmulas portuguesas exigem separador ponto e vírgula: o conversor preserva os separadores existentes e corrige misturas, incluindo o texto entre aspas. A conferência por exportação confirmou ausência de erros de fórmula e a contagem dos estados de preparação.
 
 As tarefas antigas de alt-text são reconhecidas. Duplicados de vídeo são consolidados conservando a linha com resposta da equipa e arquivando a outra, com referência ao ID mantido. Características só passam a Preenchido por conclusão humana quando todas as pendências desse tema no imóvel estão encerradas.
+
+Migração nativa concluída: 23 referências processadas e fila a zero. A data de resolução existente é preservada quando se atualiza outro documento; resoluções humanas sem data ficam registadas na conferência, com origem explícita da equipa.

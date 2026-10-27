@@ -250,3 +250,8 @@ documentState=f.context.pesquisarEstadoDocumental('TESTE-001');const stableDocum
 f.context.guardarEstadoDocumental('TESTE-001',statePatch,documentState.assinatura);assert.equal(snapshot(f),stableDocumentState);
 f.fail();assert.throws(()=>f.context.guardarEstadoDocumental('TESTE-001',{...statePatch,planta:'Digitalizado'},documentState.assinatura),/Alterações repostas/);const normalizeSnapshot=t=>JSON.stringify(JSON.parse(t).map(([n,cs,fs])=>[n,cs.filter(x=>x[1]!==''),fs]));assert.equal(normalizeSnapshot(snapshot(f)),normalizeSnapshot(stableDocumentState));
 console.log('PASS seguimento integrado: guarda cinco campos sem marcador, cria pendência para Sara, bloqueia revisão desatualizada, repetição idempotente e falha recuperada.');
+
+documentState=f.context.pesquisarEstadoDocumental('TESTE-001');f.context.guardarEstadoDocumental('TESTE-001',{...statePatch,planta:'Preenchido'},documentState.assinatura);
+let plantRow=f.pend.getRange(6,1,20,17).getValues().findIndex(r=>r[3]==='Planta')+6;const resolutionDate=get(f.pend,plantRow,13).getTime();
+f.context.dataHoje_=()=>new Date('2026-10-23T00:00:00Z');documentState=f.context.pesquisarEstadoDocumental('TESTE-001');f.context.guardarEstadoDocumental('TESTE-001',{...documentState.estados,caderneta:'No dossier · por digitalizar'},documentState.assinatura);assert.equal(get(f.pend,plantRow,13).getTime(),resolutionDate);
+console.log('PASS datas do seguimento: atualizar outro documento não altera a data de uma resolução existente.');

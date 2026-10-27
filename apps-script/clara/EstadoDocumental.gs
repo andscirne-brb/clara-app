@@ -122,9 +122,9 @@ function edAplicar_(s,alteracoes,origem){
     if(log)historico.push([sh.getName(),cel.getA1Notation(),textoHistorico_(antes),textoHistorico_(value)]);
   }
   mudancas.forEach(x=>agendar(x.folha===LEV.nome?s.sh:s.ps,x.linha,x.col,x.valor,true));
-  const rows=[...new Set(plano.filter(p=>p.sh===s.ps).map(p=>p.linha))];
+  const rows=[...new Set(plano.filter(p=>p.sh===s.ps).map(p=>p.linha).concat(s.pv.flatMap((r,i)=>r[1]===s.ref&&r[8]==='Concluído'&&!r[12]?[i+6]:[])))];
   rows.forEach(row=>{agendar(s.ps,row,11,hoje,true);if(!linha(s.ps,row).v[9])agendar(s.ps,row,10,hoje,true);
-    const estado=mudancas.find(x=>x.folha===PEND.nome&&x.linha===row&&x.col===9);if(estado&&['Concluído','Não aplicável'].includes(estado.valor))agendar(s.ps,row,13,hoje,true);
+    const estado=mudancas.find(x=>x.folha===PEND.nome&&x.linha===row&&x.col===9),final=estado?estado.valor:linha(s.ps,row).v[8];if(['Concluído','Não aplicável'].includes(final)&&!linha(s.ps,row).v[12])agendar(s.ps,row,13,hoje,true);
   });
   const start=hs.sh.getLastRow()+1;if(start+historico.length>hs.sh.getMaxRows())hs.sh.insertRowsAfter(hs.sh.getMaxRows(),Math.max(200,start+historico.length-hs.sh.getMaxRows()));
   carregar(hs.sh,start,historico.length);
