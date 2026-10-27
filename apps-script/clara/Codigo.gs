@@ -74,11 +74,16 @@ function sincronizarGestaoPendencias_(ss,inicio,n,coluna,anterior){
   return{alteracoes:historico.length};
 }
 function sincronizarResponsaveisPendencias(){const lock=LockService.getDocumentLock();if(!lock.tryLock(5000))throw Error('Há outra gravação em curso.');try{const ss=SpreadsheetApp.getActive(),sh=ss.getSheetByName(PEND.nome);return sh.getLastRow()>5?sincronizarGestaoPendencias_(ss,6,sh.getLastRow()-5,0):{alteracoes:0};}finally{lock.releaseLock();}}
-function onEdit(e){
+function onEditGestaoAnterior_(e){
   if(!e||!e.range)return;const r=e.range,sh=r.getSheet();if(sh.getName()==='Ficha do imóvel'){if(r.getRow()===3&&r.getColumn()===2)try{mostrarFichaImovel(r.getDisplayValue());}catch(err){e.source.toast(err.message,'Clara',10);}return;}if(sh.getName()!==PEND.nome||r.getLastRow()<6)return;
   const first=r.getColumn(),last=r.getLastColumn();if(!(first<=7&&last>=7)&&!(first<=9&&last>=9))return;
   const lock=LockService.getDocumentLock();if(!lock.tryLock(5000)){e.source.toast('Há uma gravação em curso. Confirma depois o responsável e o estado.','Clara',8);return;}
   try{const inicio=Math.max(6,r.getRow()),col=r.getNumRows()===1&&r.getNumColumns()===1?first:0;sincronizarGestaoPendencias_(e.source,inicio,r.getLastRow()-inicio+1,col,e.oldValue);}catch(err){console.error('Gestão de pendências: '+err.message);e.source.toast('Não foi possível sincronizar a pendência. Confirma o responsável e o estado.','Clara',10);}finally{lock.releaseLock();}
+}
+function onEdit(e){
+  onEditGestaoAnterior_(e);
+  if(!e||!e.range||typeof edSincronizarEdicao_!=='function')return;
+  try{edSincronizarEdicao_(e);}catch(err){console.error(err);e.source.toast('A edição foi mantida. Falta sincronizar: '+err.message,'Clara',12);}
 }
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Clara')
@@ -301,6 +306,8 @@ function analisar(texto, docs) {
   const campos = [], pend = [], notas = [], naoVerificados = [];
   const prop = function (coluna, valor, motivo) {
     const k = c.col(coluna); if (!k) { notas.push('Coluna "' + coluna + '" não encontrada; ignorada.'); return; }
+    // Uma ausência no site não apaga trabalho documental confirmado no dossier.
+    if(valor==='Em falta'&&(coluna==='Planta'||DOCS.some(x=>x[1]===coluna))&&['Digitalizado','No dossier · por digitalizar','Em falta no eGO e no dossier'].includes(atual[k-1]))valor=atual[k-1];
     const existente = campos.find(function (x) { return x.col === k; });
     if (existente) { existente.novo = valor; existente.motivo = motivo || ''; }
     else campos.push({ coluna: coluna, col: k, atual: atual[k - 1], novo: valor, motivo: motivo || '' });
@@ -446,7 +453,7 @@ function analisar(texto, docs) {
     if(p.retomarAndreia)p.atualizar=true;
     p.responsavelReabertura=p.sara?'Sara':ex&&ex.responsavel==='Sara'?'Andreia':ex?ex.responsavel:'Andreia';
     p.delegarSara = !!ex && ex.estado !== 'Concluído' && ex.estado !== 'Não aplicável' && p.sara;
-    if (p.delegarSara && !todosVistos) {
+    if (p.tema === 'Documentos' && p.delegarSara && !todosVistos && semDossier.length) {
       const aviso = 'Confirmado sem ficheiro no eGO nem no dossier; aguarda Sara: ' + semDossier.join(', ') + '.';
       p.evidencia = ex.evidencia.indexOf(aviso) >= 0 ? ex.evidencia : ex.evidencia + ' ' + aviso;
       p.acao = ex.acao.indexOf(aviso) >= 0 ? ex.acao : ex.acao + ' ' + aviso;
@@ -674,7 +681,11 @@ function gravar(texto, docs) {
       try{SpreadsheetApp.flush();conferirLotesClara_(aplicados,true);}catch(e){falhou=true;}
       throw new Error((falhou?'A gravação falhou e a recuperação ficou incompleta. Confere o histórico de versões do Sheets antes de repetir. ':'A gravação falhou e as células foram repostas. ')+err.message);
     }
-    return { desempenho: {ms:Date.now()-inicio,fases:tempos,celulas:plano.length,intervalos:lotes.length}, ref: a.ref, escritos: a.campos.filter(function (x) { return String(x.atual) !== String(x.novo); }).length, textos: a.textos.length, historico: historico.length, criadas: criadas, reabertas: reabertas, confirmadas: confirmadas };
+    let avisoSeguimento='';
+    if(typeof edAplicar_==='function'&&PropertiesService.getDocumentProperties().getProperty('CLARA_SEGUIMENTO_DOCUMENTAL')==='1'){
+      try{const patch={},mapa={sim:'Preenchido',sem_dossier:'Em falta no eGO e no dossier',categoria:'Categoria errada',na:'Não aplicável'};DOCS.forEach(x=>{if(docs&&mapa[docs[x[0]]])patch[x[0]]=mapa[docs[x[0]]];});edAplicar_(edSnapshot_(a.ref),patch,'marcador');}catch(e){avisoSeguimento='A leitura ficou guardada. Falta atualizar o seguimento: '+e.message;}
+    }
+    return { avisoSeguimento:avisoSeguimento, desempenho: {ms:Date.now()-inicio,fases:tempos,celulas:plano.length,intervalos:lotes.length}, ref: a.ref, escritos: a.campos.filter(function (x) { return String(x.atual) !== String(x.novo); }).length, textos: a.textos.length, historico: historico.length, criadas: criadas, reabertas: reabertas, confirmadas: confirmadas };
   } finally { lock.releaseLock(); }
 }
 

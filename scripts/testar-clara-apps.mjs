@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
+import './testar-seguimento-documental.mjs';
 const maintenance=fs.readFileSync(new URL('./organizar-perfis.gs',import.meta.url),'utf8');
 const mc={}; vm.createContext(mc); vm.runInContext(maintenance,mc);
 const portalPlan=mc.planoPerfis_([
@@ -234,3 +235,18 @@ const failSheet=new Sheet('Textos por idioma',7).seed(5,txh).seed(6,['T1']);fail
 f=fixture();const rules=new Map([[7,{owner:'Sara'}],[9,{estado:'aberto'}]]),initialRules=[...rules];const blocked=new Sheet('Pendências da equipa',17).seed(5,['ID']).seed(6,['P1']);blocked.getFilter=()=>({getRange:()=>({getColumn:()=>1,getNumColumns:()=>17}),getColumnFilterCriteria:c=>rules.get(c)||null,removeColumnFilterCriteria:c=>rules.delete(c),setColumnFilterCriteria:(c,v)=>rules.set(c,v)});blocked.insertRowsBefore=()=>{assert.equal(rules.size,0);throw Error('Falha de expansão');};assert.throws(()=>f.context.reservarCapacidadeDestino_(blocked,5,2),/Falha de expansão/);assert.deepEqual([...rules],initialRules);console.log('PASS reposição de filtros: critérios preservados mesmo se a expansão falhar.');
 
 f=fixture();f.tx.cells.delete('2000,1');f.tx.maxRows=10;f.pend.forms.delete('2000,16');f.pend.maxRows=6;f.pend.seed(6,['P0001','OUTRO-IMOVEL','Imagens','Preservar tarefa','','','Andreia','Normal','Por tratar']);d=payload();d.plantas=['pdf'];save(f,d);assert.equal(get(f.tx,210,2),'ES');assert.equal(get(f.tx,210,4),d.textos.ES.descricao);assert.equal(get(f.pend,206,2),'OUTRO-IMOVEL');assert.equal(get(f.pend,6,2),'TESTE-001');assert.equal(f.pend.getMaxRows(),206);assert.equal(f.tx.getMaxRows(),210);const expandedSnapshot=snapshot(f);save(f,d);assert.equal(snapshot(f),expandedSnapshot);console.log('PASS gravação após expansão: referências relidas, último idioma atualizado no local correto, tarefa anterior preservada e repetição sem crescer nem duplicar.');
+
+// Teste integrado do novo seguimento: escrita, concorrência, repetição e recuperação.
+headers.push('Observações / justificação N/A','Resumo para a equipa');
+f=fixture();vm.runInContext(fs.readFileSync(new URL('../apps-script/clara/EstadoDocumental.gs',import.meta.url),'utf8'),f.context);
+let documentState=f.context.pesquisarEstadoDocumental('TESTE-001');
+let statePatch={...documentState.estados,caderneta:'Digitalizado',planta:'Em falta no eGO e no dossier'};
+f.context.guardarEstadoDocumental('TESTE-001',statePatch,documentState.assinatura);
+assert.equal(get(f.lev,10,headers.indexOf('Caderneta Predial (anexo)')+1),'Digitalizado');
+assert.equal(get(f.lev,10,headers.indexOf('Planta')+1),'Em falta no eGO e no dossier');
+let pendingRows=f.pend.getRange(6,1,10,17).getValues();assert.equal(pendingRows.find(r=>r[3]==='Planta')[6],'Sara');
+assert.throws(()=>f.context.guardarEstadoDocumental('TESTE-001',statePatch,documentState.assinatura),/alterado entretanto/);
+documentState=f.context.pesquisarEstadoDocumental('TESTE-001');const stableDocumentState=snapshot(f);
+f.context.guardarEstadoDocumental('TESTE-001',statePatch,documentState.assinatura);assert.equal(snapshot(f),stableDocumentState);
+f.fail();assert.throws(()=>f.context.guardarEstadoDocumental('TESTE-001',{...statePatch,planta:'Digitalizado'},documentState.assinatura),/Alterações repostas/);const normalizeSnapshot=t=>JSON.stringify(JSON.parse(t).map(([n,cs,fs])=>[n,cs.filter(x=>x[1]!==''),fs]));assert.equal(normalizeSnapshot(snapshot(f)),normalizeSnapshot(stableDocumentState));
+console.log('PASS seguimento integrado: guarda cinco campos sem marcador, cria pendência para Sara, bloqueia revisão desatualizada, repetição idempotente e falha recuperada.');

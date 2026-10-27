@@ -1,0 +1,35 @@
+# Seguimento após o levantamento — 27/10/2026
+
+## Fluxo aprovado
+
+Clara > eGO: estado mantém a leitura do marcador e passa a incluir «Pesquisar referência · documentos e planta». A pesquisa carrega os estados existentes; a confirmação grava apenas dados do Sheets. Não altera o CRM.
+
+Estados: Por verificar; Em falta no eGO · verificar dossier; No dossier · por digitalizar; Digitalizado; Em falta no eGO e no dossier; Categoria errada; Formato errado; Preenchido; Não aplicável.
+
+Digitalizado significa que falta preparar/inserir o ficheiro no eGO. Não encerra a pendência. Ausência confirmada também no dossier atribui a tarefa à Sara. Uma atribuição manual à Sara corresponde a aguardar esclarecimento, sem afirmar automaticamente que o documento está ausente.
+
+## Sincronização
+
+- Documentos e planta têm uma pendência por item, com referência e ID estáveis.
+- A edição do Estado nas Pendências atualiza o respetivo campo no Levantamento quando existe correspondência inequívoca. Concluído significa Preenchido; estados de preparação mantêm o trabalho aberto.
+- Notas e respostas da equipa são conservadas. As ações escritas manualmente ficam anexadas ao novo próximo passo.
+- Linhas documentais antigas com nome inequívoco são reutilizadas. Agrupamentos ficam arquivados como Não aplicável, com indicação de desdobramento; o histórico conserva antes/depois.
+- O resumo é gerado a partir das pendências abertas do imóvel; o texto anterior fica no histórico.
+- Plantas/documentos digitalizados não regressam a uma falta genérica por ausência no site público. Uma escolha explícita no painel pode atualizar o estado.
+- Correspondências ambíguas não são concluídas automaticamente. Concluir um assunto genérico não confirma vários documentos.
+
+## Instalação e migração
+
+1. Construir Clara-completo.gs com scripts/construir-clara.py e publicar o conteúdo no projeto ligado ao documento.
+2. Ativar o serviço oficial Google Sheets API no projeto (mesma autorização de Sheets existente). As tabelas tipadas recusam Range.setDataValidation.
+3. Executar prepararSeguimentoDocumental: lê as tabelas, mantém as opções atuais e acrescenta os estados nas seis colunas necessárias, sem mudar os valores. Só depois ativa a sincronização automática.
+4. Executar atualizarFormulasSeguimento para incluir os novos estados nos indicadores existentes.
+5. Executar migrarSeguimentoDocumental por lotes de quatro imóveis até restantes=0. A fila fica guardada entre execuções; são usadas leituras atuais, nunca um snapshot antigo para escrever.
+
+## Segurança e testes
+
+Pesquisa exige uma única referência. A confirmação recusa uma revisão se os dados do imóvel ou pendências mudarem entretanto. Escritas agrupadas, histórico antes/depois, conferência e reposição em caso de erro. Estado do seguimento usa o documento ativo, sem IDs de clientes no código. O token Google só é usado na ligação oficial à API e nunca é registado.
+
+Testes sintéticos: Digitalizado, ausência no dossier, Sara por documento, nomes antigos, notas conservadas, agrupamentos, resumo, repetição, concorrência e recuperação. A verificação no documento real deve registar separadamente instalação, configuração, migração e leitura final; testes locais não comprovam essas fases.
+
+Confirmação específica da utilizadora: a planta MI14372 permanece Digitalizado, por inserir no eGO.
