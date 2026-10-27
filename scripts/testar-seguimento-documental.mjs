@@ -21,3 +21,15 @@ assert.throws(()=>c.edPlano_(fixture(),{planta:'inventado'},'painel'),/Estado n�
 const f='=IF(A10="","",COUNTIFS(N10:S10,"Em falta"))';assert.match(c.edFormula_(f),/Digitalizado/);assert.equal(c.edFormula_(c.edFormula_(f)),c.edFormula_(f));
 new vm.Script(fs.readFileSync(new URL('../apps-script/clara/EstadoDocumental.html',import.meta.url),'utf8').match(/<script>([\s\S]*)<\/script>/)[1]);
 console.log('PASS seguimento: Digitalizado preservado, Sara por documento, notas conservadas, agrupamentos arquivados, resumo atualizado, repetição sem duplicados, estado em correção preservado, fórmulas idempotentes.');
+
+const pt='=IF(A10="";"";COUNTIFS(N10:S10;"Em falta"))';const ptFixed=c.edFormula_(pt);assert.match(ptFixed,/COUNTIF\(N10:S10;"Digitalizado"\)/);assert.equal(c.edFormula_(ptFixed),ptFixed);
+const mix='=IF(A10="";"";IF(COUNTIFS(PendenciasEquipe[Referência EGO],A10,PendenciasEquipe[Estado],"Digitalizado")>0,"Digitalizado","Rever estado"))';const fixed=c.edFormula_(mix);assert(!fixed.replace(/"[^"]*"/g,'').includes(','));
+assert.equal(c.edCampoPendencia_(['','','Documentos','Contrato de mediação sem anexo visível'])[0],'contrato');
+assert.equal(c.edCampoPendencia_(['','','Documentos','Duplicados em Outros documentos']),null);
+const calls=[];c.edSheets_=(_,suffix,payload)=>{calls.push({suffix,payload});return{ sheets:[{properties:{title:'Levantamento'},tables:[{tableId:'T',range:{startColumnIndex:2,endColumnIndex:5},columnProperties:[{columnIndex:0,columnName:'Preservar',columnType:'TEXT'},{columnIndex:1,columnName:'Documento',columnType:'DROPDOWN',dataValidationRule:{condition:{type:'ONE_OF_LIST',values:[{userEnteredValue:'Estado antigo'}]}}},{columnIndex:2,columnName:'Data',columnType:'DATE'}]}]}]};};
+c.edConfigurarDropdowns_({},[{nome:'Levantamento',col:4,opcoes:['Digitalizado']}]);const update=calls[1].payload.requests[0].updateTable;assert.equal(update.fields,'columnProperties');assert.equal(update.table.columnProperties[2].columnType,'DATE');assert.deepEqual(Array.from(update.table.columnProperties[1].dataValidationRule.condition.values,v=>v.userEnteredValue),['Estado antigo','Digitalizado']);
+console.log('PASS tabelas e fórmulas PT: índices relativos, opções antigas e tipos não afetados preservados; separadores mistos corrigidos sem alterar texto.');
+
+s=fixture();s.values[8]='Em falta';s.pv.push(['P0004','TESTE','Vídeo','Vídeo em falta','','','Sara','Normal','A aguardar esclarecimento','','','','','','','','','Resposta existente']);p=c.edPlano_(s,{},'painel');assert.equal(p.filter(x=>x.col===12&&String(x.valor).startsWith('Duplicada:')).length,1);assert.match(value('Levantamento',10,8),/Vídeo em falta/);
+assert.equal(c.edCampoSimples_('Alt-text em falta'),'Alt-text');
+console.log('PASS tarefas antigas: vídeo duplicado consolidado na linha com resposta, sem apagar a resposta, e alt-text antigo reconhecido.');

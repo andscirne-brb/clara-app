@@ -33,3 +33,9 @@ Pesquisa exige uma única referência. A confirmação recusa uma revisão se os
 Testes sintéticos: Digitalizado, ausência no dossier, Sara por documento, nomes antigos, notas conservadas, agrupamentos, resumo, repetição, concorrência e recuperação. A verificação no documento real deve registar separadamente instalação, configuração, migração e leitura final; testes locais não comprovam essas fases.
 
 Confirmação específica da utilizadora: a planta MI14372 permanece Digitalizado, por inserir no eGO.
+
+## Validação nativa
+
+Google Sheets API ativada com autorização explícita da utilizadora. Configuração dos dropdowns executada com sucesso no projeto ligado ao documento. Fórmulas portuguesas exigem separador ponto e vírgula: o conversor preserva os separadores existentes e corrige misturas, incluindo o texto entre aspas. A conferência por exportação confirmou ausência de erros de fórmula e a contagem dos estados de preparação.
+
+As tarefas antigas de alt-text são reconhecidas. Duplicados de vídeo são consolidados conservando a linha com resposta da equipa e arquivando a outra, com referência ao ID mantido. Características só passam a Preenchido por conclusão humana quando todas as pendências desse tema no imóvel estão encerradas.

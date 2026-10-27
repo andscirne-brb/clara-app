@@ -14,6 +14,7 @@ function edCampoPendencia_(r){
   const regras=[/caderneta predial/,/certificado energetico/,/contrato.*mediacao/,/licenca.*habitacao/];
   const hits=regras.map((re,i)=>re.test(t)?i:-1).filter(i=>i>=0);return hits.length===1?ED_CAMPOS[hits[0]]:null;
 }
+function edCampoSimples_(assunto){return {'Imóvel sem fotografias':'Imagens','Fotografias sem texto alternativo':'Alt-text','Alt-text em falta':'Alt-text','Existe vídeo do imóvel?':'Vídeo','Vídeo em falta':'Vídeo'}[assunto]||'';}
 function edEstado_(valor,nota,nome){
   const linha=String(nota||'').split(/\r?\n/).find(l=>l.startsWith(nome+': '))||'';
   if(valor==='Preenchido'||valor==='Não aplicável')return valor;
@@ -91,10 +92,13 @@ function edPlano_(s,alteracoes,origem){
     if(agrupado&&ED_CAMPOS.slice(0,4).some(x=>r[4].includes(x[2])))fechar(i,'Desdobrada em pendências por documento/planta. Notas e estado anterior conservados no histórico.');
   });
   add(LEV.nome,s.row,s.c.col('Observações / justificação N/A'),notas.filter(Boolean).join('\n'));
-  const simples={'Imóvel sem fotografias':'Imagens','Fotografias sem texto alternativo':'Alt-text','Existe vídeo do imóvel?':'Vídeo'};
-  pend.forEach((r,i)=>{const campo=simples[r[3]];if(r[1]!==s.ref||!campo||['Concluído','Não aplicável'].includes(r[8]))return;
+  const grupos={};pend.forEach((r,i)=>{const campo=edCampoSimples_(r[3]);if(r[1]===s.ref&&campo&&!['Concluído','Não aplicável'].includes(r[8]))(grupos[campo]||(grupos[campo]=[])).push(i);});
+  Object.keys(grupos).forEach(campo=>{const ids=grupos[campo];if(ids.length<2)return;const principal=ids.find(i=>pend[i][17])??ids[0];ids.filter(i=>i!==principal).forEach(i=>fechar(i,'Duplicada: acompanhamento na pendência '+pend[principal][0]+'. Evidência e respostas preservadas nesta linha.'));});
+  pend.forEach((r,i)=>{const campo=edCampoSimples_(r[3]);if(r[1]!==s.ref||!campo||['Concluído','Não aplicável'].includes(r[8]))return;
     if(s.values[s.c.col(campo)-1]==='Preenchido'){set(i,9,'Concluído');set(i,12,'Confirmado no Levantamento: '+campo+' preenchido.');set(i,15,'Confirmado');set(i,17,'');}
   });
+  const caracteristicas=pend.filter(r=>r[1]===s.ref&&r[2]==='Características');
+  if(caracteristicas.length&&caracteristicas.every(r=>['Concluído','Não aplicável'].includes(r[8]))&&s.values[s.c.col('Características')-1]==='Em falta')add(LEV.nome,s.row,s.c.col('Características'),'Preenchido');
   // Conclusão indicada pela equipa: regista a origem humana, sem inventar uma leitura do site.
   pend.forEach((r,i)=>{if(r[1]===s.ref&&r[8]==='Concluído'&&!r[11]){set(i,12,'Conclusão indicada pela equipa. Ação e respostas preservadas na linha.');set(i,15,'Confirmado');}});
   const abertas=pend.filter(r=>r[1]===s.ref&&!['Concluído','Não aplicável'].includes(r[8]));
@@ -104,6 +108,7 @@ function edPlano_(s,alteracoes,origem){
 }
 function edAplicar_(s,alteracoes,origem){
   const mudancas=edPlano_(s,alteracoes,origem),plano=[],historico=[],hoje=dataHoje_();
+  if(s.edicaoManual)historico.push([LEV.nome,s.edicaoManual.celula,s.edicaoManual.antes,s.edicaoManual.depois]);
   const cache={};function linha(sh,row){const key=sh.getName()+'|'+row;if(!cache[key]){const rg=sh.getRange(row,1,1,sh.getLastColumn());cache[key]={v:rg.getValues()[0],f:rg.getFormulas()[0],m:rg.getNumberFormats()[0]};}return cache[key];}
   function carregar(sh,inicio,n){if(!n)return;const rg=sh.getRange(inicio,1,n,sh.getLastColumn()),v=rg.getValues(),f=rg.getFormulas(),m=rg.getNumberFormats();v.forEach((r,i)=>cache[sh.getName()+'|'+(inicio+i)]={v:r,f:f[i],m:m[i]});}
   const hs=estrutura_(s.ss,'Registo de alterações',['Data da alteração','Referência EGO','Autor','Onde foi alterado','Campo / assunto','Antes','Depois / alteração realizada','Motivo / fonte','Resultado da verificação']);
@@ -156,12 +161,14 @@ function edSincronizarEdicao_(e){
         if(x&&r.getColumn()<=9&&r.getLastColumn()>=9){const status=v[8],etat=status==='Concluído'?'Preenchido':ED_ESTADOS.includes(status)?status:null;
           if(etat)(patches[v[1]]||(patches[v[1]]={}))[x[0]]=etat;
         }
-        const campo={'Imóvel sem fotografias':'Imagens','Fotografias sem texto alternativo':'Alt-text','Existe vídeo do imóvel?':'Vídeo'}[v[3]];
+        const campo=edCampoSimples_(v[3]);
         if(campo&&r.getColumn()<=9&&r.getLastColumn()>=9&&['Concluído','Não aplicável'].includes(v[8]))(simples[v[1]]||(simples[v[1]]={}))[campo]=v[8]==='Concluído'?'Preenchido':'Não aplicável';
       }
     }
     const lev=e.source.getSheetByName(LEV.nome),lc=colunas_(lev,9),conhecidas=new Set(lev.getRange(10,lc.col('Referência EGO'),lev.getLastRow()-9,1).getDisplayValues().flat());
-    refs.forEach(ref=>{if(!conhecidas.has(ref))return;const s=edSnapshot_(ref);s.simples=simples[ref];edAplicar_(s,patches[ref]||{},nome===PEND.nome?'pendencia':'levantamento');});
+    refs.forEach(ref=>{if(!conhecidas.has(ref))return;const s=edSnapshot_(ref);s.simples=simples[ref];
+      if(nome===LEV.nome&&r.getNumRows()===1&&r.getNumColumns()===1&&e.value!==undefined)s.edicaoManual={celula:r.getA1Notation(),antes:e.oldValue===undefined?'':String(e.oldValue),depois:String(e.value)};
+      edAplicar_(s,patches[ref]||{},nome===PEND.nome?'pendencia':'levantamento');});
   }finally{lock.releaseLock();}
 }
 function prepararSeguimentoDocumental(){
@@ -202,13 +209,17 @@ function edConfigurarDropdowns_(ss,alvos){
   fora.forEach(a=>{const sh=ss.getSheetByName(a.nome),start=a.nome===LEV.nome?10:6;sh.getRange(start,a.col,sh.getMaxRows()-start+1,1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(a.opcoes,true).setAllowInvalid(false).build());});
 }
 function edFormula_(f){
+  let quoted=false,semi=false,normal='';
+  for(let i=0;i<f.length;i++){const ch=f[i];if(ch==='"'){if(quoted&&f[i+1]==='"'){normal+='""';i++;continue;}quoted=!quoted;}if(!quoted&&ch===';')semi=true;normal+=!quoted&&ch===';'?',':ch;}
+  f=normal;
   const estados=['Em falta','Digitalizado','No dossier · por digitalizar','Em falta no eGO · verificar dossier','Em falta no eGO e no dossier','Categoria errada','Formato errado'];
-  f=f.replace(/COUNTIFS\((N\d+:S\d+),"Em falta"\)/g,(_,r)=>'SUM(COUNTIF('+r+',{'+estados.map(s=>'"'+s+'"').join(',')+'}))');
+  f=f.replace(/COUNTIFS\((N\d+:S\d+),"Em falta"\)/g,(_,r)=>'('+estados.map(s=>'COUNTIF('+r+',"'+s+'")').join('+')+')');
   f=f.replace(/IF\(([NOPQR]\d+)="Em falta",/g,(_,c)=>'IF(OR('+estados.map(s=>c+'="'+s+'"').join(',')+'),');
   if(f.includes('PendenciasEquipe[Estado]')&&!f.includes('"Digitalizado"')){
     const ref=(f.match(/IF\((A\d+)=""/)||[])[1];
     if(ref){const abertos=estados.filter(x=>x!=='Digitalizado').map(x=>'COUNTIFS(PendenciasEquipe[Referência EGO],'+ref+',PendenciasEquipe[Estado],"'+x+'")').join('+');f=f.replace('"Rever estado"','IF(COUNTIFS(PendenciasEquipe[Referência EGO],'+ref+',PendenciasEquipe[Estado],"Digitalizado")>0,"Digitalizado",IF('+abertos+'>0,"Por tratar","Rever estado"))');}
   }
+  if(semi){let q=false,out='';for(let i=0;i<f.length;i++){const ch=f[i];if(ch==='"'){if(q&&f[i+1]==='"'){out+='""';i++;continue;}q=!q;}out+=ch===','&&!q?';':ch;}return out;}
   return f;
 }
 function atualizarFormulasSeguimento(){
