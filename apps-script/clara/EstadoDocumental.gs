@@ -126,6 +126,7 @@ function edAplicar_(s,alteracoes,origem){
   rows.forEach(row=>{agendar(s.ps,row,11,hoje,true);if(!linha(s.ps,row).v[9])agendar(s.ps,row,10,hoje,true);
     const estado=mudancas.find(x=>x.folha===PEND.nome&&x.linha===row&&x.col===9),final=estado?estado.valor:linha(s.ps,row).v[8];if(['Concluído','Não aplicável'].includes(final)&&!linha(s.ps,row).v[12])agendar(s.ps,row,13,hoje,true);
   });
+  if(!plano.length&&!historico.length)return{ref:s.ref,alteracoes:0};
   const start=hs.sh.getLastRow()+1;if(start+historico.length>hs.sh.getMaxRows())hs.sh.insertRowsAfter(hs.sh.getMaxRows(),Math.max(200,start+historico.length-hs.sh.getMaxRows()));
   carregar(hs.sh,start,historico.length);
   historico.forEach((h,i)=>{const v={'Data da alteração':hoje,'Referência EGO':s.ref,'Autor':'Equipa','Onde foi alterado':h[0],'Campo / assunto':h[1],'Antes':h[2],'Depois / alteração realizada':h[3],'Motivo / fonte':'Seguimento documental · '+origem,'Resultado da verificação':'Confirmado'};Object.keys(v).forEach(k=>{if(hs.col(k))agendar(hs.sh,start+i,hs.col(k),v[k],false);});});

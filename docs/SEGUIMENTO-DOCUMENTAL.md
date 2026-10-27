@@ -41,3 +41,5 @@ Google Sheets API ativada com autorização explícita da utilizadora. Configura
 As tarefas antigas de alt-text são reconhecidas. Duplicados de vídeo são consolidados conservando a linha com resposta da equipa e arquivando a outra, com referência ao ID mantido. Características só passam a Preenchido por conclusão humana quando todas as pendências desse tema no imóvel estão encerradas.
 
 Migração nativa concluída: 23 referências processadas e fila a zero. A data de resolução existente é preservada quando se atualiza outro documento; resoluções humanas sem data ficam registadas na conferência, com origem explícita da equipa.
+
+Conferência final no próprio Apps Script: pesquisar e guardar estados existentes em quatro imóveis, com verificação de planta digitalizada e ausência de erros de fórmula. Rotina temporária removida após o teste; código final relido e comparado integralmente com o bundle local. A exportação final confirma IDs antigos 1 a 89 presentes, respostas de vídeo preservadas, resumos corrigidos e zero erros de fórmula. Guardar sem alterações termina sem escrita nem flush adicional.
