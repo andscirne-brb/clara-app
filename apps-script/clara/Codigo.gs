@@ -201,12 +201,13 @@ function irPara(separador, linha) {
 function mostrarMarcador() {
   const codigo = 'javascript:' + encodeURIComponent(MARCADOR_JS);
   const html = '<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5">' +
-    '<p style="font-size:12px;color:#526b78">Versão 20261026.3 · Green-Acres: CSV oficiais e anúncios</p><p><b>1.</b> Arrasta este botão para a barra de marcadores do navegador:</p>' +
+    '<p style="font-size:12px;color:#526b78">Versão 20261028.1 · Green-Acres: recolha conjunta</p><p><b>1.</b> Arrasta este botão para a barra de marcadores do navegador:</p>' +
     '<p style="text-align:center"><a href="' + codigo + '" style="display:inline-block;padding:8px 18px;background:#1a73e8;color:#fff;border-radius:6px;text-decoration:none;font-weight:bold">Clara</a></p>' +
     '<p>Se não der para arrastar: cria um marcador novo, chama-lhe <b>Clara</b> e cola isto no endereço:</p>' +
     '<label for="codigoMarcador">Código para o endereço do marcador</label><textarea id="codigoMarcador" style="width:100%;height:72px;font-size:11px" onclick="this.select()">' + codigo.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</textarea>' +
     '<button style="background:#087f8c;color:white;border:0;border-radius:6px;padding:9px 14px" onclick="var t=document.getElementById(&quot;codigoMarcador&quot;),e=document.getElementById(&quot;estadoCopia&quot;);t.focus();t.select();if(navigator.clipboard&amp;&amp;navigator.clipboard.writeText){navigator.clipboard.writeText(t.value).then(function(){e.textContent=&quot;Código copiado. Substitui o endereço do marcador Clara que já tens.&quot;;},function(){t.focus();t.select();e.textContent=&quot;Código selecionado. Copia com Ctrl+C.&quot;;});}else{e.textContent=&quot;Código selecionado. Copia com Ctrl+C.&quot;;}">Copiar código</button><p id="estadoCopia" role="status" style="font-size:12px;color:#526b78">Atualiza o marcador existente para usar a recolha guiada.</p>' +
     '<p><b>2.</b> No site da Janela, Idealista, Rightmove Plus ou Green-Acres com sessão iniciada, carrega no marcador <b>Clara</b>. Para atualizar um marcador antigo, substitui o seu endereço por este.</p>' +
+    '<p><b>Green-Acres:</b> abre <b>Resumo da conta</b>. Um clique tenta recolher os cinco CSV e todas as páginas da lista de anúncios. Copia e cola apenas uma vez; o resumo indica o que ficou por recolher.</p>' +
     '<p><b>3.</b> Para o Idealista: <b>Clara &gt; Idealista: estatísticas</b>, cola (Ctrl+V), revê e guarda. Para Rightmove: <b>Clara &gt; Rightmove: estatísticas</b>. Para Green-Acres: <b>Clara &gt; Green-Acres: estatísticas</b>. Para imóveis do site da Janela: <b>Clara &gt; eGO: estado</b>.</p></div>';
   SpreadsheetApp.getUi().showModalDialog(HtmlService.createHtmlOutput(html).setWidth(520).setHeight(600), 'Instalar o marcador Clara');
 }
@@ -243,6 +244,7 @@ function cruzarCaracteristicasClara_(d){
 }
 function analisar(texto, docs) {
   texto = String(texto || '').trim();
+  if(texto.indexOf('CLARA6:')===0)return analisarConjunto_(texto);
   if(texto.indexOf('CLARA5:')===0)return analisarLigacaoPortal(texto);
   if(texto.indexOf('CLARA4:')===0)return conferirAnalisePortal_(analisarGreenAcres(texto),texto);
   if(texto.indexOf('CLARA3:')===0)return conferirAnalisePortal_(analisarRightmove(texto),texto);
@@ -505,6 +507,7 @@ function textoHistorico_(v) {
   return v == null ? '' : String(v);
 }
 function gravar(texto, docs) {
+  if(String(texto||'').trim().indexOf('CLARA6:')===0)return gravarConjunto_(texto);
   if(String(texto||'').trim().indexOf('CLARA5:')===0)return gravarLigacaoPortal(texto);
   if(String(texto||'').trim().indexOf('CLARA4:')===0)return respostaAutomacaoPortais_(gravarGreenAcres(texto),texto);
   if(String(texto||'').trim().indexOf('CLARA3:')===0)return respostaAutomacaoPortais_(gravarRightmove(texto),texto);

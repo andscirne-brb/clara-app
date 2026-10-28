@@ -54,7 +54,7 @@ draft=painelNovo();assert.equal(draft.get('txt').value,payload('EX2001'));assert
 draft.x.guardarRascunho(true);draft=painelNovo();assert.match(draft.get('rascunho').textContent,/Confirma primeiro/);
 draft.get('txt').value=payload('EX2002');draft.x.entrada();assert.equal(draft.get('d_certificado').value,'');draft.x.novaLeitura();assert.equal(store.size,0);assert.equal(painelNovo().get('txt').value,'');
 draft=painelNovo({getItem(){throw Error('bloqueado');},setItem(){throw Error('bloqueado');},removeItem(){throw Error('bloqueado');}});draft.get('txt').value=payload('EX2003');draft.x.entrada();assert.equal(draft.get('analisar').disabled,false);assert.match(draft.get('rascunho').textContent,/não permitiu/);
-draft=painelNovo();draft.get('txt').value='CLARA1:'+JSON.stringify({ref:'EX2004',marcadorVersao:'20261026.3'});draft.x.entrada();assert.equal(draft.get('versao').hidden,true);draft.get('txt').value=payload('EX2004');draft.x.entrada();assert.equal(draft.get('versao').hidden,false);
+draft=painelNovo();draft.get('txt').value='CLARA1:'+JSON.stringify({ref:'EX2004',marcadorVersao:'20261028.1'});draft.x.entrada();assert.equal(draft.get('versao').hidden,true);draft.get('txt').value=payload('EX2004');draft.x.entrada();assert.equal(draft.get('versao').hidden,false);
 const k=[...store.keys()][0],expired=JSON.parse(store.get(k));expired.data=Date.now()-8*86400000;store.set(k,JSON.stringify(expired));assert.equal(painelNovo().get('txt').value,'');assert.equal(store.size,0);
 console.log('PASS rascunho: recuperação com documentos, revisão obrigatória, gravação interrompida, troca de imóvel, limpeza, expiração, armazenamento bloqueado e aviso de versão.');
 
