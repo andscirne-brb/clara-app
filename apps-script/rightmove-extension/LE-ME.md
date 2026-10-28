@@ -1,4 +1,4 @@
-# Clara · Rightmove — versão de teste 0.1.2
+# Clara · Rightmove — versão de teste 0.1.3
 
 ## Instalar uma vez no Chrome
 1. Extrai o ZIP para uma pasta fixa. Mantém todos os ficheiros juntos.
@@ -26,4 +26,8 @@ collectors.js é gerado por scripts/construir-clara.py a partir dos coletores pa
 
 Correção 0.1.1: o resumo aguarda estabilidade dos totais, com espera adicional quando começa em zero. No primeiro teste real, a versão 0.1.0 guardou zeros transitórios; esse teste não valida as leads. O desempenho CSV foi guardado. A nova versão requer teste real e conferência das somas antes de ser considerada validada.
 
-Correção 0.1.2: cada clique cria um identificador novo. A cópia automática só aceita o resultado desse pedido, impedindo a corrida que podia copiar o resultado antigo antes de começar a recolha nova. Resultados de versões anteriores não podem ser copiados pelo painel. Versão e hora do resultado são apresentadas. A atualização exige substituir todos os ficheiros na pasta carregada e clicar Atualizar em chrome://extensions; não basta mudar o manifest. A leitura corrigida ainda exige conferência real.
+Correção 0.1.3: cada clique cria um identificador novo. A cópia automática só aceita o resultado desse pedido, impedindo a corrida que podia copiar o resultado antigo antes de começar a recolha nova. Resultados de versões anteriores não podem ser copiados pelo painel. Versão e hora do resultado são apresentadas. A atualização exige substituir todos os ficheiros na pasta carregada e clicar Atualizar em chrome://extensions; não basta mudar o manifest. A leitura corrigida ainda exige conferência real.
+
+## Validação de leads em 0.1.3
+
+As contagens são conferidas independentemente nas tabelas Calls e Emails e cruzadas com o resumo final. Um zero sem prova não é exportado. Zero legítimo exige cartão zero, tabela vazia e mensagem oficial No leads estáveis. Loading... nunca confirma ausência. O desempenho pode ser recolhido como bloco parcial. Instalação e recolha real desta versão ainda por validar.

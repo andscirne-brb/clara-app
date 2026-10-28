@@ -1,4 +1,4 @@
-const el=id=>document.getElementById(id);const VERSAO='0.1.2';let leitura='',autoCopiarPedido='',aguardarPedido='',render=0;
+const el=id=>document.getElementById(id);const VERSAO='0.1.3';let leitura='',autoCopiarPedido='',aguardarPedido='',render=0;
 async function mostrar(){const atual=++render,{clara:s}=await chrome.storage.session.get('clara');if(atual!==render)return;el('resumo').replaceChildren();leitura='';el('copiar').hidden=true;el('limpar').hidden=!s;el('iniciar').disabled=false;
 if(aguardarPedido&&s?.pedido!==aguardarPedido){el('iniciar').disabled=true;el('estado').textContent='A iniciar uma nova recolha. A leitura anterior não será copiada.';return;}
 if(!s){el('estado').textContent='Inicia sessão no Rightmove e escolhe os períodos.';return;}

@@ -1,11 +1,11 @@
 import fs from 'node:fs';import vm from 'node:vm';import assert from 'node:assert/strict';
 const source=fs.readFileSync(new URL('../apps-script/rightmove-extension/popup.js',import.meta.url),'utf8');
-const fields=new Map(),el=id=>{if(!fields.has(id))fields.set(id,{hidden:false,disabled:false,textContent:'',children:[],replaceChildren(){this.children=[];},append(x){this.children.push(x);},select(){}});return fields.get(id);};let state={estado:'pronto',versao:'0.1.2',pedido:'anterior',quando:Date.now(),texto:'LEITURA-ANTIGA',resumo:[],mensagem:'Anterior'},copias=[],changed;
+const fields=new Map(),el=id=>{if(!fields.has(id))fields.set(id,{hidden:false,disabled:false,textContent:'',children:[],replaceChildren(){this.children=[];},append(x){this.children.push(x);},select(){}});return fields.get(id);};let state={estado:'pronto',versao:'0.1.3',pedido:'anterior',quando:Date.now(),texto:'LEITURA-ANTIGA',resumo:[],mensagem:'Anterior'},copias=[],changed;
 const c={console,Date,crypto:{randomUUID:()=> 'novo'},document:{getElementById:el,createElement:()=>({textContent:''})},navigator:{clipboard:{writeText:async x=>copias.push(x)}},chrome:{storage:{session:{get:async()=>({clara:state})},onChanged:{addListener:f=>{changed=f;}}},runtime:{sendMessage:async m=>m.acao==='iniciar'?{iniciado:true,pedido:m.pedido}:m.acao==='estado'?{ativo:true}:{ok:true}}}};vm.createContext(c);vm.runInContext(source,c);await c.mostrar();assert.equal(el('copiar').hidden,false);
 // Reproduz a corrida: o worker respondeu, mas storage ainda devolve a leitura pronta antiga.
 await el('iniciar').onclick();assert.equal(copias.length,0);assert.equal(el('copiar').hidden,true);assert.match(el('estado').textContent,/anterior não será copiada/);
-state={estado:'a-recolher',pedido:'novo',versao:'0.1.2',quando:Date.now(),mensagem:'A recolher'};await c.mostrar();assert.equal(copias.length,0);
-state={estado:'pronto',pedido:'novo',versao:'0.1.2',quando:Date.now(),texto:'LEITURA-NOVA',resumo:['2 leads'],mensagem:'Pronta'};await c.mostrar();assert.deepEqual(copias,['LEITURA-NOVA']);await c.mostrar();assert.equal(copias.length,1);assert.equal(el('copiar').hidden,false);
+state={estado:'a-recolher',pedido:'novo',versao:'0.1.3',quando:Date.now(),mensagem:'A recolher'};await c.mostrar();assert.equal(copias.length,0);
+state={estado:'pronto',pedido:'novo',versao:'0.1.3',quando:Date.now(),texto:'LEITURA-NOVA',resumo:['2 leads'],mensagem:'Pronta'};await c.mostrar();assert.deepEqual(copias,['LEITURA-NOVA']);await c.mostrar();assert.equal(copias.length,1);assert.equal(el('copiar').hidden,false);
 state={...state,versao:'0.1.1'};await c.mostrar();assert.equal(el('copiar').hidden,true);assert.match(el('estado').textContent,/outra versão/);assert.equal(copias.length,1);
-state={...state,versao:'0.1.2',quando:Date.now()-31*60000};await c.mostrar();assert.equal(el('copiar').hidden,true);
+state={...state,versao:'0.1.3',quando:Date.now()-31*60000};await c.mostrar();assert.equal(el('copiar').hidden,true);
 console.log('PASS cópia Rightmove: leitura antiga após clique nunca copiada, só pedido novo, uma cópia por recolha, versões antigas e leituras expiradas bloqueadas.');

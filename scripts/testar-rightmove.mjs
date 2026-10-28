@@ -26,6 +26,20 @@ const collected=await c.recolherRightmove(doc,{estado(){}});assert.equal(collect
 console.log('PASS marcador Rightmove: separadores, paginação, série completa com zeros e regresso ao resumo sem dados pessoais.');
 transitorio=true;leituras=0;const delayed=await c.recolherRightmove(doc,{estado(){}});assert.equal(delayed.totais.total,3);assert.ok(leituras>4);transitorio=false;console.log('PASS carregamento Rightmove: zero transitório não é interpretado como mudança dos totais; conferência final do resumo preservada.');
 const selectorOriginal=doc.querySelector;let leiturasResumoInicial=0;doc.querySelector=function(sel){if(route==='summary'&&sel.startsWith('[data-testid=')&&leiturasResumoInicial++<30)return{textContent:'0'};return selectorOriginal.call(this,sel);};const resumoLento=await c.recolherRightmove(doc,{estado(){}});assert.equal(resumoLento.totais.total,3);assert.ok(leiturasResumoInicial>30);doc.querySelector=selectorOriginal;console.log('PASS resumo inicial: zeros transitórios nos três cartões não são importados como zero real.');
+// Even a permanently stale initial summary must not bypass the channel tables.
+let resumoVisitas=0;const navOriginal=doc.querySelector;
+doc.querySelector=function(sel){if(sel.startsWith('a[href=')&&sel.includes('/summary')){const a=navOriginal.call(this,sel);return{click(){resumoVisitas++;a.click();}};}if(route==='summary'&&resumoVisitas===1&&sel.startsWith('[data-testid='))return{textContent:'0'};return navOriginal.call(this,sel);};
+const recovered=await c.recolherRightmove(doc,{estado(){}});assert.equal(recovered.totais.total,3);assert.equal(recovered.totais.chamadas,1);assert.equal(recovered.totais.emails,2);doc.querySelector=navOriginal;
+const tableOriginal=doc.querySelector;doc.querySelector=function(sel){if(sel==='table'&&route!=='summary')return null;if(sel.startsWith('[data-testid=')&&route!=='summary')return{textContent:'0'};return tableOriginal.call(this,sel);};
+await assert.rejects(()=>c.recolherRightmove(doc,{estado(){}}),/zero sem confirma/);doc.querySelector=tableOriginal;
+console.log('PASS conferência independente: resumo inicial preso a zero recuperado pelas tabelas; ausência de prova nunca produz zero.');
+const queryBeforeZero=doc.querySelector,allBeforeZero=doc.querySelectorAll;
+doc.querySelector=function(sel){if(sel.startsWith('[data-testid='))return{textContent:'0'};if(sel==='table'&&route!=='summary')return{querySelectorAll:kind=>kind==='th'?labels[route].map(textContent=>({textContent})):[]};return queryBeforeZero.call(this,sel);};
+let provasZero=0;doc.querySelectorAll=function(sel){if(sel==='[class*="_noData_"]'){provasZero++;return[{textContent:provasZero<6?'Loading...':'No leads'}];}return allBeforeZero.call(this,sel);};
+const zeroReal=await c.recolherRightmove(doc,{estado(){}});assert.equal(zeroReal.totais.total,0);assert.ok(provasZero>24);doc.querySelector=queryBeforeZero;doc.querySelectorAll=allBeforeZero;
+console.log('PASS zero legítimo: Loading não confirma vazio; No leads, tabela vazia e cartões a zero conferidos antes de aceitar.');
+
+
 
 
 
