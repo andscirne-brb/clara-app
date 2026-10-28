@@ -10,5 +10,5 @@ async function recolherConjuntoGreen(doc,ui){
   const d=await recolherAnunciosGreen(page,ui);blocos.push({nome:'anuncios',texto:'CLARA4:'+JSON.stringify(d)});
  }catch(e){faltas.push({nome:'anuncios',erro:String(e.name==='AbortError'?'A lista demorou demasiado.':e.message||e).slice(0,600)});}
  if(!blocos.length)throw Error(faltas.map(f=>f.nome+': '+f.erro).join(' · '));
- return{v:6,origem:'green-acres',tipo:'conjunta',marcadorVersao:'20261028.1',lido:new Date().toISOString(),blocos,faltas};
+ return{v:6,origem:'green-acres',tipo:'conjunta',marcadorVersao:'20261028.2',lido:new Date().toISOString(),blocos,faltas};
 }

@@ -1,0 +1,16 @@
+import fs from 'node:fs';import vm from 'node:vm';import assert from 'node:assert/strict';
+const b=new URL('../apps-script/clara/',import.meta.url);let view='geral',badPeriod=false,changed=false,excelFail=false,seriesFail=false;
+const general=()=>({v:2,origem:'idealista',tipo:'geral',url:'https://www.idealista.pt/webtool/stats/loadImpactStats',lido:'2026-01-31',periodo:{inicio:'2026-01-01',fim:'2026-01-30'},filtros:['30 dias'],registos:[{metricas:{contactos:changed?3:2}}]});
+const c={setTimeout:f=>{f();return 0;},Date,JSON,recolherIdealista:()=>view==='geral'?general():{...general(),tipo:'ranking',periodo:{inicio:badPeriod?'2026-01-02':'2026-01-01',fim:'2026-01-30'}},recolherDiariosIdealista:async(d,g)=>{if(seriesFail)throw Error('Série ausente');g.diarios=[{data:'2026-01-01'}];},recolherAtivosIdealista:async()=>({total:2}),recolherExcelIdealista:async(d,r)=>{if(excelFail)throw Error('Excel ausente');return {...r,fonte:'Excel oficial Idealista'};}};
+vm.createContext(c);vm.runInContext(fs.readFileSync(new URL('idealista-conjunta.js',b),'utf8'),c);
+const doc={querySelectorAll:()=>['graph','ranking'].map(x=>({getAttribute:()=>x,click(){view=x==='graph'?'geral':'ranking';}}))},ui={estado(){}};
+let r=await c.recolherConjuntoIdealista(doc,general(),ui);assert.equal(r.blocos.length,2);assert.equal(view,'geral');assert.equal(r.faltas.length,0);
+excelFail=true;r=await c.recolherConjuntoIdealista(doc,general(),ui);assert.equal(r.blocos.length,1);assert.equal(r.faltas[0].nome,'ranking');assert.equal(view,'geral');excelFail=false;
+badPeriod=true;r=await c.recolherConjuntoIdealista(doc,general(),ui);assert.match(r.faltas[0].erro,/período diferente/);badPeriod=false;
+seriesFail=true;r=await c.recolherConjuntoIdealista(doc,general(),ui);assert.match(JSON.parse(r.blocos[0].texto.slice(7)).avisoSerie,/Série ausente/);seriesFail=false;
+c.recolherExcelIdealista=async(d,r)=>{changed=true;return {...r,fonte:'Excel oficial Idealista'};};await assert.rejects(()=>c.recolherConjuntoIdealista(doc,general(),ui),/confirmar o gráfico/);
+const s={analisar:t=>({...JSON.parse(t.slice(7)),quantidade:1}),gravar:()=>({escritos:2,quantidade:1})};vm.createContext(s);vm.runInContext(fs.readFileSync(new URL('RecolhaConjunta.gs',b),'utf8'),s);changed=false;
+const batch={v:6,origem:'idealista',blocos:[{nome:'estatisticas',texto:'CLARA2:'+JSON.stringify({...general(),diarios:[],carteiraAtiva:{total:2}})},{nome:'ranking',texto:'CLARA2:'+JSON.stringify({...general(),tipo:'ranking',fonte:'Excel oficial Idealista'})}],faltas:[]};const text=()=>'CLARA6:'+JSON.stringify(batch);
+assert.equal(s.analisarConjunto_(text()).quantidade,2);assert.equal(s.gravarConjunto_(text()).quantidade,2);assert.equal(s.analisarConjunto_(text()).lacunas.length,1);const ok=batch.blocos[1].texto;batch.blocos[1].texto=ok.replace('2026-01-30','2026-01-29');assert.throws(()=>s.analisarConjunto_(text()),/períodos/);batch.blocos[1].texto=ok;
+batch.blocos[0].texto='CLARA4:'+JSON.stringify({v:4,origem:'green-acres'});assert.throws(()=>s.analisarConjunto_(text()),/não permitido/);
+console.log('PASS Idealista conjunta: Excel prioritário, período, reposição, alterações durante leitura, falhas explícitas e isolamento dos portais.');

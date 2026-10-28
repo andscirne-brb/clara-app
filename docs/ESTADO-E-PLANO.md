@@ -370,3 +370,6 @@ Validação real: série de 90 dias importada com somas conferidas e gráfico co
 - Quatro cópias ocultas das folhas afetadas preservadas antes do diagnóstico. Teste em novas cópias reais confirmou escrita e reposição de texto numérico, zeros iniciais, texto que começa com = ou apóstrofo, estado e número, sem mudar formatos. Originais preservados nesse teste.
 - Testes sintéticos de gravação e rollback rejeitam qualquer chamada a setNumberFormat; regressões eGO e Idealista passaram. Código final relido no editor e igual ao bundle, sem função temporária.
 - Falta confirmar a transação completa com a leitura original do imóvel: painel do utilizador estava fechado, foi pedido que o deixasse com a leitura colada. Não declarar a gravação real concluída apenas pelos testes em cópias.
+
+
+28/10/2026 — Recolha conjunta Idealista 20261028.2 preparada: totais/diários/carteira + ranking Excel, revisão por fonte, reposição e conferência do período, componentes em falta explícitos. Vinte suites locais e diagnóstico sintético Google aprovados, bundle nativo conferido. Aguarda primeiro teste real com marcador reinstalado. Green-Acres conjunta mantém validação real anterior; Rightmove conjunta permanece por desenvolver.

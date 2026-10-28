@@ -38,7 +38,7 @@ marc = marc.replace('/* LIGACAO_PUBLICA */', (base / 'ligacao-portal.js').read_t
 marc = marc.replace('/* GREEN_COLLECTOR */', (base / 'green-acres.js').read_text(encoding='utf-8') + '\n' + (base / 'green-anuncios.js').read_text(encoding='utf-8') + '\n' + (base / 'recolha-conjunta.js').read_text(encoding='utf-8'))
 marc = marc.replace('/* CLARA_UI */', (base / 'marcador-ui.js').read_text(encoding='utf-8'))
 marc = marc.replace('/* RIGHTMOVE_COLLECTOR */', (base / 'rightmove-csv.js').read_text(encoding='utf-8') + '\n' + (base / 'rightmove.js').read_text(encoding='utf-8'))
-marc = marc.replace('/* IDEALISTA_COLLECTOR */', (base / 'idealista.js').read_text(encoding='utf-8') + '\n' + (base / 'idealista-excel.js').read_text(encoding='utf-8') + '\n' + (base / 'idealista-ativos.js').read_text(encoding='utf-8'))
+marc = marc.replace('/* IDEALISTA_COLLECTOR */', (base / 'idealista.js').read_text(encoding='utf-8') + '\n' + (base / 'idealista-excel.js').read_text(encoding='utf-8') + '\n' + (base / 'idealista-ativos.js').read_text(encoding='utf-8') + '\n' + (base / 'idealista-conjunta.js').read_text(encoding='utf-8'))
 marc = ' '.join(l.strip() for l in marc.splitlines() if l.strip())
 out = codigo + '\n/* ---------- gerado por scripts/construir-clara.py: não editar à mão ---------- */\n'
 out += 'const PAINEL_HTML = ' + json.dumps(painel, ensure_ascii=False) + ';\n'
