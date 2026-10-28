@@ -23,6 +23,7 @@ function consultarAuditoriaPrioritarios(){
   const ss=SpreadsheetApp.getActive(),s=ss.getSheetByName(LEV.nome);if(!s)throw Error('Levantamento não encontrado.');
   const h=s.getRange(9,1,1,s.getLastColumn()).getDisplayValues()[0],rows=s.getLastRow()>9?s.getRange(10,1,s.getLastRow()-9,h.length).getDisplayValues():[],lig=ipTabela_(ss,'Ligações dos portais',9,IP_LIGACOES),m=apModelo_(h,rows,lig);
   if(typeof cpEnriquecer_==='function')cpEnriquecer_(ss,m,lig);
+  if(typeof peEnriquecer_==='function')peEnriquecer_(ss,m);
   m.atualizado=Utilities.formatDate(new Date(),ss.getSpreadsheetTimeZone(),'yyyy-MM-dd HH:mm');m.url=ss.getUrl().split('#')[0].split('?')[0];m.levantamentoId=s.getSheetId();return m;
 }
 function abrirAuditoriaPrioritarios(){SpreadsheetApp.getUi().showModalDialog(HtmlService.createHtmlOutput(AUDITORIA_PRIORITARIOS_HTML.replace('/*AP_INICIAL*/null',JSON.stringify(consultarAuditoriaPrioritarios()).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029'))).setWidth(1000).setHeight(720),'Portais: auditoria');}

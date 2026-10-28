@@ -1,3 +1,9 @@
+## Atualização de 28 outubro — auditoria e responsabilidades
+
+Implementados: consulta dos prioritários, comparação nominal de preços com fontes datadas e resumo semanal que separa correções documentadas de verificações. A prioridade e os destinos dos portais são geridos pela Idília. Em Portais: auditoria é possível registar os destinos por imóvel apenas com a origem da confirmação dela; por defeito permanecem Por confirmar. Não houve alteração dos destinos reais nem da seleção de prioritários. Ver PUBLICACAO-ESPERADA.md.
+
+Próximo: recolher as decisões da Idília e fontes atuais completas antes de confrontar publicação esperada com inventários. Alertas de desempenho, tarefas derivadas e comparação de áreas/tipologia permanecem por implementar. As notas datadas abaixo preservam o histórico e podem descrever etapas já concluídas.
+
 
 ## Automação após recolha e conferência — 26/10/2026
 
