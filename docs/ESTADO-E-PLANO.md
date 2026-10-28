@@ -373,3 +373,5 @@ Validação real: série de 90 dias importada com somas conferidas e gráfico co
 
 
 28/10/2026 — Recolha conjunta Idealista 20261028.2 preparada: totais/diários/carteira + ranking Excel, revisão por fonte, reposição e conferência do período, componentes em falta explícitos. Vinte suites locais e diagnóstico sintético Google aprovados, bundle nativo conferido. Aguarda primeiro teste real com marcador reinstalado. Green-Acres conjunta mantém validação real anterior; Rightmove conjunta permanece por desenvolver.
+
+28/10/2026 — Corrigida seleção do dashboard Idealista: etiqueta oficial 30 dias aceita intervalo inclusivo de 30 ou 31 datas; datas reais preservadas, janela 90 dias não aceite. Série e totais ligados ao mesmo ID de recolha e três canais conferidos; gráfico passa a ter intervalo dinâmico. Testes de regressão do dashboard aprovados.

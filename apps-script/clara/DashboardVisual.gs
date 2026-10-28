@@ -1,8 +1,8 @@
 /** Dashboard de consulta: resultados primeiro; origens e histórico preservados. */
 function periodo30Dashboard_(linhas,tz){
  const lotes={};const iso=v=>v instanceof Date?Utilities.formatDate(v,tz,'yyyy-MM-dd'):String(v);
- linhas.forEach((r,i)=>{if(r[1]!=='geral'||!r[10])return;const id=String(r[10]),b=lotes[id]||(lotes[id]={inicio:iso(r[2]),fim:iso(r[3]),filtros:String(r[4]),recolha:iso(r[0]),ultima:i,metricas:{}});b.ultima=i;if(typeof r[8]==='number')b.metricas[r[7]]=r[8];});
- return Object.values(lotes).filter(b=>Math.round((Date.parse(b.fim)-Date.parse(b.inicio))/86400000)+1===30).sort((a,b)=>b.fim.localeCompare(a.fim)||b.ultima-a.ultima)[0]||null;
+ linhas.forEach((r,i)=>{if(r[1]!=='geral'||!r[10])return;const id=String(r[10]),b=lotes[id]||(lotes[id]={id:id,inicio:iso(r[2]),fim:iso(r[3]),filtros:String(r[4]),recolha:iso(r[0]),ultima:i,metricas:{}});b.ultima=i;if(typeof r[8]==='number')b.metricas[r[7]]=r[8];});
+ return Object.values(lotes).filter(b=>{const dias=Math.round((Date.parse(b.fim)-Date.parse(b.inicio))/86400000)+1;let filtros=[];try{filtros=JSON.parse(b.filtros);}catch(e){}if(!Array.isArray(filtros))return false;const etiqueta=filtros.find(x=>/^(Hoje|7 dias|30 dias|90 dias)$/.test(x));b.dias=dias;return etiqueta==='30 dias'?(dias===30||dias===31):!etiqueta&&dias===30;}).sort((a,b)=>b.fim.localeCompare(a.fim)||b.ultima-a.ultima)[0]||null;
 }
 function leadsMensaisRightmove_(linhas,tz){
  const iso=v=>v instanceof Date?Utilities.formatDate(v,tz,'yyyy-MM-dd'):String(v||''),meses={};
@@ -22,7 +22,7 @@ function assinaturaDashboard_(ss){
  const lead=dados.find(r=>r[0]==='Rightmove - leads diárias');if(lead){const serie=serieLeadsRightmoveDiarias_(lead[2]);lead[2]=serie?{inicio:serie.inicio,fim:serie.fim,diarios:serie.diarios}:null;}
  const d=ss.getSheetByName('Dashboard'),v=ss.getSheetByName('Clara - dashboard');
  const estado=[d?d.getRange('A2').getValue():null,v?v.getSheetId():null,d?d.getCharts().map(c=>String(c.getOptions().get('title')||'')).sort():[]];
- return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,JSON.stringify(['dashboard-v8',ss.getSpreadsheetTimeZone(),dados,estado]),Utilities.Charset.UTF_8).map(b=>('0'+((b+256)%256).toString(16)).slice(-2)).join('');
+ return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,JSON.stringify(['dashboard-v9',ss.getSpreadsheetTimeZone(),dados,estado]),Utilities.Charset.UTF_8).map(b=>('0'+((b+256)%256).toString(16)).slice(-2)).join('');
 }
 function atualizarDashboardSeNecessario(){
  const lock=LockService.getDocumentLock();if(!lock.tryLock(1000))return{adiado:true};
@@ -48,7 +48,7 @@ function atualizarDashboardVisual_(ss){
  const s=ss.getSheetByName('Dashboard');if(!s)return;
  prepararEspacoProgressao_(ss,s);
  const tz=ss.getSpreadsheetTimeZone(),rows=(name,start,width)=>{const sh=ss.getSheetByName(name);return sh&&sh.getLastRow()>=start?sh.getRange(start,1,sh.getLastRow()-start+1,Math.min(width,sh.getLastColumn())).getValues():[];};
- const raw=rows('Idealista - recolhas',2,13),carteira=carteiraAtivaDashboardIdealista_(raw),p=periodo30Dashboard_(raw,tz),allDaily=dadosGraficoContactosIdealista_(raw,tz);
+ const raw=rows('Idealista - recolhas',2,13),carteira=carteiraAtivaDashboardIdealista_(raw),p=periodo30Dashboard_(raw,tz),allDaily=p?dadosGraficoContactosIdealista_(raw.filter(r=>String(r[10])===p.id),tz):null;
  const rmDaily=serieLeadsRightmoveDiarias_(rows('Rightmove - leads diárias',2,9));
  const leads=rows('Leads por período',6,12),rmLeads=leadsMensaisRightmove_(leads,tz),rmUltimo=rmLeads.length?rmLeads[rmLeads.length-1]:null;
  const ga=serieMensalGreenAcres_(rows('Green-Acres - recolhas',2,12));
@@ -72,13 +72,13 @@ function atualizarDashboardVisual_(ss){
  section(17,'Evolução das Leads');
  let v=ss.getSheetByName('Clara - dashboard');if(!v){v=ss.insertSheet('Clara - dashboard');v.hideSheet();}v.clearContents();
  const daily=allDaily&&p?allDaily.diarios.filter(r=>r.data>=p.inicio&&r.data<=p.fim):[];
- const dailyOk=p&&daily.length===30&&daily.reduce((a,b)=>a+b.contactos,0)===p.metricas.contactos;
+ const dailyOk=p&&daily.length===p.dias&&['contactos','mensagens','chamadas'].every(k=>daily.reduce((a,b)=>a+b[k],0)===p.metricas[k]);
  v.getRange('A1:D1').setValues([['Dia','Contactos','Emails e mensagens','Chamadas']]);if(dailyOk)v.getRange(2,1,daily.length,4).setValues(daily.map(r=>[Utilities.parseDate(r.data,tz,'yyyy-MM-dd'),r.contactos,r.mensagens,r.chamadas]));v.getRange('A2:A32').setNumberFormat('dd/MM');
  v.getRange('F1:G1').setValues([['Mês',ga?'Contactos':'Contactos únicos']]);if(green.length)v.getRange(2,6,green.length,2).setValues(green.map(r=>[iso(r[0]).slice(0,7)+(/parcial/i.test(String(r[9]))?' *':''),r[4]]));
  SpreadsheetApp.flush();
  function chart(title,range,row,col,type,opts){const own=s.getCharts().filter(c=>String(c.getOptions().get('title')||'')===title);if(own.length>1)throw Error('Gráfico repetido: '+title);const props=PropertiesService.getDocumentProperties(),key='clara.dashboard.grafico.'+title,assinatura=assinaturaGraficoDashboard_(title,range,row,col,type,opts);if(own.length===1&&podeReutilizarGraficoDashboard_(props.getProperty(key),assinatura,own[0]))return;let b=s.newChart();b=b.setChartType(type).addRange(range).setNumHeaders(1).setHiddenDimensionStrategy(Charts.ChartHiddenDimensionStrategy.SHOW_BOTH).setPosition(row,col,0,0).setOption('title',title).setOption('width',col===1&&row===36?1100:364).setOption('height',280).setOption('fontName','Arial').setOption('backgroundColor','#ffffff').setOption('titleTextStyle',{fontSize:12,color:ink,bold:true}).setOption('legend',{position:'bottom',textStyle:{fontSize:9}});Object.keys(opts||{}).forEach(k=>b.setOption(k,opts[k]));s.insertChart(b.build());if(own.length)s.removeChart(own[0]);const atual=s.getCharts().find(c=>String(c.getOptions().get('title')||'')===title);if(atual)props.setProperty(key,JSON.stringify({assinatura:assinatura,id:atual.getChartId()}));}
  block(19,1,4,12,dailyOk?'':'Falta uma série diária completa para estes 30 dias.',11,muted,false,'#ffffff');block(19,5,4,12,green.length?'':'Falta histórico de contactos.',11,muted,false,'#ffffff');block(19,9,4,12,rmDaily||rmLeads.length?'':'Falta histórico Rightmove.',11,muted,false,'#ffffff');
- if(dailyOk)chart('Idealista · contactos nos 30 dias',v.getRange(1,1,31,4),19,1,Charts.ChartType.COMBO,{seriesType:'bars',series:{0:{type:'line',color:teal,lineWidth:2},1:{color:'#87cbd9'},2:{color:purple}},hAxis:{format:'dd/MM',showTextEvery:5},vAxis:{minValue:0,format:'0'}});
+ if(dailyOk)chart('Idealista · contactos nos 30 dias',v.getRange(1,1,daily.length+1,4),19,1,Charts.ChartType.COMBO,{seriesType:'bars',series:{0:{type:'line',color:teal,lineWidth:2},1:{color:'#87cbd9'},2:{color:purple}},hAxis:{format:'dd/MM',showTextEvery:5},vAxis:{minValue:0,format:'0'}});
  if(ga)s.getCharts().filter(c=>String(c.getOptions().get('title')||'')==='Green-Acres · contactos únicos por mês').forEach(c=>s.removeChart(c));else s.getCharts().filter(c=>String(c.getOptions().get('title')||'')==='Green-Acres · contactos por mês (CSV)').forEach(c=>s.removeChart(c));
  if(green.length)chart(ga?'Green-Acres · contactos por mês (CSV)':'Green-Acres · contactos únicos por mês',v.getRange(1,6,green.length+1,2),19,5,Charts.ChartType.COLUMN,{colors:[blue],legend:{position:'none'},hAxis:{slantedText:true,slantedTextAngle:45},vAxis:{minValue:0,format:'0'}});
  if(rmDaily){v.getRange('P1:R1').setValues([['Dia','Chamadas','Emails']]);v.getRange(2,16,rmDaily.diarios.length,3).setValues(rmDaily.diarios.map(x=>[x.data,x.chamadas,x.emails]));SpreadsheetApp.flush();}else v.getRange('P1:R1').setValues([['Mês','Chamadas','Emails']]);if(!rmDaily&&rmLeads.length)v.getRange(2,16,rmLeads.length,3).setValues(rmLeads.map(x=>[x.mes+(x.parcial?' *':''),x.chamadas,x.emails]));SpreadsheetApp.flush();
@@ -103,7 +103,7 @@ function atualizarDashboardVisual_(ss){
  [['Levantamento','eGO · estado dos imóveis',1],['Pendências da equipa','Equipa · tarefas e bloqueios',5],['Perfis dos portais','Portais · perfis e pendências',9]].forEach(a=>{const target=ss.getSheetByName(a[0]);if(target)block(73,a[2],4,2,'',11,teal,true,'#e6f0f2').setRichTextValue(SpreadsheetApp.newRichTextValue().setText(a[1]).setLinkUrl(ss.getUrl()+'#gid='+target.getSheetId()).build());});
  block(77,1,12,2,'Datas dos dados: Idealista '+(p?p.fim:'sem recolha')+' · Green-Acres '+(ga?ga.recolha+' (recolha CSV)':lastGreen?iso(lastGreen[1]):'sem recolha')+' · Rightmove '+(rm.length?iso(rm[0][0]):'sem recolha')+'. Sem dados não significa zero.',10,muted);
  block(80,1,12,1,'Vista atualizada em '+Utilities.formatDate(new Date(),tz,'yyyy-MM-dd HH:mm')+' · atualizar a vista não recolhe novos dados dos portais.',9,muted);
- s.setTabColor(teal);if(!v.isSheetHidden())v.hideSheet();SpreadsheetApp.flush();return{periodo:p?{inicio:p.inicio,fim:p.fim}:null,diarios:dailyOk?30:0,rightmove:rm.length,mediaRightmove:views.length?views.reduce((a,b)=>a+b,0)/views.length:null,graficos:s.getCharts().length,pontosRightmove:right.length,pontosEGO:ego.length,mesesLeadsRightmove:rmLeads.length,totalLeadsRightmove:rmLeads.reduce((n,x)=>n+x.total,0)};
+ s.setTabColor(teal);if(!v.isSheetHidden())v.hideSheet();SpreadsheetApp.flush();return{periodo:p?{inicio:p.inicio,fim:p.fim}:null,diarios:dailyOk?daily.length:0,rightmove:rm.length,mediaRightmove:views.length?views.reduce((a,b)=>a+b,0)/views.length:null,graficos:s.getCharts().length,pontosRightmove:right.length,pontosEGO:ego.length,mesesLeadsRightmove:rmLeads.length,totalLeadsRightmove:rmLeads.reduce((n,x)=>n+x.total,0)};
 }
 
 

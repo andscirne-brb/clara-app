@@ -66,3 +66,13 @@ console.log('PASS desempenho dashboard: 60/90 e lotes equivalentes não reconstr
  assert.equal(test.carteiraAtivaDashboardIdealista_(first).primeira,true);const result=test.carteiraAtivaDashboardIdealista_(first.concat(second));assert.equal(result.total,2);assert.equal(result.entradas,1);assert.equal(result.saidas,1);assert.equal(test.carteiraAtivaDashboardIdealista_([r('bad','','totalAtivos',2)]),null);
  console.log('PASS dashboard carteira: primeira recolha, entradas/saídas e carteira incompleta excluída.');
 }
+
+const tagged=(a,b,label)=>{const x=r('novo',a,b,54);x[4]=JSON.stringify([label,'Venda e arrendamento']);return x;};
+assert.equal(c.periodo30Dashboard_([r('antigo','2026-09-22','2026-10-21',61),tagged('2026-09-27','2026-10-27','30 dias')],'UTC').dias,31);
+assert.equal(c.periodo30Dashboard_([tagged('2026-09-27','2026-10-27','30 dias')],'UTC').metricas.contactos,54);
+assert.equal(c.periodo30Dashboard_([tagged('2026-09-27','2026-10-27','90 dias')],'UTC'),null);
+assert.equal(c.periodo30Dashboard_([tagged('2026-09-26','2026-10-27','30 dias')],'UTC'),null);
+assert.equal(c.periodo30Dashboard_([r('semEtiqueta','2026-09-27','2026-10-27',54)],'UTC'),null);
+const fontePeriodo=fs.readFileSync(new URL('../apps-script/clara/DashboardVisual.gs',import.meta.url),'utf8');assert.match(fontePeriodo,/v.getRange\(1,1,daily.length\+1,4\)/);assert.match(fontePeriodo,/String\(r\[10\]\)===p.id/);
+console.log('PASS Idealista: etiqueta oficial 30 dias com 31 datas, datas reais preservadas, 90 dias e intervalos estranhos recusados, série ligada à mesma recolha e intervalo dinâmico.');
+
