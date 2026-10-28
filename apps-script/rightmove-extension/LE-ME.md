@@ -1,4 +1,4 @@
-# Clara · Rightmove — versão de teste 0.1.0
+# Clara · Rightmove — versão de teste 0.1.1
 
 ## Instalar uma vez no Chrome
 1. Extrai o ZIP para uma pasta fixa. Mantém todos os ficheiros juntos.
@@ -11,8 +11,8 @@ A instalação concede acesso apenas aos dois domínios dos relatórios Rightmov
 ## Utilizar
 1. Inicia sessão no Rightmove Plus. Abre Leads > Summary e Property Performance; confirma a agência e escolhe os períodos pretendidos. Mantém apenas um separador de cada relatório. Os períodos são independentes.
 2. Clica na extensão e em Recolher os dois relatórios. Evita alterar filtros ou navegar nesses separadores durante a recolha.
-3. Podes fechar a janela pequena; ao reabrir, recupera o resultado enquanto a sessão do navegador se mantiver. A leitura expira para cópia após 30 minutos. Limpar leitura remove-a da memória da extensão.
-4. Clica Copiar leitura para o Sheets. No documento, Clara > Rightmove: estatísticas, cola, revê cada fonte e confirma a gravação.
+3. Se mantiveres a janela pequena aberta até terminar, a leitura é copiada automaticamente. Podes fechar a janela pequena; ao reabrir, recupera o resultado enquanto a sessão do navegador se mantiver. A leitura expira para cópia após 30 minutos. Limpar leitura remove-a da memória da extensão.
+4. Se a cópia automática não ocorreu, clica Copiar leitura para o Sheets. No documento, Clara > Rightmove: estatísticas, cola, revê cada fonte e confirma a gravação.
 
 Se um relatório não estiver aberto, a extensão tenta abrir a página oficial em segundo plano. Pode ser necessário iniciar sessão ou selecionar agência/período nessa página e repetir. Os separadores abertos pela extensão ficam disponíveis para esta verificação. Se faltar sessão ou algum relatório, o resultado indica o bloco em falta; não se apresenta como recolha completa. O CSV de desempenho tem prioridade. Se falhar e a leitura integral da página funcionar, só a janela escolhida é recolhida e isso é indicado no resumo.
 
@@ -23,3 +23,5 @@ Testes locais com Chrome simulado e regressões dos coletores/Apps Script aprova
 
 ## Manutenção
 collectors.js é gerado por scripts/construir-clara.py a partir dos coletores partilhados. Não editar esse ficheiro manualmente. Depois de uma atualização local, clicar Atualizar no cartão da extensão em chrome://extensions.
+
+Correção 0.1.1: o resumo aguarda estabilidade dos totais, com espera adicional quando começa em zero. No primeiro teste real, a versão 0.1.0 guardou zeros transitórios; esse teste não valida as leads. O desempenho CSV foi guardado. A nova versão requer teste real e conferência das somas antes de ser considerada validada.

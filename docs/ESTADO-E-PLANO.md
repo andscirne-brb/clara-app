@@ -1,3 +1,9 @@
+## Último ponto de situação — 28/10/2026 — correção extensão Rightmove 0.1.1
+
+Primeiro teste real da extensão 0.1.0: desempenho guardado com 50 IDs únicos em cada janela 30/60/90, mas leads importadas incorretamente como zeros transitórios. Conferência independente do resumo após carregamento mostrou contagem não nula para o mesmo período; não considerar a recolha de leads validada. Histórico incorreto preservado, sem apagar ou corrigir números manualmente. A Andreia precisa de atualizar a extensão e repetir a recolha para registar a revisão correta; o CSV repetido será reconhecido pelas assinaturas.
+
+Correção: resumo inicial espera estabilidade, com espera extra quando o total começa em zero. Teste sintético reproduz os três cartões temporariamente a zero e confirma que são lidos os totais finais. Cópia automática adicionada quando a recolha foi iniciada nesta janela e a janela permanece aberta; mantém botão manual se fechar ou a cópia falhar. Menos um clique, sem ligação direta nem permissões novas no Sheets. ZIP 0.1.1 local preparado; teste real desta correção ainda pendente. Não foi possível medir a duração exata da execução passada a partir da exportação do documento. Próximo passo: atualizar a extensão, recolher novamente e conferir leads/gráfico. Objetivo futuro aprovado em princípio: extensão modular para os portais e eGO, integração gradual; envio direto para Sheets não está implementado nem autorizado através de novas permissões.
+
 
 ## Último ponto de situação — 28/10/2026 — extensão Rightmove 0.1.0
 
