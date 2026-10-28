@@ -240,10 +240,10 @@ f=fixture();f.tx.cells.delete('2000,1');f.tx.maxRows=10;f.pend.forms.delete('200
 headers.push('Observações / justificação N/A','Resumo para a equipa');
 f=fixture();vm.runInContext(fs.readFileSync(new URL('../apps-script/clara/EstadoDocumental.gs',import.meta.url),'utf8'),f.context);
 let documentState=f.context.pesquisarEstadoDocumental('TESTE-001');
-let statePatch={...documentState.estados,caderneta:'Digitalizado',planta:'Em falta no eGO e no dossier'};
+let statePatch={...documentState.estados,caderneta:'Digitalizado',planta:'Falta no eGO + dossier'};
 f.context.guardarEstadoDocumental('TESTE-001',statePatch,documentState.assinatura);
 assert.equal(get(f.lev,10,headers.indexOf('Caderneta Predial (anexo)')+1),'Digitalizado');
-assert.equal(get(f.lev,10,headers.indexOf('Planta')+1),'Em falta no eGO e no dossier');
+assert.equal(get(f.lev,10,headers.indexOf('Planta')+1),'Falta no eGO + dossier');
 let pendingRows=f.pend.getRange(6,1,10,17).getValues();assert.equal(pendingRows.find(r=>r[3]==='Planta')[6],'Sara');
 assert.throws(()=>f.context.guardarEstadoDocumental('TESTE-001',statePatch,documentState.assinatura),/alterado entretanto/);
 documentState=f.context.pesquisarEstadoDocumental('TESTE-001');const stableDocumentState=snapshot(f);
@@ -253,9 +253,11 @@ console.log('PASS seguimento integrado: guarda cinco campos sem marcador, cria p
 
 documentState=f.context.pesquisarEstadoDocumental('TESTE-001');f.context.guardarEstadoDocumental('TESTE-001',{...statePatch,planta:'Preenchido'},documentState.assinatura);
 let plantRow=f.pend.getRange(6,1,20,17).getValues().findIndex(r=>r[3]==='Planta')+6;const resolutionDate=get(f.pend,plantRow,13).getTime();
-f.context.dataHoje_=()=>new Date('2026-10-23T00:00:00Z');documentState=f.context.pesquisarEstadoDocumental('TESTE-001');f.context.guardarEstadoDocumental('TESTE-001',{...documentState.estados,caderneta:'No dossier · por digitalizar'},documentState.assinatura);assert.equal(get(f.pend,plantRow,13).getTime(),resolutionDate);
+f.context.dataHoje_=()=>new Date('2026-10-23T00:00:00Z');documentState=f.context.pesquisarEstadoDocumental('TESTE-001');f.context.guardarEstadoDocumental('TESTE-001',{...documentState.estados,caderneta:'No dossier > digitalizar'},documentState.assinatura);assert.equal(get(f.pend,plantRow,13).getTime(),resolutionDate);
 console.log('PASS datas do seguimento: atualizar outro documento não altera a data de uma resolução existente.');
 
 await import("./testar-auditoria-prioritarios.mjs");
 
 const webSnapshot=f.context.pesquisarEstadoDocumental('TESTE-001');const pendAntesWebsite=JSON.stringify(f.pend.getRange(6,1,20,17).getValues());f.context.SpreadsheetApp.getActive().getSpreadsheetTimeZone=()=> 'Europe/Lisbon';f.context.guardarVisibilidadeWebsite('TESTE-001','No eGO · não visível no website',webSnapshot.assinatura);assert.equal(f.context.pesquisarEstadoDocumental('TESTE-001').website,'No eGO · não visível no website');assert.equal(JSON.stringify(f.pend.getRange(6,1,20,17).getValues()),pendAntesWebsite);assert.throws(()=>f.context.guardarVisibilidadeWebsite('TESTE-001','Visível no website',webSnapshot.assinatura),/alterado entretanto/);assert.throws(()=>f.context.edNotaWebsite_('nota existente','inválido','2026-10-28'),/não reconhecido/);assert.match(f.context.edNotaWebsite_('Nota a preservar','Por verificar','2026-10-28'),/^Nota a preservar\nWebsite:/);console.log('PASS website: guarda estado manual, preserva notas e pendências, bloqueia revisão desatualizada e estado inválido.');
+
+await import("./testar-estados-curtos.mjs");

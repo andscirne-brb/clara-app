@@ -3,9 +3,9 @@ const AP_VERSAO='20261028.1';
 const AP_CAMPOS=['Imagens','Alt-text','Descrição PT','Descrição EN','Descrição FR','Descrição DE','Descrição ES','Características','Vídeo','Planta','Caderneta Predial (anexo)','Certificado Energético (anexo)','Contrato Mediação (anexo)','Licença Habitação (anexo)','Folheto'];
 function apClassificar_(v){
   if(v==='Preenchido')return 'registado';
-  if(v==='Não aplicável')return 'na';
+  if(v==='Não aplicável'||v==='N/A')return 'na';
   if(!v||v==='Por verificar')return 'desconhecido';
-  if(['Em falta','Em falta no eGO · verificar dossier','No dossier · por digitalizar','Digitalizado','Em falta no eGO e no dossier','Categoria errada','Formato errado'].includes(v))return 'acao';
+  if(['Em falta','Falta no eGO > ver dossier','No dossier > digitalizar','Digitalizado','Falta no eGO + dossier','Categoria errada','Formato errado'].includes(v))return 'acao';
   return 'desconhecido';
 }
 function apModelo_(h,rows,ligacoes){
@@ -13,7 +13,7 @@ function apModelo_(h,rows,ligacoes){
   const get=(r,n)=>String(r[h.indexOf(n)]||''),refs={};rows.forEach(r=>{const ref=get(r,'Referência EGO').trim().toUpperCase();if(ref)refs[ref]=(refs[ref]||0)+1;});
   const imoveis=rows.map((r,i)=>({r,linha:i+10})).filter(x=>get(x.r,'Prioridade')==='Prioritária').map(x=>{
     const r=x.r,ref=get(r,'Referência EGO').trim().toUpperCase(),duplicada=refs[ref]!==1,notas=get(r,'Observações / justificação N/A');
-    const criterios=AP_CAMPOS.map(nome=>{let valor=get(r,nome);const doc=typeof ED_CAMPOS!=='undefined'&&ED_CAMPOS.find(c=>c[1]===nome);if(doc&&typeof edEstado_==='function')valor=edEstado_(valor,notas,doc[2]);return{nome,valor:valor||'Por verificar',classe:apClassificar_(valor),fonte:'Levantamento · linha '+x.linha};});
+    const criterios=AP_CAMPOS.map(nome=>{let valor=get(r,nome);const doc=typeof ED_CAMPOS!=='undefined'&&ED_CAMPOS.find(c=>c[1]===nome);if(doc&&typeof edEstado_==='function')valor=edEstado_(valor,notas,doc[2]);return{nome,valor:valor==='Não aplicável'?'N/A':valor||'Por verificar',classe:apClassificar_(valor),fonte:'Levantamento · linha '+x.linha};});
     const portais=['Idealista','Green-Acres','Rightmove'].map(portal=>{const ls=ligacoes.filter(l=>l[0]===portal&&String(l[3]||'').trim().toUpperCase()===ref),ok=duplicada?[]:ls.filter(l=>l[4]==='Confirmada');return{portal,confirmadas:ok.length,porRever:ls.length-ok.length,estado:duplicada?'Referência duplicada no levantamento':ok.length?'Ligação confirmada; publicação atual por verificar':'Sem ligação confirmada; publicação por verificar'};});
     return{ref,linha:x.linha,duplicada,natureza:get(r,'Natureza'),concelho:get(r,'Concelho'),estado:get(r,'Estado da verificação'),data:get(r,'Data da verificação'),website:typeof edWebsite_==='function'?edWebsite_(notas):'Por verificar',criterios,portais,resumo:get(r,'Resumo para a equipa'),contagens:{registados:criterios.filter(c=>c.classe==='registado').length,acoes:criterios.filter(c=>c.classe==='acao').length,desconhecidos:criterios.filter(c=>c.classe==='desconhecido').length,na:criterios.filter(c=>c.classe==='na').length}};
   });

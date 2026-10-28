@@ -308,7 +308,7 @@ function analisar(texto, docs) {
   const prop = function (coluna, valor, motivo) {
     const k = c.col(coluna); if (!k) { notas.push('Coluna "' + coluna + '" não encontrada; ignorada.'); return; }
     // Uma ausência no site não apaga trabalho documental confirmado no dossier.
-    if(valor==='Em falta'&&(coluna==='Planta'||DOCS.some(x=>x[1]===coluna))&&['Digitalizado','No dossier · por digitalizar','Em falta no eGO e no dossier'].includes(atual[k-1]))valor=atual[k-1];
+    if(valor==='Em falta'&&(coluna==='Planta'||DOCS.some(x=>x[1]===coluna))&&['Digitalizado','No dossier > digitalizar','Falta no eGO + dossier'].includes(atual[k-1]))valor=atual[k-1];
     const existente = campos.find(function (x) { return x.col === k; });
     if (existente) { existente.novo = valor; existente.motivo = motivo || ''; }
     else campos.push({ coluna: coluna, col: k, atual: atual[k - 1], novo: valor, motivo: motivo || '' });
@@ -383,7 +383,7 @@ function analisar(texto, docs) {
     if (v === 'sim') prop(x[1], 'Preenchido', 'ficha do EGO');
     else if (v === 'nao' || v === 'sem_dossier') { prop(x[1], 'Em falta', v === 'sem_dossier' ? 'Sem ficheiro no eGO nem no dossier; aguarda Sara.' : 'ficha do EGO'); emFalta.push(x[2]); (v === 'sem_dossier' ? semDossier : verificarDossier).push(x[2]); }
     else if (v === 'categoria') { prop(x[1], 'Categoria errada', 'o ficheiro existe mas está noutra categoria'); noutra.push(x[2]); }
-    else if (v === 'na') prop(x[1], 'Não aplicável', 'não se aplica a este imóvel');
+    else if (v === 'na') prop(x[1], 'N/A', 'não se aplica a este imóvel');
   });
   // Distingue o dossier no Levantamento sem alterar os estados usados pelas fórmulas.
   if(c.col('Observações / justificação N/A')){
@@ -684,7 +684,7 @@ function gravar(texto, docs) {
     }
     let avisoSeguimento='';
     if(typeof edAplicar_==='function'&&PropertiesService.getDocumentProperties().getProperty('CLARA_SEGUIMENTO_DOCUMENTAL')==='1'){
-      try{const patch={},mapa={sim:'Preenchido',sem_dossier:'Em falta no eGO e no dossier',categoria:'Categoria errada',na:'Não aplicável'};DOCS.forEach(x=>{if(docs&&mapa[docs[x[0]]])patch[x[0]]=mapa[docs[x[0]]];});edAplicar_(edSnapshot_(a.ref),patch,'marcador');}catch(e){avisoSeguimento='A leitura ficou guardada. Falta atualizar o seguimento: '+e.message;}
+      try{const patch={},mapa={sim:'Preenchido',sem_dossier:'Falta no eGO + dossier',categoria:'Categoria errada',na:'Não aplicável'};DOCS.forEach(x=>{if(docs&&mapa[docs[x[0]]])patch[x[0]]=mapa[docs[x[0]]];});edAplicar_(edSnapshot_(a.ref),patch,'marcador');}catch(e){avisoSeguimento='A leitura ficou guardada. Falta atualizar o seguimento: '+e.message;}
     }
     return { avisoSeguimento:avisoSeguimento, desempenho: {ms:Date.now()-inicio,fases:tempos,celulas:plano.length,intervalos:lotes.length}, ref: a.ref, escritos: a.campos.filter(function (x) { return String(x.atual) !== String(x.novo); }).length, textos: a.textos.length, historico: historico.length, criadas: criadas, reabertas: reabertas, confirmadas: confirmadas };
   } finally { lock.releaseLock(); }

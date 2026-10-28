@@ -6,7 +6,8 @@ const ED_CAMPOS = [
   ['licenca','Licença Habitação (anexo)','Licença de Habitação'],
   ['planta','Planta','Planta']
 ];
-const ED_ESTADOS = ['Por verificar','Em falta no eGO · verificar dossier','No dossier · por digitalizar','Digitalizado','Em falta no eGO e no dossier','Categoria errada','Formato errado','Preenchido','Não aplicável'];
+const ED_ESTADOS = ['Por verificar','Falta no eGO > ver dossier','No dossier > digitalizar','Digitalizado','Falta no eGO + dossier','Categoria errada','Formato errado','Preenchido','Não aplicável','Em falta'];
+function edEstadoCompativel_(v){return ({'Em falta no eGO · verificar dossier':'Falta no eGO > ver dossier','No dossier · por digitalizar':'No dossier > digitalizar','Em falta no eGO e no dossier':'Falta no eGO + dossier','N/A':'Não aplicável'})[v]||v;}
 function edCampoPendencia_(r){
   if(r[2]==='Plantas'&&['Planta','Imóvel sem planta','Planta só em PDF'].includes(r[3]))return ED_CAMPOS[4];
   if(r[2]!=='Documentos')return null;
@@ -16,19 +17,20 @@ function edCampoPendencia_(r){
 }
 function edCampoSimples_(assunto){return {'Imóvel sem fotografias':'Imagens','Fotografias sem texto alternativo':'Alt-text','Alt-text em falta':'Alt-text','Existe vídeo do imóvel?':'Vídeo','Vídeo em falta':'Vídeo'}[assunto]||'';}
 function edEstado_(valor,nota,nome){
+  valor=edEstadoCompativel_(valor);
   const linha=String(nota||'').split(/\r?\n/).find(l=>l.startsWith(nome+': '))||'';
   if(valor==='Preenchido'||valor==='Não aplicável')return valor;
-  if(/em falta no eGO e no dossier/i.test(linha))return 'Em falta no eGO e no dossier';
+  if(/em falta no eGO e no dossier|Falta no eGO \+ dossier/i.test(linha))return 'Falta no eGO + dossier';
   if(ED_ESTADOS.includes(valor)&&valor!=='Por verificar')return valor;
   if(/digitalizado/i.test(linha))return 'Digitalizado';
-  if(/por digitalizar/i.test(linha))return 'No dossier · por digitalizar';
+  if(/por digitalizar|No dossier > digitalizar/i.test(linha))return 'No dossier > digitalizar';
   if(valor==='Em falta'||/dossier por verificar/i.test(linha))return ED_ESTADOS[1];
   return 'Por verificar';
 }
 function edAcao_(estado,nome){
-  return ({'Por verificar':'Confirmar o estado de '+nome+'.','Em falta no eGO · verificar dossier':'Procurar no dossier e inserir no eGO.',
-    'No dossier · por digitalizar':'Digitalizar, preparar e inserir no eGO.','Digitalizado':'Preparar o ficheiro digitalizado e inserir no eGO.',
-    'Em falta no eGO e no dossier':'Esclarecer a ausência e disponibilizar o documento.',
+  return ({'Em falta':'Procurar no dossier e inserir no eGO.','Por verificar':'Confirmar o estado de '+nome+'.','Falta no eGO > ver dossier':'Procurar no dossier e inserir no eGO.',
+    'No dossier > digitalizar':'Digitalizar, preparar e inserir no eGO.','Digitalizado':'Preparar o ficheiro digitalizado e inserir no eGO.',
+    'Falta no eGO + dossier':'Esclarecer a ausência e disponibilizar o documento.',
     'Categoria errada':'Mover para a categoria correta no eGO.','Formato errado':'Preparar o formato correto e inserir no eGO.'})[estado]||'';
 }
 function edSnapshot_(ref){
@@ -46,7 +48,7 @@ function edSnapshot_(ref){
     ED_CAMPOS.forEach(x=>{
       if(campo===x&&!String(r[11]||'').startsWith('Desdobrada em pendências')&&['Concluído','Não aplicável'].includes(r[8]))estados[x[0]]=r[8]==='Concluído'?'Preenchido':'Não aplicável';
       if(r[8]==='Digitalizado'&&(campo===x||r[2]==='Documentos'&&r[3]==='Documentos obrigatórios sem ficheiro no eGO'&&r[4].includes(x[2]))&&!['Preenchido','Não aplicável'].includes(estados[x[0]]))estados[x[0]]='Digitalizado';
-      if(campo===x&&r[6]==='Sara'&&/^(?:O documento|A planta) não está no dossier\.?$/i.test(String(r[5]||'').trim())&&estados[x[0]]===ED_ESTADOS[1])estados[x[0]]='Em falta no eGO e no dossier';
+      if(campo===x&&r[6]==='Sara'&&/^(?:O documento|A planta) não está no dossier\.?$/i.test(String(r[5]||'').trim())&&estados[x[0]]===ED_ESTADOS[1])estados[x[0]]='Falta no eGO + dossier';
     });
   });
   const assinatura=JSON.stringify([values,pv.filter(r=>r[1]===ref)]);
@@ -80,16 +82,16 @@ function edPlano_(s,alteracoes,origem){
     const estado=estados[x[0]];if(!ED_ESTADOS.includes(estado))throw Error('Estado não reconhecido: '+x[2]);
     // Por verificar não gera trabalho novo só por abrir o painel.
     if(estado==='Por verificar'&&!Object.prototype.hasOwnProperty.call(alteracoes||{},x[0]))return;
-    add(LEV.nome,s.row,s.c.col(x[1]),estado);
+    add(LEV.nome,s.row,s.c.col(x[1]),estado==='Não aplicável'?'N/A':estado);
     notas=notas.filter(l=>!l.startsWith(x[2]+': '));
-    if(estado!=='Preenchido')notas.push(x[2]+': '+estado+(estado==='Em falta no eGO e no dossier'?'; aguarda análise da Sara.':'.'));
+    if(estado!=='Preenchido')notas.push(x[2]+': '+estado+(estado==='Falta no eGO + dossier'?'; aguarda análise da Sara.':'.'));
     let indices=[];pend.forEach((r,i)=>{const campo=edCampoPendencia_(r);if(r[1]===s.ref&&campo===x&&!String(r[11]||'').startsWith('Desdobrada em pendências'))indices.push(i);});
     if(indices.length>1)throw Error('Pendências repetidas para '+x[2]+'. Rever antes de sincronizar.');
     let i=indices[0];const fechado=['Preenchido','Não aplicável'].includes(estado);
     if(i===undefined&&fechado)return;
     if(i===undefined){i=livre();[[1,'P'+String(++max).padStart(4,'0')],[2,s.ref],[3,x[0]==='planta'?'Plantas':'Documentos'],[4,x[2]],[8,'Normal'],[14,'eGO']].forEach(v=>set(i,v[0],v[1]));}
     else set(i,4,x[2]);
-    const anterior=pend[i],manual=origem==='pendencia',responsavel=estado==='Em falta no eGO e no dossier'?'Sara':manual?anterior[6]||'Andreia':anterior[6]==='Sara'&&anterior[8]==='A aguardar esclarecimento'?'Andreia':anterior[6]||'Andreia';
+    const anterior=pend[i],manual=origem==='pendencia',responsavel=estado==='Falta no eGO + dossier'?'Sara':manual?anterior[6]||'Andreia':anterior[6]==='Sara'&&anterior[8]==='A aguardar esclarecimento'?'Andreia':anterior[6]||'Andreia';
     const status=estado==='Preenchido'?'Concluído':estado==='Não aplicável'?'Não aplicável':responsavel==='Sara'?'A aguardar esclarecimento':estado==='Digitalizado'?'Digitalizado':anterior[8]==='Em correção'?'Em correção':estado==='Por verificar'?'Por tratar':estado;
     const automaticas=ED_ESTADOS.map(e=>edAcao_(e,x[2])),acaoAnterior=String(anterior[5]||''),manualNota=acaoAnterior.includes('\nNota da equipa: ')?acaoAnterior.split('\nNota da equipa: ').slice(1).join('\nNota da equipa: '):automaticas.includes(acaoAnterior)?'':acaoAnterior;
     set(i,5,x[2]+': '+estado+'.');set(i,6,edAcao_(estado,x[2])+(manualNota?'\nNota da equipa: '+manualNota:''));set(i,7,responsavel);set(i,9,status);set(i,17,!fechado&&responsavel==='Sara'?'Sara':'');
@@ -185,8 +187,8 @@ function edSincronizarEdicao_(e){
 }
 function prepararSeguimentoDocumental(){
   const ss=SpreadsheetApp.getActive(),sh=ss.getSheetByName(LEV.nome),c=colunas_(sh,9);
-  const valores=ED_ESTADOS.concat(['Em falta']),ps=ss.getSheetByName(PEND.nome);
-  edConfigurarDropdowns_(ss,ED_CAMPOS.map(x=>({nome:LEV.nome,col:c.col(x[1]),opcoes:valores})).concat([{nome:PEND.nome,col:9,opcoes:[...new Set(['Por tratar','Em correção','A aguardar esclarecimento','Concluído'].concat(ED_ESTADOS.filter(x=>x!=='Preenchido')))]}]));
+  const valores=ED_ESTADOS.map(v=>v==='Não aplicável'?'N/A':v),ps=ss.getSheetByName(PEND.nome);
+  edConfigurarDropdowns_(ss,ED_CAMPOS.map(x=>({nome:LEV.nome,col:c.col(x[1]),opcoes:valores,substituir:true})).concat([{nome:PEND.nome,col:9,opcoes:[...new Set(['Por tratar','Em correção','A aguardar esclarecimento','Concluído'].concat(ED_ESTADOS.filter(x=>x!=='Preenchido')))]}]));
   PropertiesService.getDocumentProperties().setProperty('CLARA_SEGUIMENTO_DOCUMENTAL','1');
   const refs=ps.getRange(6,2,ps.getLastRow()-5,1).getDisplayValues().flat().filter(Boolean);
   const ls=sh.getRange(10,1,sh.getLastRow()-9,c.titulos.length).getDisplayValues();
@@ -213,7 +215,7 @@ function edConfigurarDropdowns_(ss,alvos){
     const t=tabelas.get(key),index=a.col-1-(t.range.startColumnIndex||0),cp=t.columnProperties.find(c=>c.columnIndex===index);
     if(!cp)throw Error('Coluna da tabela não encontrada.');
     const old=cp.dataValidationRule&&cp.dataValidationRule.condition&&cp.dataValidationRule.condition.values||[];
-    const values=[...new Set(old.map(v=>v.userEnteredValue).concat(a.opcoes))];
+    const values=a.substituir?a.opcoes:[...new Set(old.map(v=>v.userEnteredValue).concat(a.opcoes))];
     cp.columnType='DROPDOWN';cp.dataValidationRule={condition:{type:'ONE_OF_LIST',values:values.map(v=>({userEnteredValue:v}))}};
   });
   tabelas.forEach(t=>requests.push({updateTable:{table:{tableId:t.tableId,columnProperties:t.columnProperties},fields:'columnProperties'}}));
@@ -221,10 +223,13 @@ function edConfigurarDropdowns_(ss,alvos){
   fora.forEach(a=>{const sh=ss.getSheetByName(a.nome),start=a.nome===LEV.nome?10:6;sh.getRange(start,a.col,sh.getMaxRows()-start+1,1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(a.opcoes,true).setAllowInvalid(false).build());});
 }
 function edFormula_(f){
+  f=f.replace(/"Em falta no eGO · verificar dossier"/g,'"Falta no eGO > ver dossier"').replace(/"No dossier · por digitalizar"/g,'"No dossier > digitalizar"').replace(/"Em falta no eGO e no dossier"/g,'"Falta no eGO + dossier"');
+  if(!f.includes('PendenciasEquipe['))f=f.replace(/"Não aplicável"/g,'"N/A"');
+  else f=f.replace(/"N\/A"/g,'"Não aplicável"');
   let quoted=false,semi=false,normal='';
   for(let i=0;i<f.length;i++){const ch=f[i];if(ch==='"'){if(quoted&&f[i+1]==='"'){normal+='""';i++;continue;}quoted=!quoted;}if(!quoted&&ch===';')semi=true;normal+=!quoted&&ch===';'?',':ch;}
   f=normal;
-  const estados=['Em falta','Digitalizado','No dossier · por digitalizar','Em falta no eGO · verificar dossier','Em falta no eGO e no dossier','Categoria errada','Formato errado'];
+  const estados=['Em falta','Digitalizado','No dossier > digitalizar','Falta no eGO > ver dossier','Falta no eGO + dossier','Categoria errada','Formato errado'];
   f=f.replace(/COUNTIFS\((N\d+:S\d+),"Em falta"\)/g,(_,r)=>'('+estados.map(s=>'COUNTIF('+r+',"'+s+'")').join('+')+')');
   f=f.replace(/IF\(([NOPQR]\d+)="Em falta",/g,(_,c)=>'IF(OR('+estados.map(s=>c+'="'+s+'"').join(',')+'),');
   if(f.includes('PendenciasEquipe[Estado]')&&!f.includes('"Digitalizado"')){
