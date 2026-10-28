@@ -97,6 +97,7 @@ function onOpen() {
     .addItem('Green-Acres: estatísticas', 'abrirGreenAcres')
     .addSeparator()
     .addItem('Portais: imóveis', 'abrirImoveisPortais')
+    .addItem('Portais: auditoria', 'abrirAuditoriaPrioritarios')
     .addItem('Portais: identificar anúncios', 'identificarAnunciosPortais')
     .addItem('Portais: conferência', 'abrirConferenciaPortais')
     .addSeparator()
