@@ -52,3 +52,8 @@ out += 'const PORTAIS_HTML = ' + json.dumps((base / 'Portais.html').read_text(en
 (base / 'Clara-completo.gs').write_text(out, encoding='utf-8')
 
 print(len(out), 'caracteres')
+
+# Extensão Rightmove: código estático local, sem dependências ou código remoto.
+extensao = base.parent / 'rightmove-extension'
+if extensao.exists():
+    (extensao / 'collectors.js').write_text((base / 'rightmove-csv.js').read_text(encoding='utf-8') + '\n' + (base / 'rightmove.js').read_text(encoding='utf-8'), encoding='utf-8')
