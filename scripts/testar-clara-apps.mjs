@@ -261,3 +261,5 @@ await import("./testar-auditoria-prioritarios.mjs");
 const webSnapshot=f.context.pesquisarEstadoDocumental('TESTE-001');const pendAntesWebsite=JSON.stringify(f.pend.getRange(6,1,20,17).getValues());f.context.SpreadsheetApp.getActive().getSpreadsheetTimeZone=()=> 'Europe/Lisbon';f.context.guardarVisibilidadeWebsite('TESTE-001','No eGO · não visível no website',webSnapshot.assinatura);assert.equal(f.context.pesquisarEstadoDocumental('TESTE-001').website,'No eGO · não visível no website');assert.equal(JSON.stringify(f.pend.getRange(6,1,20,17).getValues()),pendAntesWebsite);assert.throws(()=>f.context.guardarVisibilidadeWebsite('TESTE-001','Visível no website',webSnapshot.assinatura),/alterado entretanto/);assert.throws(()=>f.context.edNotaWebsite_('nota existente','inválido','2026-10-28'),/não reconhecido/);assert.match(f.context.edNotaWebsite_('Nota a preservar','Por verificar','2026-10-28'),/^Nota a preservar\nWebsite:/);console.log('PASS website: guarda estado manual, preserva notas e pendências, bloqueia revisão desatualizada e estado inválido.');
 
 await import("./testar-estados-curtos.mjs");
+
+await import("./testar-comparacao-portais.mjs");

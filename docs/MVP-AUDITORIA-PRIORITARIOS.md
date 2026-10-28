@@ -27,3 +27,12 @@ Não é uma pontuação de qualidade. Preenchido é o estado anterior registado,
 Consulta no Google: 22 prioritários, 22 referências únicas, zero duplicados. Com ligação confirmada: Idealista 14, Green-Acres 20, Rightmove 10; não são contagens de publicação atual. Janela aberta pelo menu do Sheets, 22 imóveis apresentados; seleção do MI14372 confirmou planta e quatro documentos Digitalizado. Código instalado relido e igual ao bundle após normalizar quebras de linha. As três abas diárias permanecem; não foi criada uma aba de auditoria.
 
 A abertura inclui os dados iniciais do servidor, evitando uma chamada adicional e o bloqueio de leitura do iframe no navegador integrado. A atualização pelo botão depende da ligação Google do navegador. Se falhar, o painel esconde o resultado antigo e apresenta erro; reabrir pelo menu recupera uma consulta nova. Sem alegação de edição ou publicação no eGO/portais.
+
+
+## Segundo incremento — comparação nominal de preços
+
+Reutiliza Origem EGO (cabeçalhos verificados, data extraída da fonte original), ligações confirmadas, lista Green-Acres e desempenho Rightmove (janela 30 dias). Lê em bloco uma vez; a troca de imóvel não faz nova chamada. Não altera estados, tarefas, dados eGO ou anúncios.
+
+Base eGO datada de 16/10/2026: valores lado a lado, origem e datas, natureza/concelho originais, igualdade/diferença nominal. Diferença não é erro comercial confirmado; operação do portal e atualidade devem ser verificadas. Mais de uma operação com preço positivo, fonte sem data, referência duplicada, zeros, valor não numérico ou conflito na mesma data impedem a diferença. Não escolhe arbitrariamente uma janela 90 dias nem infere localização equivalente.
+
+Idealista sem preço estruturado nas recolhas atuais. Áreas e tipologia continuam por avaliar, sem extrair números de descrições. Próximo passo: exportação eGO atualizada com estes campos e fonte comparável dos portais; manter desconhecidos até existirem dados verificáveis.
