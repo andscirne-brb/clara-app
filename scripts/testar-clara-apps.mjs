@@ -255,3 +255,5 @@ documentState=f.context.pesquisarEstadoDocumental('TESTE-001');f.context.guardar
 let plantRow=f.pend.getRange(6,1,20,17).getValues().findIndex(r=>r[3]==='Planta')+6;const resolutionDate=get(f.pend,plantRow,13).getTime();
 f.context.dataHoje_=()=>new Date('2026-10-23T00:00:00Z');documentState=f.context.pesquisarEstadoDocumental('TESTE-001');f.context.guardarEstadoDocumental('TESTE-001',{...documentState.estados,caderneta:'No dossier · por digitalizar'},documentState.assinatura);assert.equal(get(f.pend,plantRow,13).getTime(),resolutionDate);
 console.log('PASS datas do seguimento: atualizar outro documento não altera a data de uma resolução existente.');
+
+await import("./testar-auditoria-prioritarios.mjs");

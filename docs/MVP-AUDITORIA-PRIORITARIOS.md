@@ -20,3 +20,10 @@ Não é uma pontuação de qualidade. Preenchido é o estado anterior registado,
 ## Validação
 
 `node scripts/testar-auditoria-prioritarios.mjs`: modelo, cobertura, duplicados, ausência de escritas, estados e sintaxe da interface. Testes locais não comprovam execução nativa; registar a verificação no Google separadamente após instalação.
+
+
+### Verificação nativa em 28/10/2026
+
+Consulta no Google: 22 prioritários, 22 referências únicas, zero duplicados. Com ligação confirmada: Idealista 14, Green-Acres 20, Rightmove 10; não são contagens de publicação atual. Janela aberta pelo menu do Sheets, 22 imóveis apresentados; seleção do MI14372 confirmou planta e quatro documentos Digitalizado. Código instalado relido e igual ao bundle após normalizar quebras de linha. As três abas diárias permanecem; não foi criada uma aba de auditoria.
+
+A abertura inclui os dados iniciais do servidor, evitando uma chamada adicional e o bloqueio de leitura do iframe no navegador integrado. A atualização pelo botão depende da ligação Google do navegador. Se falhar, o painel esconde o resultado antigo e apresenta erro; reabrir pelo menu recupera uma consulta nova. Sem alegação de edição ou publicação no eGO/portais.
