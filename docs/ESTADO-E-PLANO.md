@@ -1,3 +1,7 @@
+## 28 outubro — avisos de desempenho para revisão
+
+Implementado o primeiro conjunto de avisos por anúncio prioritário, com regras e limites em ALERTAS-DESEMPENHO.md. Fonte, data e período visíveis; não compara métricas entre portais nem cria tarefas. Leituras parciais ou incompatíveis ficam sem conclusão. Próximos passos: completar histórico comparável e rever os avisos antes de desenvolver a passagem para pendências/resumo.
+
 ## Atualização de 28 outubro — âmbito corrigido pela Andreia
 
 Os prioritários já estão marcados no Levantamento; usar essa seleção. A presença nos portais é apurada pela equipa no levantamento, sem depender da Idília. Retirada da interface e do bundle a confirmação de destinos introduzida no incremento anterior; nenhuma decisão real foi guardada.
