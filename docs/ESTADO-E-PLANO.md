@@ -2,7 +2,7 @@
 
 Os prioritários já estão marcados no Levantamento; usar essa seleção. A presença nos portais é apurada pela equipa no levantamento, sem depender da Idília. Retirada da interface e do bundle a confirmação de destinos introduzida no incremento anterior; nenhuma decisão real foi guardada.
 
-Implementados: consulta dos prioritários, comparação nominal de preços com fontes datadas e resumo semanal que separa correções documentadas de verificações. Próximo: confrontar as recolhas/inventários por imóvel, indicando fonte, data e âmbito, antes de concluir presença ou ausência. Alertas de desempenho, tarefas derivadas e comparação de áreas/tipologia permanecem por implementar. As notas datadas abaixo preservam o histórico e podem descrever etapas já concluídas.
+Implementados: consulta dos prioritários, comparação nominal de preços com fontes datadas e resumo semanal que separa correções documentadas de verificações. Implementada a presença observada por imóvel, com fonte, data e âmbito das recolhas, sem inferir ausência. Ver PRESENCA-PORTAIS.md. Próximo: melhorar a cobertura e atualidade das fontes antes de concluir ausência e preparar alertas de desempenho comparáveis. Alertas de desempenho, tarefas derivadas e comparação de áreas/tipologia permanecem por implementar. As notas datadas abaixo preservam o histórico e podem descrever etapas já concluídas.
 
 ## Automação após recolha e conferência — 26/10/2026
 

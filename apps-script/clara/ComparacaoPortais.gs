@@ -22,5 +22,6 @@ function cpEnriquecer_(ss,m,ligacoes){
  const s=ss.getSheetByName('Origem EGO');let origem={rows:[],fonte:'Origem EGO indisponível',data:''};
  if(s){const h=s.getRange(4,1,1,11).getDisplayValues()[0],esperado=['Referência','Natureza','Disponibilidade','Venda (€)','Trespasse (€)','Arrendamento (€)','Permuta (€)','Concelho'];if(esperado.some((v,i)=>h[i]!==v))origem.fonte='Estrutura de Origem EGO por confirmar';else{const fonte=s.getRange(3,1).getDisplayValue();origem={fonte,data:cpDataFonte_(fonte),rows:s.getLastRow()>4?s.getRange(5,1,s.getLastRow()-4,11).getValues():[]};}}
  const data=(n,w,headers)=>ipTabela_(ss,n,w,headers).map(r=>r.map((v,i)=>v instanceof Date?ipData_(v):v)),fontes={green:data('Green-Acres - anúncios',20,GA_ANUNCIOS_HEADERS),rightmove:data('Rightmove - desempenho',16,RM_PERF_HEADERS)};
- m.imoveis.forEach(x=>x.comparacao=cpModelo_(x,origem,ligacoes,fontes));m.limites[0]='Preços: comparação nominal com a exportação eGO datada. Diferenças requerem confirmação da operação e atualidade; áreas e tipologia continuam por avaliar.';return m;
+ fontes.idealista=data('Idealista - recolhas',13,IDEALISTA_CABECALHOS);
+ m.imoveis.forEach(x=>{x.comparacao=cpModelo_(x,origem,ligacoes,fontes);x.presenca=ppModelo_(x,ligacoes,fontes);});m.limites[0]='Preços: comparação nominal com a exportação eGO datada. Diferenças requerem confirmação da operação e atualidade; áreas e tipologia continuam por avaliar.';return m;
 }
