@@ -31,3 +31,11 @@ Correção 0.1.3: cada clique cria um identificador novo. A cópia automática s
 ## Validação de leads em 0.1.3
 
 As contagens são conferidas independentemente nas tabelas Calls e Emails e cruzadas com o resumo final. Um zero sem prova não é exportado. Zero legítimo exige cartão zero, tabela vazia e mensagem oficial No leads estáveis. Loading... nunca confirma ausência. O desempenho pode ser recolhido como bloco parcial. Instalação e recolha real desta versão ainda por validar.
+
+## Atualização 0.1.4: espera limitada
+
+Depois de substituir todos os ficheiros e clicar Atualizar no cartão da extensão, atualiza também os dois relatórios para terminar qualquer execução antiga na página. Uma atualização da extensão não interrompe necessariamente código já lançado na página pela versão anterior.
+
+O relatório de leads passa a ser o separador ativo durante a recolha. Mantém-no visível, sem minimizar a janela. A extensão não altera o período selecionado. Se a mudança de separador fechar o popup, volta a abri-lo para copiar o resultado. O desempenho continua a dar prioridade ao CSV.
+
+Cada relatório tem um limite de 90 segundos no worker, independente dos temporizadores da página. Um bloco concluído é preservado quando o outro excede o tempo. Respostas tardias não voltam a escrever o resultado. O coletor também verifica um prazo de 85 segundos ao retomar cada espera. O painel deteta uma execução antiga e mostra recuperação em vez de ficar indefinidamente desativado. Sem novas permissões. Testes simulados aprovados; execução real instalada ainda por validar.
