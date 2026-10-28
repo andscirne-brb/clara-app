@@ -1,6 +1,6 @@
 ## 28 outubro — piloto da recolha conjunta
 
-Preparada recolha conjunta Green-Acres (cinco CSV + lista de anúncios) numa única leitura CLARA6, com falhas e gravação por bloco explícitas. Marcador 20261028.1 exige atualização. Validadores reais testados no Google com dados sintéticos sem importação; falta clique integral do marcador e gravação real conjunta no navegador habitual. Ver RECOLHA-CONJUNTA.md. Idealista e Rightmove ainda não têm coordenação de recolha conjunta.
+Preparada recolha conjunta Green-Acres (cinco CSV + lista de anúncios) numa única leitura CLARA6, com falhas e gravação por bloco explícitas. Marcador 20261028.1 exige atualização. Validadores reais testados no Google com dados sintéticos sem importação; Execução real do marcador e gravação conjunta confirmadas no Chrome; fontes e histórico conferidos no documento original. Permanecem casos de ligação e lacunas de origem por rever, sem inferências ou zeros inventados. Ver RECOLHA-CONJUNTA.md. Idealista e Rightmove ainda não têm coordenação de recolha conjunta.
 
 ## 28 outubro — avisos de desempenho para revisão
 
