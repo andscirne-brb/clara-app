@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Clara · Rightmove",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Recolha manual conjunta de leads agregadas e Property Performance para rever no Sheets.",
   "permissions": [
     "scripting",

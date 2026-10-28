@@ -1,4 +1,4 @@
-# Clara · Rightmove — versão de teste 0.1.1
+# Clara · Rightmove — versão de teste 0.1.2
 
 ## Instalar uma vez no Chrome
 1. Extrai o ZIP para uma pasta fixa. Mantém todos os ficheiros juntos.
@@ -25,3 +25,5 @@ Testes locais com Chrome simulado e regressões dos coletores/Apps Script aprova
 collectors.js é gerado por scripts/construir-clara.py a partir dos coletores partilhados. Não editar esse ficheiro manualmente. Depois de uma atualização local, clicar Atualizar no cartão da extensão em chrome://extensions.
 
 Correção 0.1.1: o resumo aguarda estabilidade dos totais, com espera adicional quando começa em zero. No primeiro teste real, a versão 0.1.0 guardou zeros transitórios; esse teste não valida as leads. O desempenho CSV foi guardado. A nova versão requer teste real e conferência das somas antes de ser considerada validada.
+
+Correção 0.1.2: cada clique cria um identificador novo. A cópia automática só aceita o resultado desse pedido, impedindo a corrida que podia copiar o resultado antigo antes de começar a recolha nova. Resultados de versões anteriores não podem ser copiados pelo painel. Versão e hora do resultado são apresentadas. A atualização exige substituir todos os ficheiros na pasta carregada e clicar Atualizar em chrome://extensions; não basta mudar o manifest. A leitura corrigida ainda exige conferência real.
