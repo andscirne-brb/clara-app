@@ -36,3 +36,6 @@ Reutiliza Origem EGO (cabeçalhos verificados, data extraída da fonte original)
 Base eGO datada de 16/10/2026: valores lado a lado, origem e datas, natureza/concelho originais, igualdade/diferença nominal. Diferença não é erro comercial confirmado; operação do portal e atualidade devem ser verificadas. Mais de uma operação com preço positivo, fonte sem data, referência duplicada, zeros, valor não numérico ou conflito na mesma data impedem a diferença. Não escolhe arbitrariamente uma janela 90 dias nem infere localização equivalente.
 
 Idealista sem preço estruturado nas recolhas atuais. Áreas e tipologia continuam por avaliar, sem extrair números de descrições. Próximo passo: exportação eGO atualizada com estes campos e fonte comparável dos portais; manter desconhecidos até existirem dados verificáveis.
+
+
+Validação nativa final: 22 prioritários, base eGO 2026-10-16, 30 preços recolhidos e 30 comparações nominais calculadas; zero diferenças nominais. Fonte eGO armazena números como texto: aceita apenas cadeias numéricas sem separadores ambíguos (ex.: 2300000), sem modificar a origem. Catorze suítes locais passaram. Janela inspecionada com APT13261: eGO e dois portais 2300000 EUR, datas distintas explícitas. Código instalado relido e igual ao bundle. Nenhuma célula de dados ou tarefa alterada por esta consulta.
