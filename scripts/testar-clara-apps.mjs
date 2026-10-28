@@ -12,7 +12,7 @@ const portalPlan=mc.planoPerfis_([
  ['portal-teste','Próxima ação','Rever nome e imagem.','Em curso']
 ]);
 assert.equal(portalPlan.length,1); assert.equal(portalPlan[0].sara,true); assert.equal(portalPlan[0].notas.length,2);
-const source=fs.readFileSync(new URL('../apps-script/clara/Codigo.gs',import.meta.url),'utf8');
+const source=fs.readFileSync(new URL('../apps-script/clara/Codigo.gs',import.meta.url),'utf8')+'\n'+fs.readFileSync(new URL('../apps-script/clara/ResumoSemanal.gs',import.meta.url),'utf8');
 const headers=['Referência EGO','Imagens','Alt-text','Descrição PT','Descrição EN','Descrição FR','Descrição DE','Descrição ES','Características','Vídeo','Planta','Folheto','Caderneta Predial (anexo)','Certificado Energético (anexo)','Contrato Mediação (anexo)','Licença Habitação (anexo)','Página pública','Data da verificação','Estado da verificação'];
 const txh=['Referência EGO','Idioma','Título original','Descrição original','Origem / evidência','Data de recolha','Estado da recolha'];
 const hish=['Data da alteração','Referência EGO','ID da pendência','Autor','Onde foi alterado','Campo / assunto','Antes','Depois / alteração realizada','Motivo / fonte','Resultado da verificação','Data da verificação','Verificado por'];
@@ -195,7 +195,7 @@ try{
 f=fixture();const rss=f.context.SpreadsheetApp.getActive();rss.getUrl=()=> 'https://example.invalid/sheet/edit';f.sheets.set('Dashboard',{getSheetId:()=>101});f.pend.getSheetId=()=>202;
 f.context.PropertiesService={getScriptProperties:()=>({getProperty:()=> '303'})};
 let weeklyReport=f.context.previewResumo(7,'Rever anúncios prioritários\nConfirmar <documentos>');
-assert.equal(weeklyReport.proximosPassos.length,2);assert.match(weeklyReport.html,/href="https:\/\/example.invalid\/sheet\/edit#gid=101"/);assert.match(weeklyReport.html,/#gid=202&amp;fvid=303/);assert.match(weeklyReport.html,/Confirmar &lt;documentos>/);assert.match(weeklyReport.html,/<table/);assert.match(weeklyReport.html,/Seguimento previsto para a próxima semana/);
+assert.equal(weeklyReport.proximosPassos.length,2);assert.match(weeklyReport.html,/href="https:\/\/example.invalid\/sheet\/edit#gid=101"/);assert.match(weeklyReport.html,/#gid=202&amp;fvid=303/);assert.match(weeklyReport.html,/Confirmar &lt;documentos&gt;/);assert.match(weeklyReport.html,/Correções realizadas/);assert.match(weeklyReport.html,/Seguimento previsto para a próxima semana/);
 weeklyReport=f.context.previewResumo(7,'');assert.match(weeklyReport.html,/Planeamento por preencher/);assert.equal(weeklyReport.proximosPassos.length,0);
 f.context.PropertiesService={getScriptProperties:()=>({getProperty:()=> 'invalido'})};assert.equal(f.context.previewResumo(7,'Plano').links.filtrada,false);
 console.log('PASS resumo: links do documento ativo e vista filtrada privada, plano explícito escapado e ausência de compromissos inventados.');
@@ -263,3 +263,5 @@ const webSnapshot=f.context.pesquisarEstadoDocumental('TESTE-001');const pendAnt
 await import("./testar-estados-curtos.mjs");
 
 await import("./testar-comparacao-portais.mjs");
+
+await import("./testar-resumo-classificacao.mjs");

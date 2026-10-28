@@ -173,66 +173,18 @@ function listaTrabalho() {
 
 /* ---------- resumo semanal: a Clara prepara, a Andreia copia para o webmail da Janela e envia ---------- */
 function abrirResumo() {
-  SpreadsheetApp.getUi().showSidebar(HtmlService.createHtmlOutput(RESUMO_HTML).setTitle('Clara · resumo semanal'));
+  const inicial=JSON.stringify(previewResumo(7,'')).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029');
+  SpreadsheetApp.getUi().showModalDialog(HtmlService.createHtmlOutput(RESUMO_HTML.replace('/*RS_INICIAL*/null',inicial)).setWidth(1000).setHeight(720),'Clara · resumo semanal');
 }
 function dataDe_(txt) { const s = String(txt || ''); let m = /^(\d{4})-(\d{2})-(\d{2})(?:$|[ T])/.exec(s); if (m) return new Date(+m[1], +m[2] - 1, +m[3]); m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(s); return m ? new Date(+m[3], +m[2] - 1, +m[1]) : null; }
 function resumoSemanal(dias) {
-  dias = dias || 7;
-  const ss = SpreadsheetApp.getActive(), tz = ss.getSpreadsheetTimeZone();
-  const hoje = dataDe_(Utilities.formatDate(new Date(), tz, 'dd/MM/yyyy'));
-  const de = new Date(hoje.getTime() - (dias - 1) * 86400000);
-  const dentro = function (t) { const d = dataDe_(t); return d && d >= de && d <= hoje; };
-  const fmt = function (d) { return Utilities.formatDate(d, tz, 'dd/MM/yyyy'); };
-  const por = {};
-  const im = function (ref) { return por[ref] = por[ref] || { ref: ref, trabalho: [], pendente: [] }; };
-  // Verificações feitas na Clara
-  const lev = ss.getSheetByName(LEV.nome); const c = colunas_(lev, LEV.titulos);
-  const iRef = c.col('Referência EGO') - 1, iData = c.col('Data da verificação') - 1;
-  lev.getRange(LEV.titulos + 1, 1, lev.getLastRow() - LEV.titulos, c.titulos.length).getDisplayValues().forEach(function (r) {
-    if (r[iRef] && iData >= 0 && dentro(r[iData])) im(r[iRef]).trabalho.push((r[c.col('Estado da verificação') - 1] === 'Verificado' ? 'Anúncio verificado (' : 'Leitura parcial, por concluir (') + r[iData] + ').');
-  });
-  // Pendências
-  let corrigidas = 0, novas = 0, aSara = 0;
-  ss.getSheetByName(PEND.nome).getRange(PEND.titulos + 1, 1, Math.max(1, ss.getSheetByName(PEND.nome).getLastRow() - PEND.titulos), 17).getDisplayValues().forEach(function (r) {
-    if (!r[1]) return;
-    const fechada = r[8] === 'Concluído' || r[8] === 'Não aplicável';
-    if (r[8] === 'Concluído' && r[14] === 'Confirmado' && dentro(r[12])) { im(r[1]).trabalho.push((r[8] === 'Concluído' ? 'Corrigido: ' : 'Não aplicável: ') + r[3] + '.'); corrigidas++; }
-    else if (!fechada && responsavelPendencia_(r) === 'Sara') { im(r[1]).pendente.push(r[3] + (r[5] ? ' ' + r[5] : '')); aSara++; }
-    else if (!fechada && responsavelPendencia_(r) === 'Andreia' && dentro(r[9])) { im(r[1]).trabalho.push('Identificado, a tratar: ' + r[3] + '.'); novas++; }
-  });
-  // Registo de alterações
-  const rg = ss.getSheetByName('Registo de alterações');
-  const alterados={};
-  if (rg && rg.getLastRow() > 5) rg.getRange(6, 1, rg.getLastRow() - 5, 12).getDisplayValues().forEach(function (r) {
-    if(!r[1]||!dentro(r[0]))return;
-    const grupo=alterados[r[1]]||(alterados[r[1]]={campos:{},idiomas:{},pendencias:false});
-    const partes=String(r[5]||'').split(' · '),onde=partes[0];
-    if(onde==='Textos por idioma'&&IDIOMAS[partes[1]])grupo.idiomas[partes[1]]=true;
-    else if(onde===PEND.nome||r[4]===PEND.nome)grupo.pendencias=true;
-    else if(onde===LEV.nome&&partes[1])grupo.campos[partes.slice(1).join(' · ')]=true;
-    else if(r[5])grupo.campos[String(r[5])]=true;
-  });
-  Object.keys(alterados).forEach(function(ref){const g=alterados[ref],dest=im(ref).trabalho,campos=Object.keys(g.campos),idiomas=Object.keys(g.idiomas);
-    if(campos.length)dest.push('Registadas alterações no levantamento: '+campos.join(', ')+'.');
-    if(idiomas.length)dest.push('Registados textos por idioma: '+idiomas.join(', ')+'.');
-    if(g.pendencias)dest.push('Atualizado o acompanhamento das pendências.');
-  });
-  const linhas = Object.keys(por).map(function (k) { return por[k]; }).sort(function (a, b) { return b.pendente.length - a.pendente.length || a.ref.localeCompare(b.ref); });
-  return { de: fmt(de), ate: fmt(hoje), linhas: linhas, corrigidas: corrigidas, novas: novas, aSara: aSara };
+  dias=Number(dias||7);if(![7,14,30].includes(dias))throw Error('Escolhe 7, 14 ou 30 dias.');
+  const ss=SpreadsheetApp.getActive(),tz=ss.getSpreadsheetTimeZone(),hoje=dataDe_(Utilities.formatDate(new Date(),tz,'dd/MM/yyyy')),de=new Date(hoje);de.setDate(de.getDate()-(dias-1));
+  const lev=ss.getSheetByName(LEV.nome),c=colunas_(lev,LEV.titulos),ps=ss.getSheetByName(PEND.nome),hs=ss.getSheetByName('Registo de alterações');
+  const ls=lev.getLastRow()>9?lev.getRange(10,1,lev.getLastRow()-9,c.titulos.length).getDisplayValues():[],pv=ps.getLastRow()>5?ps.getRange(6,1,ps.getLastRow()-5,17).getDisplayValues():[],history=hs&&hs.getLastRow()>5?hs.getRange(6,1,hs.getLastRow()-5,12).getDisplayValues():[];
+  return rsModelo_(c.titulos,ls,pv,history,de,hoje);
 }
-function htmlResumo_(r) {
-  const fimResumo = String(r.ate || '').split('/').reverse().join('-');
-  const pedidoLeadsEstaSemana = fimResumo >= '2026-10-19' && fimResumo <= '2026-10-25';
-  const e = function (s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
-  const td = 'border:1px solid #d7dde0;padding:8px;vertical-align:top;text-align:left';
-  const cel = function (a, vazio) { return a.length ? a.map(function (x) { return '<div>' + e(x) + '</div>'; }).join('') : '<span style="color:#6b7b80">' + vazio + '</span>'; };
-  return '<div style="font-family:Arial,sans-serif;font-size:14px;color:#24383f">' +
-    '<p>Olá Sara,</p>' + (r.links ? '<p>Para consulta: <a href="'+e(r.links.documento)+'">dashboard e detalhes do documento</a> · <a href="'+e(r.links.sara)+'">pendências para a Sara'+(r.links.filtrada?' (vista filtrada)':'')+'</a>.</p>' : '') + '<p>Ponto de situação dos anúncios de ' + r.de + ' a ' + r.ate + ': ' + r.corrigidas + ' correções confirmadas, ' + r.novas + ' novos pontos a tratar por mim e ' + r.aSara + ' questões que precisam da tua análise (última coluna).</p>' +
-    '<h3>Trabalho realizado e assuntos em acompanhamento</h3><table style="border-collapse:collapse;width:100%"><thead><tr>' + ['Imóvel', 'Trabalho realizado / verificação', 'Para a tua análise'].map(function (h) { return '<th style="' + td + ';background:#edf1f2">' + h + '</th>'; }).join('') + '</tr></thead><tbody>' +
-    r.linhas.map(function (l) { return '<tr><th scope="row" style="' + td + '">' + e(l.ref) + '</th><td style="' + td + '">' + cel(l.trabalho, 'Sem trabalho neste período.') + '</td><td style="' + td + '">' + cel(l.pendente, 'Nada pendente.') + '</td></tr>'; }).join('') +
-    '</tbody></table><h3>Seguimento previsto para a próxima semana</h3>' + ((r.proximosPassos||[]).length ? '<ul>'+r.proximosPassos.map(x=>'<li>'+e(x)+'</li>').join('')+'</ul>' : '<p>Planeamento por preencher antes de enviar.</p>') +
-    (pedidoLeadsEstaSemana ? '<p><strong>Relatórios de leads do eGO</strong><br>Para preparar um relatório de progressão baseado em dados reais, preciso de acesso a relatórios com o número de leads por dia e a respetiva origem no eGO. Neste momento não consigo consultar esta informação no eGO. Podes ajudar-me a obter acesso a estes relatórios na plataforma? Preciso apenas das contagens diárias por origem, sem informação individual de cada lead. Depois de ter acesso, consigo consultar os relatórios autonomamente de quinze em quinze dias.</p>' : '') + '<p>Obrigada,<br>Andreia</p></div>';
-}
+function htmlResumo_(r){return rsHtml_(r);}
 function previewResumo(dias,plano) {
   const r=resumoSemanal(dias),ss=SpreadsheetApp.getActive(),base=ss.getUrl(),dashboard=ss.getSheetByName('Dashboard'),pend=ss.getSheetByName(PEND.nome),vista=PropertiesService.getScriptProperties().getProperty('CLARA_VISTA_SARA_FVID')||'';
   r.links={documento:base+(dashboard?'#gid='+dashboard.getSheetId():''),sara:base+(pend?'#gid='+pend.getSheetId():'')+(/^\d+$/.test(vista)?'&fvid='+vista:''),filtrada:/^\d+$/.test(vista)};

@@ -7,10 +7,12 @@ select,input,textarea{width:100%;box-sizing:border-box;font-size:13px;padding:4p
 button{background:#1a73e8;color:#fff;border:0;border-radius:6px;padding:8px 12px;font-size:13px;cursor:pointer;margin:8px 6px 0 0}
 button:disabled{opacity:.5;cursor:default}
 button.sec{background:#fff;color:#1a73e8;border:1px solid #dadce0}
-#prev{border:1px solid #dadce0;border-radius:6px;padding:8px;margin-top:10px;font-size:12px;max-height:420px;overflow:auto;background:#fff}
+#prev{border:1px solid #dadce0;border-radius:6px;padding:8px;margin-top:10px;font-size:12px;max-height:450px;overflow:auto;background:#fff}
+#dias{max-width:220px}
 .ok{color:#188038;margin-top:8px}.muted{color:#5f6368;font-size:12px}
 </style></head>
 <body>
+<p class="muted">Correções documentadas, verificações e registos no Sheets são apresentados separadamente. O email só é copiado; o envio é manual.</p>
 <p><strong>Para:</strong> Sara<br><strong>Cc:</strong> Idília e Júlia</p>
 <label for="dias">Período</label>
 <select id="dias" onchange="ver()"><option value="7">Últimos 7 dias</option><option value="14">Últimos 14 dias</option><option value="30">Últimos 30 dias</option></select>
@@ -20,6 +22,7 @@ button.sec{background:#fff;color:#1a73e8;border:1px solid #dadce0}
 <button id="copiarAssunto" class="sec" disabled onclick="copiarAssunto()">Copiar assunto</button><button id="copiarEmail" disabled onclick="copiarEmail()">Copiar email</button>
 <div id="msg" class="ok" role="status" aria-live="polite"></div>
 <div id="prev">A preparar…</div>
+<p class="muted">Para documentar uma correção numa pendência, descreve a ação na Resposta / decisão. Exemplo: «Correção realizada no eGO: certificado carregado». Concluído ou Preenchido, por si só, não comprovam essa alteração.</p>
 <p class="muted">Abre o webmail da Janela (janela.pt/webmail), cria uma mensagem para a Sara com a Idília e a Júlia em Cc, cola o assunto e o email (Ctrl+V). Revê e envia tu.</p>
 <script>
 let revisao=0,pendente=null,aprovado=null,timerAviso=null;
@@ -30,21 +33,22 @@ function mensagem(t){if(timerAviso!==null){clearTimeout(timerAviso);timerAviso=n
 function bloquear(){campo('copiarEmail').disabled=true;campo('copiarAssunto').disabled=true;campo('assunto').value='';}
 function invalidar(){revisao++;pendente=null;aprovado=null;bloquear();campo('prev').textContent='Alterações por atualizar.';mensagem('Atualiza o resumo para incluir o plano e o período atuais.');}
 function falhaAtual(p,e){if(!coincide(p))return;pendente=null;aprovado=null;bloquear();campo('prev').textContent=e.message||'Não foi possível preparar o resumo. Tenta atualizar novamente.';mensagem('O resumo não está pronto para copiar. O plano foi mantido.');}
-function ver(){
- const a=entradaAtual();if(pendente&&coincide(pendente))return;
- const p={...a,revisao:++revisao};pendente=p;aprovado=null;bloquear();campo('prev').textContent='A preparar…';mensagem('A preparar o resumo para o plano e período atuais…');
- google.script.run.withSuccessHandler(r=>{
+function receberResumo(r,p){
   if(!coincide(p))return;
   if(!r||typeof r.html!=='string'||typeof r.assunto!=='string'||!Array.isArray(r.proximosPassos)){falhaAtual(p,{message:'O resumo recebido está incompleto. Atualiza novamente.'});return;}
   pendente=null;aprovado=p;campo('prev').innerHTML=r.html;campo('assunto').value=r.assunto;campo('copiarAssunto').disabled=false;campo('copiarEmail').disabled=!r.proximosPassos.length;
   mensagem(r.proximosPassos.length?'Resumo atualizado. Revê antes de copiar.':'Preenche o seguimento da próxima semana e carrega em Atualizar resumo.');
- }).withFailureHandler(e=>falhaAtual(p,e)).previewResumo(p.dias,p.plano);
+}
+function ver(){
+ const a=entradaAtual();if(pendente&&coincide(pendente))return;
+ const p={...a,revisao:++revisao};pendente=p;aprovado=null;bloquear();campo('prev').textContent='A preparar…';mensagem('A preparar o resumo para o plano e período atuais…');
+ google.script.run.withSuccessHandler(r=>receberResumo(r,p)).withFailureHandler(e=>falhaAtual(p,e)).previewResumo(p.dias,p.plano);
 }
 function aviso(t){mensagem(t);const atual=revisao;timerAviso=setTimeout(()=>{if(atual===revisao)campo('msg').textContent='';timerAviso=null;},4000);}
 function pronto(email){if(!coincide(aprovado)||pendente||(email?campo('copiarEmail').disabled:campo('copiarAssunto').disabled)){invalidar();return false;}return true;}
 function copiarAssunto(){if(!pronto(false))return;const i=campo('assunto');i.select();const ok=document.execCommand('copy');aviso(ok?'Assunto copiado.':'Seleciona o assunto e usa Ctrl+C.');}
 function copiarEmail(){if(!pronto(true))return;const el=campo('prev'),r=document.createRange();r.selectNodeContents(el);const s=window.getSelection();s.removeAllRanges();s.addRange(r);const ok=document.execCommand('copy');s.removeAllRanges();aviso(ok?'Email copiado, com a tabela. Cola no webmail.':'Não consegui copiar: seleciona o texto acima e usa Ctrl+C.');}
 
-ver();
+const inicial=/*RS_INICIAL*/null;if(inicial){const a=entradaAtual(),p={...a,revisao:++revisao};pendente=p;receberResumo(inicial,p);}else ver();
 </script>
 </body></html>
