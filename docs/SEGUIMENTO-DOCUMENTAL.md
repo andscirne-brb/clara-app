@@ -43,3 +43,8 @@ As tarefas antigas de alt-text são reconhecidas. Duplicados de vídeo são cons
 Migração nativa concluída: 23 referências processadas e fila a zero. A data de resolução existente é preservada quando se atualiza outro documento; resoluções humanas sem data ficam registadas na conferência, com origem explícita da equipa.
 
 Conferência final no próprio Apps Script: pesquisar e guardar estados existentes em quatro imóveis, com verificação de planta digitalizada e ausência de erros de fórmula. Rotina temporária removida após o teste; código final relido e comparado integralmente com o bundle local. A exportação final confirma IDs antigos 1 a 89 presentes, respostas de vídeo preservadas, resumos corrigidos e zero erros de fórmula. Guardar sem alterações termina sem escrita nem flush adicional.
+
+
+## Visibilidade no website — 28/10/2026
+
+Em eGO: estado, pesquisa por referência e guarda a visibilidade separadamente dos documentos. Opções: Por verificar; Visível no website; No eGO · não visível no website. Confirmação manual datada em Observações / justificação N/A, prefixo Website, com histórico antes/depois. Preserva outras notas, estados documentais, disponibilidade comercial e pendências. Não deduz invisibilidade de uma leitura falhada nem ausência nos portais. A consulta Portais: auditoria apresenta esta indicação para os prioritários. TE321 solicitado pela Andreia; existência no eGO e invisibilidade no site confirmadas por ela, causa não inferida.

@@ -53,7 +53,18 @@ function edSnapshot_(ref){
   return {ss,sh,ps,c,row,values,pv,ref,nota,estados,assinatura};
 }
 function pesquisarEstadoDocumental(ref){
-  const s=edSnapshot_(ref);return{ref:s.ref,linha:s.row,estados:s.estados,assinatura:s.assinatura,campos:ED_CAMPOS.map(x=>({id:x[0],nome:x[2]})),opcoes:ED_ESTADOS};
+  const s=edSnapshot_(ref);return{ref:s.ref,linha:s.row,estados:s.estados,assinatura:s.assinatura,website:edWebsite_(s.nota),opcoesWebsite:ED_WEBSITE,campos:ED_CAMPOS.map(x=>({id:x[0],nome:x[2]})),opcoes:ED_ESTADOS};
+}
+const ED_WEBSITE=['Por verificar','Visível no website','No eGO · não visível no website'];
+function edWebsite_(nota){const linha=String(nota||'').split(/\r?\n/).find(l=>l.startsWith('Website: '))||'';return ED_WEBSITE.find(v=>linha.startsWith('Website: '+v+' |'))||'Por verificar';}
+function edNotaWebsite_(nota,estado,data){if(!ED_WEBSITE.includes(estado))throw Error('Estado do website não reconhecido.');return String(nota||'').split(/\r?\n/).filter(l=>l&&!l.startsWith('Website: ')).concat('Website: '+estado+' | confirmação manual da equipa em '+data+'.').join('\n');}
+function guardarVisibilidadeWebsite(ref,estado,assinatura){
+  const lock=LockService.getDocumentLock();if(!lock.tryLock(5000))throw Error('Outra gravação em curso. Tenta novamente.');
+  try{const s=edSnapshot_(ref);if(s.assinatura!==assinatura)throw Error('O imóvel foi alterado entretanto. Pesquisa novamente.');if(!ED_WEBSITE.includes(estado))throw Error('Estado do website não reconhecido.');
+    if(edWebsite_(s.nota)===estado)return{ref:s.ref,alteracoes:0};
+    const data=Utilities.formatDate(new Date(),s.ss.getSpreadsheetTimeZone(),'yyyy-MM-dd');s.websiteMudancas=[{folha:LEV.nome,linha:s.row,col:s.c.col('Observações / justificação N/A'),valor:edNotaWebsite_(s.nota,estado,data)}];
+    return edAplicar_(s,{},'visibilidade do website · confirmação manual');
+  }finally{lock.releaseLock();}
 }
 function abrirEstadoDocumental(){SpreadsheetApp.getUi().showSidebar(HtmlService.createHtmlOutput(ESTADO_DOCUMENTAL_HTML).setTitle('Clara · eGO: estado'));}
 function edPlano_(s,alteracoes,origem){
@@ -107,7 +118,7 @@ function edPlano_(s,alteracoes,origem){
   return cambios;
 }
 function edAplicar_(s,alteracoes,origem){
-  const mudancas=edPlano_(s,alteracoes,origem),plano=[],historico=[],hoje=dataHoje_();
+  const mudancas=s.websiteMudancas||edPlano_(s,alteracoes,origem),plano=[],historico=[],hoje=dataHoje_();
   if(s.edicaoManual)historico.push([LEV.nome,s.edicaoManual.celula,s.edicaoManual.antes,s.edicaoManual.depois]);
   const cache={};function linha(sh,row){const key=sh.getName()+'|'+row;if(!cache[key]){const rg=sh.getRange(row,1,1,sh.getLastColumn());cache[key]={v:rg.getValues()[0],f:rg.getFormulas()[0],m:rg.getNumberFormats()[0]};}return cache[key];}
   function carregar(sh,inicio,n){if(!n)return;const rg=sh.getRange(inicio,1,n,sh.getLastColumn()),v=rg.getValues(),f=rg.getFormulas(),m=rg.getNumberFormats();v.forEach((r,i)=>cache[sh.getName()+'|'+(inicio+i)]={v:r,f:f[i],m:m[i]});}
@@ -122,7 +133,7 @@ function edAplicar_(s,alteracoes,origem){
     if(log)historico.push([sh.getName(),cel.getA1Notation(),textoHistorico_(antes),textoHistorico_(value)]);
   }
   mudancas.forEach(x=>agendar(x.folha===LEV.nome?s.sh:s.ps,x.linha,x.col,x.valor,true));
-  const rows=[...new Set(plano.filter(p=>p.sh===s.ps).map(p=>p.linha).concat(s.pv.flatMap((r,i)=>r[1]===s.ref&&r[8]==='Concluído'&&!r[12]?[i+6]:[])))];
+  const rows=s.websiteMudancas?[]:[...new Set(plano.filter(p=>p.sh===s.ps).map(p=>p.linha).concat(s.pv.flatMap((r,i)=>r[1]===s.ref&&r[8]==='Concluído'&&!r[12]?[i+6]:[])))];
   rows.forEach(row=>{agendar(s.ps,row,11,hoje,true);if(!linha(s.ps,row).v[9])agendar(s.ps,row,10,hoje,true);
     const estado=mudancas.find(x=>x.folha===PEND.nome&&x.linha===row&&x.col===9),final=estado?estado.valor:linha(s.ps,row).v[8];if(['Concluído','Não aplicável'].includes(final)&&!linha(s.ps,row).v[12])agendar(s.ps,row,13,hoje,true);
   });
