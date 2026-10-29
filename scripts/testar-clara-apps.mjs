@@ -152,7 +152,7 @@ assert.equal(f.context.lotesGravacaoClara_(ps).length,2);
 console.log('PASS lotes: menos chamadas de escrita; lacunas e fórmulas não incluídas.');
 
 f=fixture();d=payload();const absent={...docs,licenca:'sem_dossier',certificado:'nao'};
-a=analyse(f,d,absent);let dp=a.pendencias.find(p=>p.tema==='Documentos');assert.equal(dp.sara,true);assert.match(dp.acao,/Sara: Licença/);assert.match(dp.acao,/dossier.*Certificado/);save(f,d,absent);assert.equal(get(f.pend,6,7),'Sara');assert.equal(get(f.pend,6,17),'Sara');assert.equal(get(f.pend,6,9),'A aguardar esclarecimento');
+a=analyse(f,d,absent);let dp=a.pendencias.find(p=>p.tema==='Documentos');assert.equal(dp.sara,true);assert.match(dp.acao,/Sara: Licença/);assert.match(dp.acao,/dossiê.*Certificado/);save(f,d,absent);assert.equal(get(f.pend,6,7),'Sara');assert.equal(get(f.pend,6,17),'Sara');assert.equal(get(f.pend,6,9),'A aguardar esclarecimento');
 f=fixture();f.pend.seed(6,['P0001','TESTE-001','Documentos','Documentos obrigatórios sem ficheiro no eGO','Falta licença','Verificar dossier','Andreia','Alta','Por tratar']);save(f,d,{...docs,licenca:'sem_dossier'});assert.equal(get(f.pend,6,17),'Sara');assert.equal(get(f.pend,6,7),'Sara');assert.equal(get(f.pend,6,8),'Alta');assert.equal(get(f.pend,6,9),'A aguardar esclarecimento');
 console.log('PASS documentos: ausência no dossier delega análise à Sara em pendência nova ou existente; distingue documentos por procurar no dossier.');
 
@@ -272,3 +272,14 @@ await import("./testar-estados-curtos.mjs");
 await import("./testar-comparacao-portais.mjs");
 
 await import("./testar-resumo-classificacao.mjs");
+
+// Seguimento de vídeo explícito: não inferir decisões a partir de texto livre.
+for(const [estado,responsavel,acao] of [['A carregar vídeo','Sara',/carregar vídeo/],['Sem vídeo disponível','Andreia',/Pedir à Sara a criação/],['Criar vídeo','Sara',/criar vídeo/]]){
+ const r=['P9000','TESTE001','Vídeo','Existe vídeo do imóvel?','','Esclarecer se existe vídeo e onde está, para a Andreia o carregar no eGO.','Sara','Normal',estado];
+ const g=f.context.gestaoPendencia_(r,9,'A aguardar esclarecimento');assert.equal(g.responsavel,responsavel);assert.equal(g.estado,estado);assert.match(g.acao,acao);
+}
+const manualVideo=['P9000','TESTE001','Vídeo','Existe vídeo do imóvel?','','Nota manual importante','Sara','Normal','Criar vídeo'];assert.match(f.context.gestaoPendencia_(manualVideo,9,'Sem vídeo disponível').acao,/Nota manual importante/);
+console.log('PASS fluxo vídeo: decisões explícitas, responsável e próxima ação por etapa, notas preservadas.');
+
+const acaoDoc=['P9001','TESTE001','Documentos','Caderneta Predial','','Esclarecer a ausência e disponibilizar o documento.','Sara','Normal','A aguardar esclarecimento'];assert.equal(f.context.acaoFluxoPendencia_(acaoDoc,acaoDoc[8]),'Pedir esclarecimento à Sara.');
+const curto=['P9001','TESTE001','Documentos','Documentos obrigatórios sem ficheiro no eGO','','Verificar no dossier do escritório e carregar no eGO: Caderneta Predial. Se não estiverem no dossier, pedir esclarecimento à Sara.','Andreia','Normal','Por tratar'];assert.equal(f.context.acaoFluxoPendencia_(curto,curto[8]),'Verif. dossiê > digitalizar > carregar no eGO: Caderneta Predial.');

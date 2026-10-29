@@ -33,3 +33,9 @@ console.log('PASS tabelas e fórmulas PT: índices relativos, opções antigas e
 s=fixture();s.values[8]='Em falta';s.pv.push(['P0004','TESTE','Vídeo','Vídeo em falta','','','Sara','Normal','A aguardar esclarecimento','','','','','','','','','Resposta existente']);p=c.edPlano_(s,{},'painel');assert.equal(p.filter(x=>x.col===12&&String(x.valor).startsWith('Duplicada:')).length,1);assert.match(value('Levantamento',10,8),/Vídeo em falta/);
 assert.equal(c.edCampoSimples_('Alt-text em falta'),'Alt-text');
 console.log('PASS tarefas antigas: vídeo duplicado consolidado na linha com resposta, sem apagar a resposta, e alt-text antigo reconhecido.');
+
+assert.equal(c.edAcao_('Formato errado','Planta'),'Converter para JPG > carregar no eGO.');
+assert.equal(c.edAcao_('Falta no eGO + dossier','Caderneta Predial'),'Pedir esclarecimento à Sara.');
+assert.equal(c.edAcao_('Digitalizado','Planta'),'Carregar no eGO.');
+s=fixture();s.estados.planta='Formato errado';s.pv[1][6]='Sara';p=c.edPlano_(s,{},'painel');assert.equal(value('Pendências da equipa',7,7),'Andreia');assert.match(value('Pendências da equipa',7,6),/Converter para JPG/);
+console.log('PASS ações curtas: planta em JPG atribuída à Andreia e ausência confirmada encaminhada para Sara.');

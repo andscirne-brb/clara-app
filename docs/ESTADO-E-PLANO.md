@@ -1,3 +1,11 @@
+## Último ponto de situação — 29/10/2026 — fluxos de vídeo, plantas e documentos
+
+Vídeo: falta inicial pede confirmação à Sara. Estados explícitos A carregar vídeo (Sara), Sem vídeo disponível (Andreia pede criação ou dispensa), Criar vídeo (Sara) e Não aplicável (dispensado). Uma nova leitura negativa não sobrepõe a decisão operacional nem reabre a dispensa. Texto livre de respostas não é interpretado como decisão automática. A conclusão continua dependente de confirmação humana ou evidência positiva.
+
+Plantas em Formato errado: Converter para JPG > carregar no eGO, a cargo da Andreia. Documentos: Verif. dossiê > digitalizar > carregar no eGO; ausência confirmada em ambos pede esclarecimento à Sara. Digitalizado mantém-se aberto até carregar. Ações reconhecidas são encurtadas; notas personalizadas e respostas são preservadas.
+
+Fonte nativa atualizada por alterações delimitadas. Opções de vídeo acrescentadas sem retirar valores existentes. Atualização das ações existentes auditada; exportação independente confirma preservação das respostas, do Levantamento e do histórico anterior. Testes de regressão aprovados. Não exige reinstalar extensão. Próximo: validar edição manual de uma etapa de vídeo no uso diário, sem simular decisões em registos reais. Ramo desenvolvimento-extensao-imoveis.
+
 ## Último ponto de situação — 29/10/2026 — proteção de plantas corrigida
 
 Correção no analisador: leituras públicas negativas preservam estados operacionais específicos das plantas. Assuntos equivalentes reutilizam o seguimento documental original, sem substituir responsável, ação ou notas manuais. Pendências explicitamente substituídas são excluídas da inferência documental e da sincronização.

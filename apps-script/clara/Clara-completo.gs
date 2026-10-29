@@ -43,6 +43,34 @@ function simplificarPendenciasEquipa() {
   SpreadsheetApp.flush();
   return {colunasVisiveis:6,registos:Math.max(0,s.getLastRow()-5)};
 }
+
+const ESTADOS_VIDEO_CLARA=['A carregar vídeo','Sem vídeo disponível','Criar vídeo'];
+function acaoFluxoPendencia_(r,estado){
+ const acao=String(r[5]||''),partes=acao.split('\nNota da equipa: '),base=partes.shift(),nota=partes.join('\nNota da equipa: ');
+ let nova=null;
+ if(r[2]==='Vídeo'&&['Existe vídeo do imóvel?','Vídeo em falta'].includes(r[3])){
+   const acoes={'A aguardar esclarecimento':'Confirmar com a Sara: carregar vídeo ou indicar se não há vídeo disponível.','A carregar vídeo':'Sara: carregar vídeo no eGO.','Sem vídeo disponível':'Pedir à Sara a criação de vídeo ou confirmar que não é necessário.','Criar vídeo':'Sara: criar vídeo > carregar no eGO.','Não aplicável':'Vídeo dispensado pela equipa.','Concluído':'Vídeo carregado no eGO.'};
+   const antigas=['Esclarecer se existe vídeo e onde está, para a Andreia o carregar no eGO.','Confirmar se há vídeo disponível e anexar, ou justificar se não aplicável.','Esclarecer se existe vídeo e onde está, para a Andreia o carregar no eGO. Confirmado sem ficheiro no eGO nem no dossier; aguarda Sara: .'];
+   if(acoes[estado]&&(antigas.includes(base)||Object.values(acoes).includes(base)||!base||ESTADOS_VIDEO_CLARA.includes(estado)))nova=acoes[estado];
+   if(nova&&base&&!antigas.includes(base)&&!Object.values(acoes).includes(base))return nova+'\nNota da equipa: '+acao;
+ }
+ if(r[2]==='Plantas'&&['Planta','Planta só em PDF','Imóvel sem planta'].includes(r[3])&&estado==='Formato errado'){
+   if(['Preparar o formato correto e inserir no eGO.','Converter a planta em imagem (JPG) e carregar no eGO.','Converter para JPG > carregar no eGO.',''].includes(base))nova='Converter para JPG > carregar no eGO.';
+ }
+ if(r[2]==='Documentos'){
+   if(/^Verificar no dossier do escritório e carregar no eGO: [^\n]+$/.test(base))nova=base.replace('Verificar no dossier do escritório e carregar no eGO: ','Verif. dossiê > digitalizar > carregar no eGO: ').replace(/\s*Se não estiverem no dossier, pedir esclarecimento à Sara\.$/,'');
+   const campo=typeof edCampoPendencia_==='function'?edCampoPendencia_(r):null;
+   if(campo&&typeof edAcao_==='function'&&edAcoesAntigas_().includes(base))nova=edAcao_(estado,campo[2])||(base==='Esclarecer a ausência e disponibilizar o documento.'?'Pedir esclarecimento à Sara.':null);
+ }
+ return nova===null?null:nova+(nota?'\nNota da equipa: '+nota:'');
+}
+function atualizarFluxosPendencias(){
+ const lock=LockService.getDocumentLock()||LockService.getScriptLock();if(!lock.tryLock(5000))throw Error('Outra gravação está em curso.');
+ try{const ss=SpreadsheetApp.getActive(),sh=ss.getSheetByName(PEND.nome);
+ edConfigurarDropdowns_(ss,[{nome:PEND.nome,col:9,opcoes:ESTADOS_VIDEO_CLARA}]);
+ return sh.getLastRow()>5?sincronizarGestaoPendencias_(ss,6,sh.getLastRow()-5,0):{alteracoes:0};}finally{lock.releaseLock();}
+}
+
 function gestaoPendencia_(r,coluna,anterior){
   let responsavel=String(r[6]||''),estado=String(r[8]||'');
   const fechada=estado==='Concluído'||estado==='Não aplicável';
@@ -52,7 +80,13 @@ function gestaoPendencia_(r,coluna,anterior){
     else if(coluna===9&&anterior==='A aguardar esclarecimento'&&estado!=='A aguardar esclarecimento'&&responsavel==='Sara')responsavel='Andreia';
     if(estado==='A aguardar esclarecimento')responsavel='Sara';
   }
-  return{responsavel:responsavel,estado:estado,aguarda:!fechada&&responsavel==='Sara'?'Sara':''};
+  const video=r[2]==='Vídeo'&&['Existe vídeo do imóvel?','Vídeo em falta'].includes(r[3]);
+  if(video&&!fechada){
+    if(estado==='A carregar vídeo'||estado==='Criar vídeo')responsavel='Sara';
+    if(estado==='Sem vídeo disponível')responsavel='Andreia';
+  }
+  if(r[2]==='Plantas'&&estado==='Formato errado')responsavel='Andreia';
+  return{responsavel:responsavel,estado:estado,aguarda:!fechada&&responsavel==='Sara'?'Sara':'',acao:acaoFluxoPendencia_(r,estado)};
 }
 function responsavelPendencia_(r){return gestaoPendencia_(r,0).responsavel;}
 function sincronizarGestaoPendencias_(ss,inicio,n,coluna,anterior){
@@ -60,7 +94,7 @@ function sincronizarGestaoPendencias_(ss,inicio,n,coluna,anterior){
   const linhas=sh.getRange(inicio,1,n,17).getValues(),plano=[],historico=[],hoje=dataHoje_();
   function agendar(sheet,row,col,novo){const cel=sheet.getRange(row,col),antes=cel.getValue();if(mesmoValor_(antes,novo))return;if(cel.getFormula())throw Error('Há uma fórmula na célula de gestão.');plano.push({sh:sheet,linha:row,col:col,cel:cel,antes:antes,depois:novo,antesFormato:cel.getNumberFormat()});}
   function nota(r,campo,antes,depois){historico.push({ref:r[1],id:r[0],campo:campo,antes:String(antes||''),depois:String(depois||'')});}
-  linhas.forEach(function(r,i){if(!r[0]||!r[1])return;const row=inicio+i,g=gestaoPendencia_(r,coluna,anterior),changes=[[7,g.responsavel,'Responsável'],[9,g.estado,'Estado'],[17,g.aguarda,'Aguarda análise de']];let mudou=false;
+  linhas.forEach(function(r,i){if(!r[0]||!r[1])return;const row=inicio+i,g=gestaoPendencia_(r,coluna,anterior),changes=[[7,g.responsavel,'Responsável'],[9,g.estado,'Estado'],[17,g.aguarda,'Aguarda análise de']];if(g.acao!==null)changes.push([6,g.acao,'Ação necessária']);let mudou=false;
     if(n===1&&(coluna===7||coluna===9)&&anterior!==undefined&&String(anterior)!==String(r[coluna-1])){nota(r,coluna===7?'Responsável':'Estado',anterior,r[coluna-1]);mudou=true;}
     changes.forEach(function(x){if(String(r[x[0]-1]||'')!==x[1]){agendar(sh,row,x[0],x[1]);nota(r,x[2],r[x[0]-1],x[1]);mudou=true;}});
     if(mudou)agendar(sh,row,11,hoje);
@@ -263,6 +297,7 @@ function analisar(texto, docs) {
   const prop = function (coluna, valor, motivo) {
     const k = c.col(coluna); if (!k) { notas.push('Coluna "' + coluna + '" não encontrada; ignorada.'); return; }
     // Uma ausência no site não apaga trabalho documental confirmado no dossier.
+    if(coluna==='Vídeo'&&valor==='Em falta'&&['N/A','Não aplicável'].includes(atual[k-1]))valor=atual[k-1];
     if(coluna==='Planta'&&['Em falta','Formato errado','Por verificar'].includes(valor)&&['Digitalizado','No dossier > digitalizar','Falta no eGO + dossier','Falta no eGO > ver dossier','Categoria errada','Formato errado','N/A','Não aplicável','Preenchido'].includes(atual[k-1])){valor=atual[k-1];notas.push('Planta: estado operacional preservado. A leitura pública não confirma a situação no eGO nem no dossier.');}
     if(valor==='Em falta'&&DOCS.some(x=>x[1]===coluna)&&['Digitalizado','No dossier > digitalizar','Falta no eGO + dossier','Falta no eGO > ver dossier','Categoria errada','Formato errado','N/A','Não aplicável'].includes(atual[k-1]))valor=atual[k-1];
     const existente = campos.find(function (x) { return x.col === k; });
@@ -320,7 +355,7 @@ function analisar(texto, docs) {
   }
   if (d.videos != null) {
     prop('Vídeo', d.videos > 0 ? 'Preenchido' : 'Em falta', d.videos + ' vídeos');
-    if (d.videos === 0) nova('Vídeo', 'Existe vídeo do imóvel?', 'O site não mostra vídeo' + fonte + '.', 'Esclarecer se existe vídeo e onde está, para a Andreia o carregar no eGO.', 'eGO', true);
+    if (d.videos === 0) nova('Vídeo', 'Existe vídeo do imóvel?', 'O site não mostra vídeo' + fonte + '.', 'Confirmar com a Sara: carregar vídeo ou indicar se não há vídeo disponível.', 'eGO', true);
   }
   // Visita virtual: descontinuada na Janela (22/10/2026), não se avalia.
   if (d.plantas) {
@@ -351,7 +386,7 @@ function analisar(texto, docs) {
     });
     const novo=linhas.filter(Boolean).join('\n');if(novo!==anterior)prop('Observações / justificação N/A',novo,'Situação documental por documento; outras observações preservadas.');
   }
-  if (emFalta.length) nova('Documentos', 'Documentos obrigatórios sem ficheiro no eGO', 'Na ficha do eGO sem ficheiro: ' + emFalta.join(', ') + ' (' + hoje + ').' + (semDossier.length ? ' Confirmado também em falta no dossier: ' + semDossier.join(', ') + '.' : ''), (verificarDossier.length ? 'Verificar no dossier do escritório e carregar no eGO: ' + verificarDossier.join(', ') + '. ' : '') + (semDossier.length ? 'Aguardar análise da Sara: ' + semDossier.join(', ') + '.' : 'Se não estiverem no dossier, pedir esclarecimento à Sara.'), 'eGO', semDossier.length > 0);
+  if (emFalta.length) nova('Documentos', 'Documentos obrigatórios sem ficheiro no eGO', 'Na ficha do eGO sem ficheiro: ' + emFalta.join(', ') + ' (' + hoje + ').' + (semDossier.length ? ' Confirmado também em falta no dossier: ' + semDossier.join(', ') + '.' : ''), (verificarDossier.length ? 'Verif. dossiê > digitalizar > carregar no eGO: ' + verificarDossier.join(', ') + '.' : '') + (semDossier.length ? (verificarDossier.length?'\n':'')+'Pedir esclarecimento à Sara: ' + semDossier.join(', ') + '.' : ''), 'eGO', semDossier.length > 0);
   if (noutra.length) nova('Documentos', 'Documentos na categoria errada no eGO', 'Na ficha do eGO, carregados noutra categoria: ' + noutra.join(', ') + ' (' + hoje + ').', 'Mover cada ficheiro para a categoria certa no bloco Documentos do eGO.');
   // A folha calcula o estado global a partir de vazios/Por verificar.
   // Uma falha de leitura não substitui um estado conhecido por desconhecido.
@@ -413,6 +448,7 @@ function analisar(texto, docs) {
     p.retomarAndreia = !!ex && p.tema==='Documentos' && todosVistos && !p.sara && ex.estado==='A aguardar esclarecimento' && ex.responsavel==='Sara';
     if(p.retomarAndreia)p.atualizar=true;
     if(p.tema==='Plantas'&&ex&&ex.assunto==='Planta'){p.reabrir=false;p.atualizar=false;p.retomarAndreia=false;}
+    if(p.tema==='Vídeo'&&ex&&['A carregar vídeo','Sem vídeo disponível','Criar vídeo','Não aplicável'].includes(ex.estado)){p.reabrir=false;p.atualizar=false;p.sara=false;}
     p.responsavelReabertura=p.sara?'Sara':ex&&ex.responsavel==='Sara'?'Andreia':ex?ex.responsavel:'Andreia';
     p.delegarSara = !!ex && ex.estado !== 'Concluído' && ex.estado !== 'Não aplicável' && p.sara;
     if (p.tema === 'Documentos' && p.delegarSara && !todosVistos && semDossier.length) {
@@ -767,11 +803,12 @@ function edEstado_(valor,nota,nome){
   if(valor==='Em falta'||/dossier por verificar/i.test(linha))return ED_ESTADOS[1];
   return 'Por verificar';
 }
+function edAcoesAntigas_(){return ['Procurar no dossier e inserir no eGO.','Digitalizar, preparar e inserir no eGO.','Preparar o ficheiro digitalizado e inserir no eGO.','Esclarecer a ausência e disponibilizar o documento.','Preparar o formato correto e inserir no eGO.'];}
 function edAcao_(estado,nome){
-  return ({'Em falta':'Procurar no dossier e inserir no eGO.','Por verificar':'Confirmar o estado de '+nome+'.','Falta no eGO > ver dossier':'Procurar no dossier e inserir no eGO.',
-    'No dossier > digitalizar':'Digitalizar, preparar e inserir no eGO.','Digitalizado':'Preparar o ficheiro digitalizado e inserir no eGO.',
-    'Falta no eGO + dossier':'Esclarecer a ausência e disponibilizar o documento.',
-    'Categoria errada':'Mover para a categoria correta no eGO.','Formato errado':'Preparar o formato correto e inserir no eGO.'})[estado]||'';
+  return ({'Em falta':'Verif. dossiê > digitalizar > carregar no eGO.','Por verificar':'Confirmar o estado de '+nome+'.','Falta no eGO > ver dossier':'Verif. dossiê > digitalizar > carregar no eGO.',
+    'No dossier > digitalizar':'Digitalizar > carregar no eGO.','Digitalizado':'Carregar no eGO.',
+    'Falta no eGO + dossier':'Pedir esclarecimento à Sara.',
+    'Categoria errada':'Mover para a categoria correta no eGO.','Formato errado':nome==='Planta'?'Converter para JPG > carregar no eGO.':'Corrigir formato > carregar no eGO.'})[estado]||'';
 }
 function edSnapshot_(ref){
   ref=String(ref||'').trim().toUpperCase();if(!ref)throw Error('Indica a referência do imóvel.');
@@ -831,9 +868,9 @@ function edPlano_(s,alteracoes,origem){
     if(i===undefined&&fechado)return;
     if(i===undefined){i=livre();[[1,'P'+String(++max).padStart(4,'0')],[2,s.ref],[3,x[0]==='planta'?'Plantas':'Documentos'],[4,x[2]],[8,'Normal'],[14,'eGO']].forEach(v=>set(i,v[0],v[1]));}
     else set(i,4,x[2]);
-    const anterior=pend[i],manual=origem==='pendencia',responsavel=estado==='Falta no eGO + dossier'?'Sara':manual?anterior[6]||'Andreia':anterior[6]==='Sara'&&anterior[8]==='A aguardar esclarecimento'?'Andreia':anterior[6]||'Andreia';
+    const anterior=pend[i],manual=origem==='pendencia',responsavel=estado==='Falta no eGO + dossier'?'Sara':x[0]==='planta'&&estado==='Formato errado'?'Andreia':manual?anterior[6]||'Andreia':anterior[6]==='Sara'&&anterior[8]==='A aguardar esclarecimento'?'Andreia':anterior[6]||'Andreia';
     const status=estado==='Preenchido'?'Concluído':estado==='Não aplicável'?'Não aplicável':responsavel==='Sara'?'A aguardar esclarecimento':estado==='Digitalizado'?'Digitalizado':anterior[8]==='Em correção'?'Em correção':estado==='Por verificar'?'Por tratar':estado;
-    const automaticas=ED_ESTADOS.map(e=>edAcao_(e,x[2])),acaoAnterior=String(anterior[5]||''),manualNota=acaoAnterior.includes('\nNota da equipa: ')?acaoAnterior.split('\nNota da equipa: ').slice(1).join('\nNota da equipa: '):automaticas.includes(acaoAnterior)?'':acaoAnterior;
+    const automaticas=ED_ESTADOS.map(e=>edAcao_(e,x[2])).concat(edAcoesAntigas_()),acaoAnterior=String(anterior[5]||''),manualNota=acaoAnterior.includes('\nNota da equipa: ')?acaoAnterior.split('\nNota da equipa: ').slice(1).join('\nNota da equipa: '):automaticas.includes(acaoAnterior)?'':acaoAnterior;
     set(i,5,x[2]+': '+estado+'.');set(i,6,edAcao_(estado,x[2])+(manualNota?'\nNota da equipa: '+manualNota:''));set(i,7,responsavel);set(i,9,status);set(i,17,!fechado&&responsavel==='Sara'?'Sara':'');
     if(fechado){set(i,12,'Estado confirmado: '+estado+'.');set(i,15,'Confirmado');}
     else if(['Concluído','Não aplicável'].includes(s.pv[i]&&s.pv[i][8])){set(i,12,'');set(i,13,'');set(i,15,'Por verificar');}
@@ -928,7 +965,7 @@ function edSincronizarEdicao_(e){
 function prepararSeguimentoDocumental(){
   const ss=SpreadsheetApp.getActive(),sh=ss.getSheetByName(LEV.nome),c=colunas_(sh,9);
   const valores=ED_ESTADOS.map(v=>v==='Não aplicável'?'N/A':v),ps=ss.getSheetByName(PEND.nome);
-  edConfigurarDropdowns_(ss,ED_CAMPOS.map(x=>({nome:LEV.nome,col:c.col(x[1]),opcoes:valores,substituir:true})).concat([{nome:PEND.nome,col:9,opcoes:[...new Set(['Por tratar','Em correção','A aguardar esclarecimento','Concluído'].concat(ED_ESTADOS.filter(x=>x!=='Preenchido')))]}]));
+  edConfigurarDropdowns_(ss,ED_CAMPOS.map(x=>({nome:LEV.nome,col:c.col(x[1]),opcoes:valores,substituir:true})).concat([{nome:PEND.nome,col:9,opcoes:[...new Set(['Por tratar','Em correção','A aguardar esclarecimento','Concluído'].concat(ESTADOS_VIDEO_CLARA,ED_ESTADOS.filter(x=>x!=='Preenchido')))]}]));
   PropertiesService.getDocumentProperties().setProperty('CLARA_SEGUIMENTO_DOCUMENTAL','1');
   const refs=ps.getRange(6,2,ps.getLastRow()-5,1).getDisplayValues().flat().filter(Boolean);
   const ls=sh.getRange(10,1,sh.getLastRow()-9,c.titulos.length).getDisplayValues();
