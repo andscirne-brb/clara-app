@@ -18,3 +18,7 @@ Substituir os ficheiros na pasta da extensão instalada e clicar Atualizar em ch
 Sem envio direto ao Sheets, edição de portais ou registo de palavras-passe. Leituras temporárias expiram após 30 minutos e ficam em storage.session. Os novos coletores usam a mesma fonte do marcador, sem bibliotecas remotas. Origem e versão da extensão acompanham o resultado. Página incompatível, mudança de URL e fonte de outro portal bloqueiam a cópia. Prazo externo de 90 segundos; uma resposta tardia não substitui o resultado. Se o prazo terminar, deixar a página terminar/atualizá-la antes de repetir.
 
 Testes locais não substituem validação com sessões reais. Idealista e Green-Acres ainda precisam de teste instalado e conferência da gravação. O marcador continua disponível durante o piloto. Não há necessidade de alterar a estrutura nem a fonte nativa do Sheets para ler estes formatos.
+
+## Conferência real do piloto
+
+Percurso dos dois portais adicionais conferido no documento após teste da utilizadora: exportações oficiais e listas completas persistidas, dashboard coerente com as somas e fila de identificação terminada. Lacunas da fonte e correspondências por rever continuam explícitas. Sem nova importação necessária. Evidência individual permanece privada. Ver docs/VALIDACAO-PERCURSO-DIARIO.md.

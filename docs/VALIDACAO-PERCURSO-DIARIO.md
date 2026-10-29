@@ -1,3 +1,11 @@
+# Conferência do piloto dos portais — 29/10/2026
+
+A utilizadora informou que instalou a extensão e realizou as recolhas dos dois portais adicionais. Conferência independente do documento por exportação privada: estatísticas, séries diárias, carteira ativa e ranking Excel do Idealista presentes; cinco relatórios CSV e lista completa paginada do Green-Acres presentes. Totais dos contactos e canais coincidem com a série usada pelo dashboard. Sem linhas idênticas duplicadas nos lotes conferidos nem erros nas três folhas operacionais.
+
+A lacuna de um dia no CSV de visitantes únicos permanece explícita, sem preenchimento com zero. A identificação automática terminou a fila; casos de correspondência por rever continuam separados da gravação, que está concluída. Não pedir nova importação para resolver correspondências.
+
+Este teste confirma este percurso real e os dados persistidos; não prova todas as condições de sessão/falha, nem identifica independentemente a versão instalada a partir do XLSX. Nenhuma alteração dos dados foi necessária nesta conferência. Evidências e resultados por cliente ficam apenas no ambiente privado. Próximo: rever correspondências pendentes e recolher novos períodos nas rotinas normais. Não promover automaticamente para main nesta verificação.
+
 # Ponto técnico atual — 29/10/2026
 
 Extensão 0.3.0 preparada: quatro ações, mantendo os coletores existentes, prioridade CSV/Excel, revisão humana e ausência de envio direto ao Sheets. Novos portais ainda precisam de teste instalado. Ver docs/EXTENSAO-PORTAIS.md. Ramo desenvolvimento-extensao-imoveis.
