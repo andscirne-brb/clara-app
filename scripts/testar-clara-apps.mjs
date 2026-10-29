@@ -294,3 +294,17 @@ console.log('PASS simplificação: fotos antigas reconhecidas, instrução redun
 
 
 const archivedFixture=fixture();archivedFixture.pend.seed(6,['P9003',payload().ref,'Documentos','Documentos obrigatórios sem ficheiro no eGO','Caderneta Predial','','Andreia','Normal','Arquivado','','','Desdobrada em pendências por documento/planta.']);const archivedRead=analyse(archivedFixture,payload(),{caderneta:'falta',certificado:'falta',contrato:'falta',licenca:'falta'});const archivedGroup=archivedRead.pendencias.find(p=>p.tema==='Documentos');if(archivedGroup){assert.equal(archivedGroup.jaExiste,'P9003');assert.equal(archivedGroup.reabrir,false);assert.equal(archivedGroup.atualizar,false);}
+
+// Percurso diário completo através dos callbacks de edição (apenas fixtures sintéticas).
+Object.assign(Range.prototype,{getRow(){return this.r},getColumn(){return this.c},getLastRow(){return this.r+this.n-1},getLastColumn(){return this.c+this.m-1},getNumRows(){return this.n},getNumColumns(){return this.m},getDisplayValue(){return this.getDisplayValues()[0][0]}});
+function dailyFixture(){const t=fixture();vm.runInContext(fs.readFileSync(new URL('../apps-script/clara/EstadoDocumental.gs',import.meta.url),'utf8'),t.context);t.context.PropertiesService={getDocumentProperties:()=>({getProperty:()=> '1'})};t.context.SpreadsheetApp.getActive().toast=msg=>{throw Error('Toast de falha: '+msg)};return t;}
+function editDaily(t,sh,row,col,value){const rg=sh.getRange(row,col),oldValue=rg.getDisplayValue();rg.setValue(value);t.context.onEdit({range:rg,source:t.context.SpreadsheetApp.getActive(),value,oldValue});}
+let daily=dailyFixture();const cadCol=headers.indexOf('Caderneta Predial (anexo)')+1;
+daily.lev.getRange(10,cadCol).setValue('Digitalizado');daily.pend.seed(6,['P9001',payload().ref,'Documentos','Caderneta Predial','Caderneta Predial: Digitalizado.','Upload eGO','Andreia','Normal','Digitalizado']);
+editDaily(daily,daily.lev,10,cadCol,'Preenchido');assert.equal(get(daily.pend,6,9),'Concluído');assert.doesNotMatch(get(daily.lev,10,headers.indexOf('Resumo para a equipa')+1),/Caderneta/);
+daily=dailyFixture();daily.lev.getRange(10,cadCol).setValue('Digitalizado');daily.pend.seed(6,['P9001',payload().ref,'Documentos','Caderneta Predial','Caderneta Predial: Digitalizado.','Upload eGO','Andreia','Normal','Digitalizado']);editDaily(daily,daily.pend,6,9,'Concluído');assert.equal(get(daily.lev,10,cadCol),'Preenchido');assert.ok(daily.hist.getLastRow()>5);
+// Percurso de vídeo sem alterar conclusões de uploads reais.
+daily=dailyFixture();daily.lev.getRange(10,headers.indexOf('Vídeo')+1).setValue('Em falta');daily.pend.seed(6,['P9002',payload().ref,'Vídeo','Existe vídeo do imóvel?','','Confirmar com a Sara: carregar vídeo ou indicar se não há vídeo disponível.','Sara','Normal','A aguardar esclarecimento']);
+for(const [estado,owner] of [['A carregar vídeo','Sara'],['Sem vídeo disponível','Andreia'],['Criar vídeo','Sara']]){editDaily(daily,daily.pend,6,9,estado);assert.equal(get(daily.pend,6,9),estado);assert.equal(get(daily.pend,6,7),owner);assert.match(get(daily.lev,10,headers.indexOf('Resumo para a equipa')+1),new RegExp(estado));}
+editDaily(daily,daily.pend,6,9,'Não aplicável');assert.equal(get(daily.lev,10,headers.indexOf('Vídeo')+1),'Não aplicável');assert.equal(get(daily.pend,6,17),'');
+console.log('PASS percurso diário: callbacks reais de edição com fixtures, documento nos dois sentidos, histórico, resumo e três etapas de vídeo.');
