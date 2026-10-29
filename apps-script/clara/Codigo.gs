@@ -44,10 +44,21 @@ function simplificarPendenciasEquipa() {
   return {colunasVisiveis:6,registos:Math.max(0,s.getLastRow()-5)};
 }
 
+
+function textoCurtoClara_(t){return String(t||'').replace(/Fotografias/g,'Fotos').replace(/fotografias/g,'fotos');}
+function simplificarAcaoClara_(t,tema){
+ let partes=textoCurtoClara_(t).split('\nNota da equipa: '),base=partes.shift();
+ const mapa={'Procurar no dossier e inserir no eGO.':'Verif. dossiê > digitalizar > upload eGO','Verif. dossiê > digitalizar > carregar no eGO.':'Verif. dossiê > digitalizar > upload eGO','Digitalizar, preparar e inserir no eGO.':'Digitalizar > upload eGO','Digitalizar > carregar no eGO.':'Digitalizar > upload eGO','Preparar o ficheiro digitalizado e inserir no eGO.':'Upload eGO','Carregar no eGO.':'Upload eGO','Converter a planta em imagem (JPG) e carregar no eGO.':'Converter para JPG > upload eGO','Converter para JPG > carregar no eGO.':'Converter para JPG > upload eGO','Preencher o texto alternativo e a legenda das fotos no eGO.':'Alt-text e legendas das fotos > eGO','Carregar fotos no eGO.':'Upload de fotos > eGO'};
+ base=mapa[base]||base.replace(/Verif\. dossiê > digitalizar > carregar no eGO:/g,'Verif. dossiê > digitalizar > upload eGO:').replace(/ > carregar no eGO\.?/g,' > upload eGO');
+ if(tema==='Plantas'&&/upload eGO/.test(base))partes=partes.filter(n=>!['Carregar a planta em imagem (JPG) no eGO.','Carregar a planta em imagem (JPG) no eGO','Converter a planta em imagem (JPG) e carregar no eGO.'].includes(n.trim()));
+ return base+(partes.length?'\nNota da equipa: '+partes.join('\nNota da equipa: '):'');
+}
+
 const ESTADOS_VIDEO_CLARA=['A carregar vídeo','Sem vídeo disponível','Criar vídeo'];
 function acaoFluxoPendencia_(r,estado){
  const acao=String(r[5]||''),partes=acao.split('\nNota da equipa: '),base=partes.shift(),nota=partes.join('\nNota da equipa: ');
  let nova=null;
+ if(estado==='Não aplicável'&&typeof edMotivoCurto_==='function'&&edMotivoCurto_(r[11]))return edMotivoCurto_(r[11]);
  if(r[2]==='Vídeo'&&['Existe vídeo do imóvel?','Vídeo em falta'].includes(r[3])){
    const acoes={'A aguardar esclarecimento':'Confirmar com a Sara: carregar vídeo ou indicar se não há vídeo disponível.','A carregar vídeo':'Sara: carregar vídeo no eGO.','Sem vídeo disponível':'Pedir à Sara a criação de vídeo ou confirmar que não é necessário.','Criar vídeo':'Sara: criar vídeo > carregar no eGO.','Não aplicável':'Vídeo dispensado pela equipa.','Concluído':'Vídeo carregado no eGO.'};
    const antigas=['Esclarecer se existe vídeo e onde está, para a Andreia o carregar no eGO.','Confirmar se há vídeo disponível e anexar, ou justificar se não aplicável.','Esclarecer se existe vídeo e onde está, para a Andreia o carregar no eGO. Confirmado sem ficheiro no eGO nem no dossier; aguarda Sara: .'];
@@ -62,7 +73,8 @@ function acaoFluxoPendencia_(r,estado){
    const campo=typeof edCampoPendencia_==='function'?edCampoPendencia_(r):null;
    if(campo&&typeof edAcao_==='function'&&edAcoesAntigas_().includes(base))nova=edAcao_(estado,campo[2])||(base==='Esclarecer a ausência e disponibilizar o documento.'?'Pedir esclarecimento à Sara.':null);
  }
- return nova===null?null:nova+(nota?'\nNota da equipa: '+nota:'');
+ const resultado=simplificarAcaoClara_(nova===null?acao:nova+(nota?'\nNota da equipa: '+nota:''),r[2]);
+ return resultado===acao?null:resultado;
 }
 function atualizarFluxosPendencias(){
  const lock=LockService.getDocumentLock()||LockService.getScriptLock();if(!lock.tryLock(5000))throw Error('Outra gravação está em curso.');
@@ -94,7 +106,7 @@ function sincronizarGestaoPendencias_(ss,inicio,n,coluna,anterior){
   const linhas=sh.getRange(inicio,1,n,17).getValues(),plano=[],historico=[],hoje=dataHoje_();
   function agendar(sheet,row,col,novo){const cel=sheet.getRange(row,col),antes=cel.getValue();if(mesmoValor_(antes,novo))return;if(cel.getFormula())throw Error('Há uma fórmula na célula de gestão.');plano.push({sh:sheet,linha:row,col:col,cel:cel,antes:antes,depois:novo,antesFormato:cel.getNumberFormat()});}
   function nota(r,campo,antes,depois){historico.push({ref:r[1],id:r[0],campo:campo,antes:String(antes||''),depois:String(depois||'')});}
-  linhas.forEach(function(r,i){if(!r[0]||!r[1])return;const row=inicio+i,g=gestaoPendencia_(r,coluna,anterior),changes=[[7,g.responsavel,'Responsável'],[9,g.estado,'Estado'],[17,g.aguarda,'Aguarda análise de']];if(g.acao!==null)changes.push([6,g.acao,'Ação necessária']);let mudou=false;
+  linhas.forEach(function(r,i){if(!r[0]||!r[1])return;const row=inicio+i,g=gestaoPendencia_(r,coluna,anterior),changes=[[7,g.responsavel,'Responsável'],[9,g.estado,'Estado'],[17,g.aguarda,'Aguarda análise de']];changes.push([4,textoCurtoClara_(r[3]),'Assunto'],[5,textoCurtoClara_(r[4]),'Evidência']);if(g.acao!==null)changes.push([6,g.acao,'Ação necessária']);let mudou=false;
     if(n===1&&(coluna===7||coluna===9)&&anterior!==undefined&&String(anterior)!==String(r[coluna-1])){nota(r,coluna===7?'Responsável':'Estado',anterior,r[coluna-1]);mudou=true;}
     changes.forEach(function(x){if(String(r[x[0]-1]||'')!==x[1]){agendar(sh,row,x[0],x[1]);nota(r,x[2],r[x[0]-1],x[1]);mudou=true;}});
     if(mudou)agendar(sh,row,11,hoje);
@@ -312,21 +324,21 @@ function analisar(texto, docs) {
     prop(coluna,conhecido?anterior:'Por verificar',motivo+(conhecido?' Mantido o último estado registado; não foi reconfirmado.':''));
   };
   const nova = function (tema, assunto, evidencia, acao, ondeCorrigir, sara) {
-    pend.push({ tema: tema, assunto: assunto, evidencia: evidencia, acao: acao, onde: ondeCorrigir || 'eGO', sara: !!sara });
+    pend.push({ tema: tema, assunto: assunto, evidencia: evidencia, acao: simplificarAcaoClara_(acao,tema), onde: ondeCorrigir || 'eGO', sara: !!sara });
   };
   const hoje = Utilities.formatDate(new Date(), 'Europe/Lisbon', 'dd/MM/yyyy');
   const fonte = ' (site público, ' + hoje + ')';
 
-  // Fotografias
+  // Fotos
   if (d.fotos != null) {
-    prop('Imagens', d.fotos > 0 ? 'Preenchido' : 'Em falta', d.fotos + ' fotografias');
+    prop('Imagens', d.fotos > 0 ? 'Preenchido' : 'Em falta', d.fotos + ' fotos');
     if (c.col('N.º de imagens')) prop('N.º de imagens', d.fotos, '');
-    if (d.fotos === 0) nova('Imagens', 'Imóvel sem fotografias', 'O site não mostra fotografias' + fonte + '.', 'Carregar fotografias no eGO.');
+    if (d.fotos === 0) nova('Imagens', 'Imóvel sem fotos', 'O site não mostra fotos' + fonte + '.', 'Carregar fotos no eGO.');
   }
   if ((!d.parcial || d.fotosComAltCompletos === true) && d.fotosComAlt != null && d.fotos > 0) {
     const ok = d.fotosComAlt === d.fotos;
     prop('Alt-text', ok ? 'Preenchido' : 'Em falta', d.fotosComAlt + ' de ' + d.fotos + ' com texto alternativo');
-    if (!ok) nova('Imagens', 'Fotografias sem texto alternativo', 'No site, ' + (d.fotos - d.fotosComAlt) + ' de ' + d.fotos + ' fotografias sem texto alternativo; ' + d.fotosComLegenda + ' com legenda' + fonte + '.', 'Preencher o texto alternativo e a legenda das fotografias no eGO.');
+    if (!ok) nova('Imagens', 'Fotos sem texto alternativo', 'No site, ' + (d.fotos - d.fotosComAlt) + ' de ' + d.fotos + ' fotos sem texto alternativo; ' + d.fotosComLegenda + ' com legenda' + fonte + '.', 'Preencher o texto alternativo e a legenda das fotos no eGO.');
   }
   // Textos por idioma
   const T = d.textos || {};
@@ -411,8 +423,8 @@ function analisar(texto, docs) {
   // Assuntos que esta leitura consegue verificar (para confirmar correções)
   const verificaveis = {};
   const pode = function (a) { verificaveis[a] = true; };
-  if (d.fotos != null) pode('Imóvel sem fotografias');
-  if ((!d.parcial || d.fotosComAltCompletos === true) && d.fotosComAlt != null) pode('Fotografias sem texto alternativo');
+  if (d.fotos != null) pode('Imóvel sem fotos');
+  if ((!d.parcial || d.fotosComAltCompletos === true) && d.fotosComAlt != null) pode('Fotos sem texto alternativo');
   Object.keys(IDIOMAS).forEach(function (k) {
     const t = T[k]; if (!t || t.erro) return;
     pode('Descrição em ' + IDIOMAS[k] + ' em falta');
@@ -430,7 +442,8 @@ function analisar(texto, docs) {
   const existentes = {}, resolvidas = [];
   ps.getRange(PEND.titulos + 1, 1, Math.max(1, ps.getLastRow() - PEND.titulos), 17).getDisplayValues().forEach(function (r, i) {
     if (!r[1] || r[1].toUpperCase() !== ref) return;
-    const key = r[1].toUpperCase() + '|' + r[3];
+    const assuntoAtual=textoCurtoClara_(r[3]);
+    const key = r[1].toUpperCase() + '|' + assuntoAtual;
     const registro = { id: r[0], linha: PEND.titulos + 1 + i, estado: r[8], aguarda: r[16], responsavel: r[6], evidencia: r[4], acao: r[5], assunto:r[3] };
     if (!existentes[key] || existentes[key].estado === 'Concluído') existentes[key] = registro;
     // O seguimento manual de Planta cobre os dois avisos gerados pelo site.
@@ -438,7 +451,7 @@ function analisar(texto, docs) {
       existentes[ref+'|Imóvel sem planta']=registro;existentes[ref+'|Planta só em PDF']=registro;
     }
     const aberta = r[8] !== 'Concluído' && r[8] !== 'Não aplicável';
-    if (aberta && verificaveis[r[3]] && !detetados[r[3]]) resolvidas.push({ id: r[0], assunto: r[3], linha: PEND.titulos + 1 + i });
+    if (aberta && verificaveis[assuntoAtual] && !detetados[assuntoAtual]) resolvidas.push({ id: r[0], assunto: r[3], linha: PEND.titulos + 1 + i });
   });
   pend.forEach(function (p) {
     const ex = p.tema==='Plantas'&&existentes[ref+'|Planta']||existentes[ref + '|' + p.assunto];

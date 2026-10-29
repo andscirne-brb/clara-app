@@ -1,3 +1,11 @@
+## Último ponto de situação — 29/10/2026 — linguagem curta e motivos de substituição
+
+Andreia pediu Fotos em vez de Fotografias e instruções por passos. Ações documentais/planta usam Verif. dossiê > digitalizar > upload eGO; formato errado usa Converter para JPG > upload eGO. Instruções automáticas repetidas são removidas; notas distintas mantêm-se. Assuntos antigos de fotos continuam reconhecidos por alias para evitar duplicação. Histórico anterior não é reescrito.
+
+Auditoria dos estados Não aplicável: distinguir substituição técnica de dispensa real. A ação visível indica Separada por documento > ver pendências do imóvel ou Duplicada > ver ID; o motivo detalhado e o registo original permanecem guardados. Não converter automaticamente estes estados em conclusão de trabalho nem em dispensa documental. Foi conferida a existência dos destinos no ambiente privado.
+
+24 suites de regressão aprovadas. Aplicação nativa concluída; exportação independente confirmou preservação de IDs, estados, responsáveis, respostas, resoluções, Levantamento e histórico anterior. Motivos de substituição visíveis e rótulos Fotos conferidos. Código no ramo desenvolvimento-extensao-imoveis. Nenhum dado individual ou exportação no repositório.
+
 ## Último ponto de situação — 29/10/2026 — fluxos de vídeo, plantas e documentos
 
 Vídeo: falta inicial pede confirmação à Sara. Estados explícitos A carregar vídeo (Sara), Sem vídeo disponível (Andreia pede criação ou dispensa), Criar vídeo (Sara) e Não aplicável (dispensado). Uma nova leitura negativa não sobrepõe a decisão operacional nem reabre a dispensa. Texto livre de respostas não é interpretado como decisão automática. A conclusão continua dependente de confirmação humana ou evidência positiva.

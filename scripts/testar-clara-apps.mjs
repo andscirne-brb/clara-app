@@ -160,10 +160,10 @@ f=fixture();f.pend.seed(6,['P0001','TESTE-001','Documentos','Documentos obrigat�
 
 f=fixture();d=payload();d.parcial=true;delete d.textos.FR;
 ['Alt-text','Características','Descrição FR','Certificado Energético (anexo)'].forEach(h=>f.lev.cells.set('10,'+(headers.indexOf(h)+1),'Preenchido'));
-f.pend.seed(6,['P0001','TESTE-001','Imagens','Fotografias sem texto alternativo','','','Andreia','Normal','Por tratar']);
+f.pend.seed(6,['P0001','TESTE-001','Imagens','Fotos sem texto alternativo','','','Andreia','Normal','Por tratar']);
 a=analyse(f,d,{});['Alt-text','Características','Descrição FR','Certificado Energético (anexo)'].forEach(h=>assert.equal(a.campos.find(x=>x.coluna===h).novo,'Preenchido'));assert.equal(a.resolvidas.length,0);assert(a.naoVerificados.some(x=>x.coluna==='Descrição FR'&&x.preservado));save(f,d,{});assert.equal(get(f.pend,6,9),'Por tratar');console.log('PASS leitura parcial: preserva estados conhecidos e não conclui pendências de blocos não lidos.');
 
-f=fixture();d=payload();d.fotos=14;d.fotosComAlt=11;f.pend.seed(6,['P0001','TESTE-001','Imagens','Fotografias sem texto alternativo','14 fotografias sem texto alternativo','Ação antiga','Andreia','Alta','Em curso']);save(f,d);assert.match(get(f.pend,6,5),/3 de 14/);assert.equal(get(f.pend,6,9),'Em curso');console.log('PASS pendências de imagens: resolução parcial reduz faltas sem duplicar ou alterar gestão.');
+f=fixture();d=payload();d.fotos=14;d.fotosComAlt=11;f.pend.seed(6,['P0001','TESTE-001','Imagens','Fotos sem texto alternativo','14 fotos sem texto alternativo','Ação antiga','Andreia','Alta','Em curso']);save(f,d);assert.match(get(f.pend,6,5),/3 de 14/);assert.equal(get(f.pend,6,9),'Em curso');console.log('PASS pendências de imagens: resolução parcial reduz faltas sem duplicar ou alterar gestão.');
 
 f=fixture();d=payload();d.caracteristicas=1;d.nomesCaracteristicas=['Elevador'];d.textos.PT.descricao='Apartamento com piscina e garagem. Elevador no prédio. Sem lareira. Possibilidade de jardim.';
 let cross=f.context.cruzarCaracteristicasClara_(d);assert.deepEqual(Array.from(cross.sugestoes,x=>x.nome),['Piscina','Garagem']);assert.equal(cross.assinaladasSemTexto.length,0);d.parcial=true;assert.equal(f.context.cruzarCaracteristicasClara_(d).avaliadas,0);delete d.parcial;d.nomesCaracteristicas=[''];assert.equal(f.context.cruzarCaracteristicasClara_(d).avaliadas,0);console.log('PASS características: evidência textual, negação e hipótese excluídas, nomes ausentes e leitura parcial não produzem conclusão.');
@@ -282,4 +282,13 @@ const manualVideo=['P9000','TESTE001','Vídeo','Existe vídeo do imóvel?','','N
 console.log('PASS fluxo vídeo: decisões explícitas, responsável e próxima ação por etapa, notas preservadas.');
 
 const acaoDoc=['P9001','TESTE001','Documentos','Caderneta Predial','','Esclarecer a ausência e disponibilizar o documento.','Sara','Normal','A aguardar esclarecimento'];assert.equal(f.context.acaoFluxoPendencia_(acaoDoc,acaoDoc[8]),'Pedir esclarecimento à Sara.');
-const curto=['P9001','TESTE001','Documentos','Documentos obrigatórios sem ficheiro no eGO','','Verificar no dossier do escritório e carregar no eGO: Caderneta Predial. Se não estiverem no dossier, pedir esclarecimento à Sara.','Andreia','Normal','Por tratar'];assert.equal(f.context.acaoFluxoPendencia_(curto,curto[8]),'Verif. dossiê > digitalizar > carregar no eGO: Caderneta Predial.');
+const curto=['P9001','TESTE001','Documentos','Documentos obrigatórios sem ficheiro no eGO','','Verificar no dossier do escritório e carregar no eGO: Caderneta Predial. Se não estiverem no dossier, pedir esclarecimento à Sara.','Andreia','Normal','Por tratar'];assert.equal(f.context.acaoFluxoPendencia_(curto,curto[8]),'Verif. dossiê > digitalizar > upload eGO: Caderneta Predial.');
+
+assert.equal(f.context.simplificarAcaoClara_('Procurar no dossier e inserir no eGO.\nNota da equipa: Carregar a planta em imagem (JPG) no eGO.','Plantas'),'Verif. dossiê > digitalizar > upload eGO');
+assert.match(f.context.simplificarAcaoClara_('Procurar no dossier e inserir no eGO.\nNota da equipa: Confirmar medidas com a equipa.','Plantas'),/Confirmar medidas com a equipa/);
+assert.equal(f.context.textoCurtoClara_('Fotografias sem texto alternativo'),'Fotos sem texto alternativo');
+const fotoOld=fixture();fotoOld.pend.seed(6,['P9002',payload().ref,'Imagens','Imóvel sem fotografias','','Carregar fotografias no eGO.','Andreia','Normal','Por tratar']);const fotoLeitura={...payload(),fotos:0,fotosComAlt:0,fotosComLegenda:0};
+// A fixture principal usa referência própria; atualizar apenas a pendência para essa referência.
+const fotoPreview=analyse(fotoOld,fotoLeitura);assert.equal(fotoPreview.pendencias.find(p=>p.assunto==='Imóvel sem fotos').jaExiste,'P9002');
+console.log('PASS simplificação: fotos antigas reconhecidas, instrução redundante removida e nota distinta preservada.');
+

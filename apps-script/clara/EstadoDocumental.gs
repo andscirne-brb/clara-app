@@ -7,6 +7,7 @@ const ED_CAMPOS = [
   ['planta','Planta','Planta']
 ];
 const ED_ESTADOS = ['Por verificar','Falta no eGO > ver dossier','No dossier > digitalizar','Digitalizado','Falta no eGO + dossier','Categoria errada','Formato errado','Preenchido','Não aplicável','Em falta'];
+function edMotivoCurto_(motivo){const t=String(motivo||'');if(t.startsWith('Desdobrada em pendências'))return 'Separada por documento > ver pendências do imóvel';const m=t.match(/^Duplicada: acompanhamento na pendência (P\d+)/);return m?'Duplicada > ver '+m[1]:'';}
 function edPendenciaSubstituida_(r){return /^(Desdobrada em pendências|Duplicada: acompanhamento na pendência )/.test(String(r[11]||''));}
 function edEstadoCompativel_(v){return ({'Em falta no eGO · verificar dossier':'Falta no eGO > ver dossier','No dossier · por digitalizar':'No dossier > digitalizar','Em falta no eGO e no dossier':'Falta no eGO + dossier','N/A':'Não aplicável'})[v]||v;}
 function edCampoPendencia_(r){
@@ -16,7 +17,7 @@ function edCampoPendencia_(r){
   const regras=[/caderneta predial/,/certificado energetico/,/contrato.*mediacao/,/licenca.*habitacao/];
   const hits=regras.map((re,i)=>re.test(t)?i:-1).filter(i=>i>=0);return hits.length===1?ED_CAMPOS[hits[0]]:null;
 }
-function edCampoSimples_(assunto){return {'Imóvel sem fotografias':'Imagens','Fotografias sem texto alternativo':'Alt-text','Alt-text em falta':'Alt-text','Existe vídeo do imóvel?':'Vídeo','Vídeo em falta':'Vídeo'}[assunto]||'';}
+function edCampoSimples_(assunto){return {'Imóvel sem fotos':'Imagens','Imóvel sem fotografias':'Imagens','Fotos sem texto alternativo':'Alt-text','Fotografias sem texto alternativo':'Alt-text','Alt-text em falta':'Alt-text','Existe vídeo do imóvel?':'Vídeo','Vídeo em falta':'Vídeo'}[assunto]||'';}
 function edEstado_(valor,nota,nome){
   valor=edEstadoCompativel_(valor);
   const linha=String(nota||'').split(/\r?\n/).find(l=>l.startsWith(nome+': '))||'';
@@ -28,12 +29,12 @@ function edEstado_(valor,nota,nome){
   if(valor==='Em falta'||/dossier por verificar/i.test(linha))return ED_ESTADOS[1];
   return 'Por verificar';
 }
-function edAcoesAntigas_(){return ['Procurar no dossier e inserir no eGO.','Digitalizar, preparar e inserir no eGO.','Preparar o ficheiro digitalizado e inserir no eGO.','Esclarecer a ausência e disponibilizar o documento.','Preparar o formato correto e inserir no eGO.'];}
+function edAcoesAntigas_(){return ['Verif. dossiê > digitalizar > carregar no eGO.','Digitalizar > carregar no eGO.','Carregar no eGO.','Converter para JPG > carregar no eGO.','Procurar no dossier e inserir no eGO.','Digitalizar, preparar e inserir no eGO.','Preparar o ficheiro digitalizado e inserir no eGO.','Esclarecer a ausência e disponibilizar o documento.','Preparar o formato correto e inserir no eGO.'];}
 function edAcao_(estado,nome){
-  return ({'Em falta':'Verif. dossiê > digitalizar > carregar no eGO.','Por verificar':'Confirmar o estado de '+nome+'.','Falta no eGO > ver dossier':'Verif. dossiê > digitalizar > carregar no eGO.',
-    'No dossier > digitalizar':'Digitalizar > carregar no eGO.','Digitalizado':'Carregar no eGO.',
+  return ({'Em falta':'Verif. dossiê > digitalizar > upload eGO','Por verificar':'Confirmar o estado de '+nome+'.','Falta no eGO > ver dossier':'Verif. dossiê > digitalizar > upload eGO',
+    'No dossier > digitalizar':'Digitalizar > upload eGO','Digitalizado':'Upload eGO',
     'Falta no eGO + dossier':'Pedir esclarecimento à Sara.',
-    'Categoria errada':'Mover para a categoria correta no eGO.','Formato errado':nome==='Planta'?'Converter para JPG > carregar no eGO.':'Corrigir formato > carregar no eGO.'})[estado]||'';
+    'Categoria errada':'Mover para a categoria correta no eGO.','Formato errado':nome==='Planta'?'Converter para JPG > upload eGO':'Corrigir formato > carregar no eGO.'})[estado]||'';
 }
 function edSnapshot_(ref){
   ref=String(ref||'').trim().toUpperCase();if(!ref)throw Error('Indica a referência do imóvel.');
@@ -78,7 +79,7 @@ function edPlano_(s,alteracoes,origem){
   let max=pend.reduce((m,r)=>Math.max(m,/^P\d+$/.test(r[0])?+r[0].slice(1):0),0);
   function livre(){let i=pend.findIndex(r=>r.every((v,j)=>!v||j===15));if(i<0){i=pend.length;pend.push(Array(17).fill(''));}return i;}
   function set(i,col,value){pend[i][col-1]=value;add(PEND.nome,i+6,col,value);}
-  const fechar=(i,motivo)=>{set(i,9,'Não aplicável');set(i,12,motivo);set(i,15,'Confirmado');set(i,17,'');};
+  const fechar=(i,motivo)=>{set(i,9,'Não aplicável');set(i,6,edMotivoCurto_(motivo)||pend[i][5]);set(i,12,motivo);set(i,15,'Confirmado');set(i,17,'');};
   let notas=s.nota.split(/\r?\n/);
   ED_CAMPOS.forEach(x=>{
     const estado=estados[x[0]];if(!ED_ESTADOS.includes(estado))throw Error('Estado não reconhecido: '+x[2]);
@@ -96,7 +97,7 @@ function edPlano_(s,alteracoes,origem){
     const anterior=pend[i],manual=origem==='pendencia',responsavel=estado==='Falta no eGO + dossier'?'Sara':x[0]==='planta'&&estado==='Formato errado'?'Andreia':manual?anterior[6]||'Andreia':anterior[6]==='Sara'&&anterior[8]==='A aguardar esclarecimento'?'Andreia':anterior[6]||'Andreia';
     const status=estado==='Preenchido'?'Concluído':estado==='Não aplicável'?'Não aplicável':responsavel==='Sara'?'A aguardar esclarecimento':estado==='Digitalizado'?'Digitalizado':anterior[8]==='Em correção'?'Em correção':estado==='Por verificar'?'Por tratar':estado;
     const automaticas=ED_ESTADOS.map(e=>edAcao_(e,x[2])).concat(edAcoesAntigas_()),acaoAnterior=String(anterior[5]||''),manualNota=acaoAnterior.includes('\nNota da equipa: ')?acaoAnterior.split('\nNota da equipa: ').slice(1).join('\nNota da equipa: '):automaticas.includes(acaoAnterior)?'':acaoAnterior;
-    set(i,5,x[2]+': '+estado+'.');set(i,6,edAcao_(estado,x[2])+(manualNota?'\nNota da equipa: '+manualNota:''));set(i,7,responsavel);set(i,9,status);set(i,17,!fechado&&responsavel==='Sara'?'Sara':'');
+    set(i,5,x[2]+': '+estado+'.');const instrucao=edAcao_(estado,x[2])+(manualNota?'\nNota da equipa: '+manualNota:'');set(i,6,typeof simplificarAcaoClara_==='function'?simplificarAcaoClara_(instrucao,x[0]==='planta'?'Plantas':'Documentos'):instrucao);set(i,7,responsavel);set(i,9,status);set(i,17,!fechado&&responsavel==='Sara'?'Sara':'');
     if(fechado){set(i,12,'Estado confirmado: '+estado+'.');set(i,15,'Confirmado');}
     else if(['Concluído','Não aplicável'].includes(s.pv[i]&&s.pv[i][8])){set(i,12,'');set(i,13,'');set(i,15,'Por verificar');}
   });
