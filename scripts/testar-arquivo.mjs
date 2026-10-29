@@ -6,3 +6,7 @@ for(const sep of [',',';']){
 }
 assert(c.edPendenciaSubstituida_(['','','','','','','','','Arquivado']));assert.equal(c.edEstadoCompativel_('Digitalizado'),'Digitalizado');const r=['P1','TESTE001','Vídeo','Existe vídeo do imóvel?','','Nota mantida','Sara','Normal','Arquivado'];assert.equal(c.gestaoPendencia_(r,7,'Andreia').estado,'Arquivado');assert.equal(c.gestaoPendencia_(r,7,'Andreia').aguarda,'');
 console.log('PASS arquivo: fechado sem dispensa documental, fórmulas idempotentes, conferência de motivo e gestão preservada.');
+
+assert.equal(c.arFormulaApi_('=IF(A1="texto; preservado";"Sim";"Não")'),'=IF(A1="texto; preservado","Sim","Não")');
+assert.equal(c.arFormulaApi_('=COUNTIFS(A:A,"<>Arquivado")'),'=COUNTIFS(A:A,"<>Arquivado")');
+console.log('PASS escrita de fórmulas: separadores normalizados sem alterar textos.');

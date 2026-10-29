@@ -785,7 +785,7 @@ function arquivarPendenciasSubstituidas(){
  const lock=LockService.getDocumentLock()||LockService.getScriptLock();if(!lock.tryLock(5000))throw Error('Outra gravação está em curso.');
  try{
  const ss=SpreadsheetApp.getActive(),ps=ss.getSheetByName(PEND.nome),range=ps.getDataRange(),v=range.getValues(),forms=range.getFormulas(),signature=JSON.stringify([v,forms]),requests=[],logs=[],hoje=dataHoje_(),ids=new Map(v.slice(5).filter(r=>r[0]).map(r=>[String(r[0]),r]));
- const cell=(sheetId,row,col,value,formula)=>requests.push({updateCells:{range:{sheetId,startRowIndex:row,endRowIndex:row+1,startColumnIndex:col,endColumnIndex:col+1},rows:[{values:[{userEnteredValue:formula?{formulaValue:value}:{stringValue:value}}]}],fields:'userEnteredValue'}});
+ const cell=(sheetId,row,col,value,formula)=>requests.push({updateCells:{range:{sheetId,startRowIndex:row,endRowIndex:row+1,startColumnIndex:col,endColumnIndex:col+1},rows:[{values:[{userEnteredValue:formula?{formulaValue:arFormulaApi_(value)}:{stringValue:value}}]}],fields:'userEnteredValue'}});
  let arquivadas=0,formulaCount=0;v.slice(5).forEach((r,i)=>{
   if(r[8]!=='Não aplicável'||!edPendenciaSubstituida_(r))return;
   const m=String(r[11]||'').match(/^Duplicada: acompanhamento na pendência (P\d+)/);
@@ -811,6 +811,9 @@ function arquivarPendenciasSubstituidas(){
  return{arquivadas,formulas:formulaCount,filtroAtualizado:!!active};
  }finally{lock.releaseLock();}
 }
+
+/* A API recebe separadores canónicos; os textos entre aspas ficam intactos. */
+function arFormulaApi_(f){let quoted=false,out='';for(let i=0;i<f.length;i++){const ch=f[i];if(ch==='"'){if(quoted&&f[i+1]==='"'){out+='""';i++;continue;}quoted=!quoted;}out+=!quoted&&ch===';'?',':ch;}return out;}
 
 /* Uniformização ortográfica dos textos atuais; histórico e cópias originais preservados. */
 function termoDossieClara_(v){return typeof v==='string'?v.replace(/\bdossier\b/gi,'dossiê'):v;}

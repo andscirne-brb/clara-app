@@ -1,19 +1,20 @@
-# Clara · imóveis e Rightmove — 0.2.0
+# Clara · imóveis e portais — 0.3.0 (piloto)
 
-Atualiza a extensão que já tens instalada, substituindo todos os ficheiros na mesma pasta e clicando Atualizar em chrome://extensions. Não precisas de instalar uma segunda extensão. Confirma a versão 0.2.0. O Chrome pode pedir acesso ao website público da agência para a nova ação; não é acesso ao CRM administrativo do eGO.
+Uma extensão com quatro ações: eGO: ler este imóvel; Idealista: estatísticas; Green-Acres: estatísticas; Rightmove: recolher os dois relatórios. A extensão lê, permite copiar e indica o painel do Sheets. A gravação continua a exigir revisão e confirmação.
 
-## eGO: ler este imóvel
+## Atualizar
 
-Abre a página pública completa do imóvel no website da agência. Clica na extensão e em «eGO: ler este imóvel». A leitura apresenta os campos confirmados e os que ficaram por verificar. Copia se a cópia automática não funcionar. No Sheets, abre Clara > eGO: estado, cola, analisa, revê e confirma a gravação. Os documentos continuam a ser confirmados manualmente. Não é possível ler o CRM interno nesta versão.
+Substituir os ficheiros na pasta da extensão instalada e clicar Atualizar em chrome://extensions. Confirmar 0.3.0. O Chrome pode pedir os novos acessos ao Idealista e Green-Acres; não há acesso ao CRM interno, contactos individuais nem todos os sites. A atualização não altera o documento.
 
-Fotografias e alt texts só são confirmados quando a galeria fica completa. Campos desconhecidos não são tratados como ausentes. «Descrição lida» confirma leitura, não qualidade editorial. O histórico e os estados anteriores continuam sujeitos às regras existentes do Sheets. Não há gravação automática nem edição do website.
+## Páginas e fontes
 
-## Rightmove
+- eGO: ficha pública do website, documentos confirmados manualmente no Sheets.
+- Idealista: Estatísticas dos teus anúncios, em Gráfico ou Ranking. Reutiliza o Excel oficial do ranking; no Gráfico tenta também as séries diárias e carteira ativa. Mantém/restaura os filtros existentes.
+- Green-Acres: Resumo da conta para cinco CSV e a lista dos anúncios; Anúncios para apenas a lista completa. Ficheiros oficiais têm prioridade. Componentes em falta são apresentados explicitamente.
+- Rightmove: mantém a recolha conjunta de leads e desempenho CSV. Mantém o relatório de leads visível; se o popup fechar, reabre para copiar.
 
-O percurso continua disponível no segundo botão, com CSV de desempenho prioritário e leads agregadas sem dados pessoais. Mantém o relatório de leads visível. Se o popup fechar ao ativar o relatório, volta a abri-lo para copiar. Os prazos, falhas parciais e conferência de totais da 0.1.4 são mantidos.
+## Garantias e limites
 
-## Validação e dados
+Sem envio direto ao Sheets, edição de portais ou registo de palavras-passe. Leituras temporárias expiram após 30 minutos e ficam em storage.session. Os novos coletores usam a mesma fonte do marcador, sem bibliotecas remotas. Origem e versão da extensão acompanham o resultado. Página incompatível, mudança de URL e fonte de outro portal bloqueiam a cópia. Prazo externo de 90 segundos; uma resposta tardia não substitui o resultado. Se o prazo terminar, deixar a página terminar/atualizá-la antes de repetir.
 
-Piloto: 23 suites locais aprovadas; instalação e leitura real da nova ação ainda precisam de teste. Testa primeiro um imóvel conhecido e confere o resultado no Sheets. A extensão guarda temporariamente a leitura em storage.session, com limite de 30 minutos para copiar; pode ser apagada em Limpar leitura e desaparece ao fechar o browser. Não guarda palavras-passe nem envia dados para um servidor próprio.
-
-O código é estático, sem bibliotecas remotas. Só executa por clique. Não pede acesso ao admin.eGO nem a todos os sites. O novo acesso serve apenas o domínio público da agência. Detalhes técnicos e limites em docs/EXTENSAO-IMOVEIS.md no repositório.
+Testes locais não substituem validação com sessões reais. Idealista e Green-Acres ainda precisam de teste instalado e conferência da gravação. O marcador continua disponível durante o piloto. Não há necessidade de alterar a estrutura nem a fonte nativa do Sheets para ler estes formatos.

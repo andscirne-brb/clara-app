@@ -9,7 +9,7 @@ const c={console,Date,Map,Set,AbortController,setTimeout,clearTimeout,performanc
 vm.createContext(c);vm.runInContext(fs.readFileSync(new URL('core.js',ext),'utf8')+'\n'+source,c);
 let d=await c.recolherFichaClara(doc,{estado(){}});assert.equal(d.ref,'MO0001');assert.equal(d.fotos,2);assert.equal(d.fotosComAlt,2);assert.equal(d.fotosComAltCompletos,true);assert.equal(d.videos,0);assert.equal(d.plantas.length,1);assert.equal(d.textos.PT.descricao,'Descrição de teste');
 let r=c.resumoFichaClara(d);assert.ok(r.confirmados.includes('Alt texts: 2 de 2'));assert.ok(r.porVerificar.includes('Características'));assert.ok(r.porVerificar.some(x=>x.startsWith('Documentos:')));assert.ok(r.porVerificar.includes('Descrição EN'));
-count=3;d=await c.recolherFichaClara(doc,{estado(){}});assert.equal(d.fotos,null);assert.equal(d.fotosComAlt,undefined);assert.ok(c.resumoFichaClara(d).porVerificar.includes('Fotografias'));assert.ok(c.resumoFichaClara(d).porVerificar.includes('Alt texts'));count=2;
+count=3;d=await c.recolherFichaClara(doc,{estado(){}});assert.equal(d.fotos,null);assert.equal(d.fotosComAlt,undefined);assert.ok(c.resumoFichaClara(d).porVerificar.includes('Fotos'));assert.ok(c.resumoFichaClara(d).porVerificar.includes('Alt texts'));count=2;
 for(const url of ['https://admin.egorealestate.com/egocore/realestates','https://www.janela-imobiliaria.com.evil.test/a/123','https://evil.test/a/123','https://www.janela-imobiliaria.com/'])assert.equal(c.fichaUrlPermitido(url),false);
 await assert.rejects(()=>c.fetchClara('https://evil.test/data',true),/não autorizada/);
 assert.equal(c.fichaUrlPermitido('https://www.janela-imobiliaria.com/casasvenda/imovel-teste/123'),true);

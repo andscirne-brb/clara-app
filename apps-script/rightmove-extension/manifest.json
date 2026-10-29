@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Clara · imóveis e Rightmove",
-  "version": "0.2.0",
-  "description": "Lê fichas públicas de imóveis e relatórios Rightmove para rever no Sheets.",
+  "name": "Clara · imóveis e portais",
+  "version": "0.3.0",
+  "description": "Recolhe imóveis e estatísticas dos portais para rever no Sheets.",
   "permissions": [
     "scripting",
     "storage",
@@ -12,14 +12,17 @@
     "https://rmplusportal.rightmove.co.uk/*",
     "https://admin.rightmove.co.uk/*",
     "https://www.janela-imobiliaria.com/*",
-    "https://janela-imobiliaria.com/*"
+    "https://janela-imobiliaria.com/*",
+    "https://www.idealista.pt/*",
+    "https://idealista.pt/*",
+    "https://back.green-acres.com/*"
   ],
   "background": {
     "service_worker": "worker.js"
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Clara · imóveis e Rightmove"
+    "default_title": "Clara · imóveis e portais"
   },
   "minimum_chrome_version": "102"
 }
