@@ -1,3 +1,13 @@
+# Revisão das correspondências — 29/10/2026
+
+Revisão concluída das ligações pendentes no ambiente autorizado. Referências explícitas conferidas no browser e cruzadas com correspondência única no Levantamento foram confirmadas. Referências ausentes no catálogo permanecem não associadas, com nota de próxima ação. Não retirar sufixos, normalizar acentos para encontrar outra referência, aproximar por preço/morada/foto ou criar imóveis automaticamente.
+
+Leitor e validadores agora aceitam referências exatas com acentos, sufixos entre parênteses e espaço antes de hífen. Mantêm distinção entre referência da agência e ID do anúncio, identidade da página, conflitos e referência duplicada no catálogo. Marcador público e servidor usam o mesmo vocabulário. Função pura de revisão coberta por testes sintéticos; execução privada com comparação prévia das linhas e confirmação do resultado previsto, histórico preservado.
+
+28 suites locais aprovadas. Aplicação nativa e fonte final conferidas, sem função temporária nem dados do cliente. Exportação independente confirma preservação do Levantamento, pendências, registo de alterações, recolhas e ligações previamente confirmadas; histórico das ligações apenas acrescentado e sem erros nas folhas operacionais. Vista de conferência atualizada; apenas as três abas diárias continuam visíveis. Nenhuma reinstalação da extensão necessária para esta revisão. A nova leitura do marcador só se aplica quando este for reinstalado; os dados já revistos não exigem nova recolha.
+
+Próximo passo: conferir/atualizar a lista de referências eGO para tratar as ligações restantes. Não assumir que cada referência ausente é um imóvel novo; variantes podem exigir esclarecimento. Evidências, alvos, contagens por cliente e exportações mantidos apenas no ambiente privado.
+
 # Conferência do piloto dos portais — 29/10/2026
 
 A utilizadora informou que instalou a extensão e realizou as recolhas dos dois portais adicionais. Conferência independente do documento por exportação privada: estatísticas, séries diárias, carteira ativa e ranking Excel do Idealista presentes; cinco relatórios CSV e lista completa paginada do Green-Acres presentes. Totais dos contactos e canais coincidem com a série usada pelo dashboard. Sem linhas idênticas duplicadas nos lotes conferidos nem erros nas três folhas operacionais.
