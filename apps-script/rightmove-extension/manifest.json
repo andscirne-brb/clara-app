@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Clara · Rightmove",
-  "version": "0.1.4",
-  "description": "Recolha manual conjunta de leads agregadas e Property Performance para rever no Sheets.",
+  "name": "Clara · imóveis e Rightmove",
+  "version": "0.2.0",
+  "description": "Lê fichas públicas de imóveis e relatórios Rightmove para rever no Sheets.",
   "permissions": [
     "scripting",
     "storage",
@@ -10,14 +10,16 @@
   ],
   "host_permissions": [
     "https://rmplusportal.rightmove.co.uk/*",
-    "https://admin.rightmove.co.uk/*"
+    "https://admin.rightmove.co.uk/*",
+    "https://www.janela-imobiliaria.com/*",
+    "https://janela-imobiliaria.com/*"
   ],
   "background": {
     "service_worker": "worker.js"
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Clara · Rightmove"
+    "default_title": "Clara · imóveis e Rightmove"
   },
   "minimum_chrome_version": "102"
 }

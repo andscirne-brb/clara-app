@@ -1,0 +1,33 @@
+import fs from 'node:fs';import vm from 'node:vm';import assert from 'node:assert/strict';
+const ext=new URL('../apps-script/rightmove-extension/',import.meta.url),source=fs.readFileSync(new URL('ego-collector.js',ext),'utf8');
+const photo=(id,alt)=>({getAttribute:k=>k==='data-url'?`https://example.invalid/Tphoto/ID${id}.jpg`:k==='data-description'?'Legenda':'',querySelector:()=>({getAttribute:()=>alt})});
+const photos=[photo('aaaa','Sala com janela'),photo('bbbb','Quarto')];let count=2;
+const gallery={querySelector:s=>s==='.totalImgCounter'?{textContent:String(count)}:photos[0],querySelectorAll:()=>photos};
+const listing={textContent:JSON.stringify({'@type':'RealEstateListing',name:'Imóvel teste',description:'Descrição de teste'})};
+const doc={documentElement:{lang:'pt',outerHTML:'/Tphoto/IDaaaa /Tphoto/IDbbbb /Tblueprint/IDabcd.jpg'},body:{textContent:'Ref. MO0001'},querySelector:s=>s==='.mediaGallery .totalImgCounter'?{textContent:'2'}:s==='#videoTab.propertyMediaDisabled'?{}:null,querySelectorAll:s=>s==='script[type="application/ld+json"]'?[listing]:s==='.mediaContainer'?[gallery]:[]};
+const c={console,Date,Map,Set,AbortController,setTimeout,clearTimeout,performance:{getEntriesByType:()=>[]},location:{href:'https://www.janela-imobiliaria.com/casasvenda/imovel-teste/123'},fetch:async()=>{throw Error('Não deve consultar rede nesta prova');}};
+vm.createContext(c);vm.runInContext(fs.readFileSync(new URL('core.js',ext),'utf8')+'\n'+source,c);
+let d=await c.recolherFichaClara(doc,{estado(){}});assert.equal(d.ref,'MO0001');assert.equal(d.fotos,2);assert.equal(d.fotosComAlt,2);assert.equal(d.fotosComAltCompletos,true);assert.equal(d.videos,0);assert.equal(d.plantas.length,1);assert.equal(d.textos.PT.descricao,'Descrição de teste');
+let r=c.resumoFichaClara(d);assert.ok(r.confirmados.includes('Alt texts: 2 de 2'));assert.ok(r.porVerificar.includes('Características'));assert.ok(r.porVerificar.some(x=>x.startsWith('Documentos:')));assert.ok(r.porVerificar.includes('Descrição EN'));
+count=3;d=await c.recolherFichaClara(doc,{estado(){}});assert.equal(d.fotos,null);assert.equal(d.fotosComAlt,undefined);assert.ok(c.resumoFichaClara(d).porVerificar.includes('Fotografias'));assert.ok(c.resumoFichaClara(d).porVerificar.includes('Alt texts'));count=2;
+for(const url of ['https://admin.egorealestate.com/egocore/realestates','https://www.janela-imobiliaria.com.evil.test/a/123','https://evil.test/a/123','https://www.janela-imobiliaria.com/'])assert.equal(c.fichaUrlPermitido(url),false);
+await assert.rejects(()=>c.fetchClara('https://evil.test/data',true),/não autorizada/);
+assert.equal(c.fichaUrlPermitido('https://www.janela-imobiliaria.com/casasvenda/imovel-teste/123'),true);
+assert.throws(()=>c.resumoFichaClara({...d,url:'https://evil.test/a/123'}),/identificada/);
+console.log('PASS imóvel: coletor real com DOM sintético, alt completo/incompleto, vídeo ausente confirmado, planta, idiomas, documentos manuais e URLs limitadas.');
+let state;let tabUrl=c.location.href;let selectedUrl=tabUrl;let fail=false;const injections=[];
+const chrome={storage:{session:{set:async x=>{state=x.clara;}}},tabs:{query:async()=>[{id:7,url:selectedUrl}],get:async()=>({id:7,url:tabUrl})},scripting:{executeScript:async o=>{injections.push(o);if(o.files)return[];return[{result:fail?{ok:false,erro:'Página indisponível'}:{ok:true,d:await c.recolherFichaClara(doc,{estado(){}})}}];}},runtime:{id:'test',onMessage:{addListener(){}}}};
+const w={console,chrome,setTimeout,clearTimeout,Date,Promise,importScripts(){}};vm.createContext(w);vm.runInContext(fs.readFileSync(new URL('core.js',ext),'utf8')+'\n'+fs.readFileSync(new URL('worker.js',ext),'utf8'),w);
+await w.executarFicha();assert.equal(state.estado,'pronto');assert.equal(state.destino,'eGO: estado');assert.ok(state.texto.startsWith('CLARA1:'));assert.equal(JSON.parse(state.texto.slice(7)).ref,'MO0001');assert.equal(injections[0].files[0],'ego-collector.js');
+selectedUrl='https://admin.egorealestate.com/egocore/realestates';const before=injections.length;await w.executarFicha();assert.equal(state.estado,'erro');assert.equal(injections.length,before);assert.match(state.mensagem,/pública/);
+selectedUrl=c.location.href;tabUrl='https://www.janela-imobiliaria.com/casasvenda/outro-imovel/456';await w.executarFicha();assert.equal(state.estado,'erro');assert.match(state.mensagem,/mudou/);tabUrl=c.location.href;
+fail=true;await w.executarFicha();assert.equal(state.estado,'erro');assert.match(state.mensagem,/indisponível/);
+console.log('PASS extensão imóvel: CLARA1, destino eGO, nenhuma leitura do CRM interno, navegação durante leitura recusada e erros sem resultado copiável.');
+// Wrong API reference is refused rather than combined with another property's DOM.
+c.performance={getEntriesByType:()=>[{name:'https://websiteapi.egorealestate.com/v1/Properties/123?propertyid=123'}]};c.fetch=async()=>({ok:true,json:async()=>({Reference:'MO9999',Images:[]})});
+await assert.rejects(()=>c.recolherFichaClara(doc,{estado(){}}),/referências/);c.performance={getEntriesByType:()=>[]};
+// A delayed DOM can become ready; a permanently incomplete page times out cleanly.
+let observer,timeout,disconnected=0,ready=false;c.MutationObserver=class{constructor(fn){observer=fn;}observe(){}disconnect(){disconnected++;}};c.setTimeout=fn=>{timeout=fn;return 1;};c.clearTimeout=()=>{};
+const lazy={documentElement:{},querySelectorAll:()=>ready?[listing]:[],querySelector:()=>ready?{}:null};const loading=c.aguardarFichaClara(lazy);ready=true;observer();await loading;assert.equal(disconnected,1);
+ready=false;const unfinished=c.aguardarFichaClara(lazy);timeout();await assert.rejects(()=>unfinished,/carregar/);assert.equal(disconnected,2);
+console.log('PASS ficha: referências divergentes recusadas, espera pelo DOM, observador desligado no sucesso e timeout.');

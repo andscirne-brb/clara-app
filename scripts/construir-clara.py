@@ -57,3 +57,5 @@ print(len(out), 'caracteres')
 extensao = base.parent / 'rightmove-extension'
 if extensao.exists():
     (extensao / 'collectors.js').write_text((base / 'rightmove-csv.js').read_text(encoding='utf-8') + '\n' + (base / 'rightmove.js').read_text(encoding='utf-8'), encoding='utf-8')
+    import subprocess, sys
+    subprocess.run([sys.executable, str(pathlib.Path(__file__).with_name('construir-coletor-imovel.py'))], check=True)
