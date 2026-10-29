@@ -1,3 +1,9 @@
+## Último ponto de situação — 29/10/2026 — terminologia dossiê
+
+Regra da Andreia: usar dossiê de forma uniforme. Textos, estados, painel, ações e critérios gerados usam a mesma grafia. Compatibilidade explícita com estados da versão anterior; o código interno sem_dossier não muda. Fotos continua abreviado.
+
+Migração ortográfica das folhas operacionais preparada em lote atómico: células atuais, fórmulas, opções de tabelas, regras e filtros atualizados em conjunto; preflight recusa alterações concorrentes. Histórico e cópias originais preservados. Alterações textuais auditadas; fórmulas agrupadas por folha no registo para não inflacionar o resumo semanal. 25 suites locais aprovadas. Aplicação nativa concluída; exportação independente confirma substituições estritamente ortográficas, fórmulas coerentes, dropdowns atualizados e histórico anterior preservado. Fonte final conferida sem função temporária.
+
 ## Último ponto de situação — 29/10/2026 — linguagem curta e motivos de substituição
 
 Andreia pediu Fotos em vez de Fotografias e instruções por passos. Ações documentais/planta usam Verif. dossiê > digitalizar > upload eGO; formato errado usa Converter para JPG > upload eGO. Instruções automáticas repetidas são removidas; notas distintas mantêm-se. Assuntos antigos de fotos continuam reconhecidos por alias para evitar duplicação. Histórico anterior não é reescrito.

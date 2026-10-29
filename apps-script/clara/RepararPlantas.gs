@@ -4,7 +4,7 @@ function planoRepararPlantas_(s){
  const originais=rows.map((r,i)=>({r,i})).filter(x=>x.r[1]===s.ref&&x.r[2]==='Plantas'&&x.r[3]==='Planta'&&!edPendenciaSubstituida_(x.r));
  if(originais.length!==1)throw Error('É necessária uma única pendência original de planta.');
  const original=originais[0],estado=edEstadoCompativel_(original.r[8]);
- if(!['Falta no eGO > ver dossier','No dossier > digitalizar','Digitalizado','Falta no eGO + dossier','Categoria errada','Formato errado'].includes(estado))throw Error('O estado original exige revisão manual.');
+ if(!['Falta no eGO > ver dossiê','No dossiê > digitalizar','Digitalizado','Falta no eGO + dossiê','Categoria errada','Formato errado'].includes(estado))throw Error('O estado original exige revisão manual.');
  const duplas=rows.map((r,i)=>({r,i})).filter(x=>x.r[1]===s.ref&&x.r[2]==='Plantas'&&x.r[3]==='Imóvel sem planta'&&!edPendenciaSubstituida_(x.r));
  if(!duplas.length){if(atual===estado)return[];throw Error('Não há duplicado reconhecido; não alterar automaticamente.');}
  if(atual!=='Em falta'&&atual!==estado)throw Error('A planta foi alterada entretanto; não restaurar automaticamente.');

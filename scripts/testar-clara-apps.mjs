@@ -63,7 +63,7 @@ const save=(f,d,documents=docs)=>f.context.gravar('CLARA1:'+JSON.stringify(d),do
 const get=(s,r,c)=>s.getRange(r,c).getValue();
 const snapshot=f=>JSON.stringify([...f.sheets].map(([n,s])=>[n,[...s.cells], [...s.forms]]));
 // Public absence must preserve the operational state and reuse the canonical task.
-for(const estado of ['Falta no eGO > ver dossier','No dossier > digitalizar','Digitalizado','Falta no eGO + dossier','Categoria errada','Formato errado','N/A','Preenchido']){
+for(const estado of ['Falta no eGO > ver dossiê','No dossiê > digitalizar','Digitalizado','Falta no eGO + dossiê','Categoria errada','Formato errado','N/A','Preenchido']){
  const pf=fixture(),col=headers.indexOf('Planta')+1;pf.lev.getRange(10,col).setValue(estado);pf.pend.seed(6,['P0001','TESTE-001','Plantas','Planta','Evidência manual','Nota da equipa','Sara','Normal',estado]);
  const pp=analyse(pf,{...payload(),plantas:[]},{});assert.equal(pp.campos.find(p=>p.coluna==='Planta').novo,estado);const task=pp.pendencias.find(p=>p.tema==='Plantas');assert.equal(task.jaExiste,'P0001');assert.equal(task.atualizar,false);assert.equal(task.reabrir,false);
  save(pf,{...payload(),plantas:[]},{});assert.equal(get(pf.lev,10,col),estado);assert.equal(get(pf.pend,6,6),'Nota da equipa');assert.equal(get(pf.pend,6,7),'Sara');assert.equal(get(pf.pend,7,1),'');
@@ -153,10 +153,10 @@ console.log('PASS lotes: menos chamadas de escrita; lacunas e fórmulas não inc
 
 f=fixture();d=payload();const absent={...docs,licenca:'sem_dossier',certificado:'nao'};
 a=analyse(f,d,absent);let dp=a.pendencias.find(p=>p.tema==='Documentos');assert.equal(dp.sara,true);assert.match(dp.acao,/Sara: Licença/);assert.match(dp.acao,/dossiê.*Certificado/);save(f,d,absent);assert.equal(get(f.pend,6,7),'Sara');assert.equal(get(f.pend,6,17),'Sara');assert.equal(get(f.pend,6,9),'A aguardar esclarecimento');
-f=fixture();f.pend.seed(6,['P0001','TESTE-001','Documentos','Documentos obrigatórios sem ficheiro no eGO','Falta licença','Verificar dossier','Andreia','Alta','Por tratar']);save(f,d,{...docs,licenca:'sem_dossier'});assert.equal(get(f.pend,6,17),'Sara');assert.equal(get(f.pend,6,7),'Sara');assert.equal(get(f.pend,6,8),'Alta');assert.equal(get(f.pend,6,9),'A aguardar esclarecimento');
-console.log('PASS documentos: ausência no dossier delega análise à Sara em pendência nova ou existente; distingue documentos por procurar no dossier.');
+f=fixture();f.pend.seed(6,['P0001','TESTE-001','Documentos','Documentos obrigatórios sem ficheiro no eGO','Falta licença','Verificar dossiê','Andreia','Alta','Por tratar']);save(f,d,{...docs,licenca:'sem_dossier'});assert.equal(get(f.pend,6,17),'Sara');assert.equal(get(f.pend,6,7),'Sara');assert.equal(get(f.pend,6,8),'Alta');assert.equal(get(f.pend,6,9),'A aguardar esclarecimento');
+console.log('PASS documentos: ausência no dossiê delega análise à Sara em pendência nova ou existente; distingue documentos por procurar no dossiê.');
 
-f=fixture();f.pend.seed(6,['P0001','TESTE-001','Documentos','Documentos obrigatórios sem ficheiro no eGO','Outras faltas já conferidas','Verificar dossier','Andreia','Alta','Por tratar']);save(f,d,{licenca:'sem_dossier'});assert.equal(get(f.pend,6,17),'Sara');assert.match(get(f.pend,6,5),/Outras faltas já conferidas/);let once=snapshot(f);save(f,d,{licenca:'sem_dossier'});assert.equal(snapshot(f),once);console.log('PASS delegação parcial: preserva faltas anteriores e não duplica notas.');
+f=fixture();f.pend.seed(6,['P0001','TESTE-001','Documentos','Documentos obrigatórios sem ficheiro no eGO','Outras faltas já conferidas','Verificar dossiê','Andreia','Alta','Por tratar']);save(f,d,{licenca:'sem_dossier'});assert.equal(get(f.pend,6,17),'Sara');assert.match(get(f.pend,6,5),/Outras faltas já conferidas/);let once=snapshot(f);save(f,d,{licenca:'sem_dossier'});assert.equal(snapshot(f),once);console.log('PASS delegação parcial: preserva faltas anteriores e não duplica notas.');
 
 f=fixture();d=payload();d.parcial=true;delete d.textos.FR;
 ['Alt-text','Características','Descrição FR','Certificado Energético (anexo)'].forEach(h=>f.lev.cells.set('10,'+(headers.indexOf(h)+1),'Preenchido'));
@@ -178,7 +178,7 @@ try{assert.throws(()=>save(f,payload()),/células foram repostas/);assert(inject
 console.log('PASS recuperação: bloco parcialmente escrito é integralmente reposto.');
 
 f=fixture();headers.push('Observações / justificação N/A');f=fixture();f.lev.seed(10,['TESTE-001']);f.lev.cells.set('10,'+headers.length,'Nota manual preservada.');
-a=analyse(f,payload(),{...docs,caderneta:'nao',licenca:'sem_dossier'});const note=a.campos.find(x=>x.coluna==='Observações / justificação N/A').novo;assert.match(note,/Caderneta Predial: em falta no eGO; dossier por verificar/);assert.match(note,/Licença de Habitação: em falta no eGO e no dossier; aguarda análise da Sara/);assert.match(note,/Nota manual preservada/);assert.equal(a.campos.find(x=>x.coluna==='Licença Habitação (anexo)').novo,'Em falta');save(f,payload(),{...docs,caderneta:'nao',licenca:'sem_dossier'});let stableDoc=snapshot(f);save(f,payload(),{...docs,caderneta:'nao',licenca:'sem_dossier'});assert.equal(snapshot(f),stableDoc);save(f,payload(),{...docs,caderneta:'',licenca:'sim'});assert.match(get(f.lev,10,headers.length),/Caderneta/);assert.doesNotMatch(get(f.lev,10,headers.length),/Licença/);console.log('PASS diferenciação: observações por documento, notas manuais preservadas, contagens compatíveis, repetição e resolução.');
+a=analyse(f,payload(),{...docs,caderneta:'nao',licenca:'sem_dossier'});const note=a.campos.find(x=>x.coluna==='Observações / justificação N/A').novo;assert.match(note,/Caderneta Predial: em falta no eGO; dossiê por verificar/);assert.match(note,/Licença de Habitação: em falta no eGO e no dossiê; aguarda análise da Sara/);assert.match(note,/Nota manual preservada/);assert.equal(a.campos.find(x=>x.coluna==='Licença Habitação (anexo)').novo,'Em falta');save(f,payload(),{...docs,caderneta:'nao',licenca:'sem_dossier'});let stableDoc=snapshot(f);save(f,payload(),{...docs,caderneta:'nao',licenca:'sem_dossier'});assert.equal(snapshot(f),stableDoc);save(f,payload(),{...docs,caderneta:'',licenca:'sim'});assert.match(get(f.lev,10,headers.length),/Caderneta/);assert.doesNotMatch(get(f.lev,10,headers.length),/Licença/);console.log('PASS diferenciação: observações por documento, notas manuais preservadas, contagens compatíveis, repetição e resolução.');
 
 // Reproduz a perda de Date em coluna com validação de data, mantendo conferência estrita.
 const setOriginal=Range.prototype.setValue;
@@ -247,10 +247,10 @@ f=fixture();f.tx.cells.delete('2000,1');f.tx.maxRows=10;f.pend.forms.delete('200
 headers.push('Observações / justificação N/A','Resumo para a equipa');
 f=fixture();vm.runInContext(fs.readFileSync(new URL('../apps-script/clara/EstadoDocumental.gs',import.meta.url),'utf8'),f.context);
 let documentState=f.context.pesquisarEstadoDocumental('TESTE-001');
-let statePatch={...documentState.estados,caderneta:'Digitalizado',planta:'Falta no eGO + dossier'};
+let statePatch={...documentState.estados,caderneta:'Digitalizado',planta:'Falta no eGO + dossiê'};
 f.context.guardarEstadoDocumental('TESTE-001',statePatch,documentState.assinatura);
 assert.equal(get(f.lev,10,headers.indexOf('Caderneta Predial (anexo)')+1),'Digitalizado');
-assert.equal(get(f.lev,10,headers.indexOf('Planta')+1),'Falta no eGO + dossier');
+assert.equal(get(f.lev,10,headers.indexOf('Planta')+1),'Falta no eGO + dossiê');
 let pendingRows=f.pend.getRange(6,1,10,17).getValues();assert.equal(pendingRows.find(r=>r[3]==='Planta')[6],'Sara');
 assert.throws(()=>f.context.guardarEstadoDocumental('TESTE-001',statePatch,documentState.assinatura),/alterado entretanto/);
 documentState=f.context.pesquisarEstadoDocumental('TESTE-001');const stableDocumentState=snapshot(f);
@@ -260,7 +260,7 @@ console.log('PASS seguimento integrado: guarda cinco campos sem marcador, cria p
 
 documentState=f.context.pesquisarEstadoDocumental('TESTE-001');f.context.guardarEstadoDocumental('TESTE-001',{...statePatch,planta:'Preenchido'},documentState.assinatura);
 let plantRow=f.pend.getRange(6,1,20,17).getValues().findIndex(r=>r[3]==='Planta')+6;const resolutionDate=get(f.pend,plantRow,13).getTime();
-f.context.dataHoje_=()=>new Date('2026-10-23T00:00:00Z');documentState=f.context.pesquisarEstadoDocumental('TESTE-001');f.context.guardarEstadoDocumental('TESTE-001',{...documentState.estados,caderneta:'No dossier > digitalizar'},documentState.assinatura);assert.equal(get(f.pend,plantRow,13).getTime(),resolutionDate);
+f.context.dataHoje_=()=>new Date('2026-10-23T00:00:00Z');documentState=f.context.pesquisarEstadoDocumental('TESTE-001');f.context.guardarEstadoDocumental('TESTE-001',{...documentState.estados,caderneta:'No dossiê > digitalizar'},documentState.assinatura);assert.equal(get(f.pend,plantRow,13).getTime(),resolutionDate);
 console.log('PASS datas do seguimento: atualizar outro documento não altera a data de uma resolução existente.');
 
 await import("./testar-auditoria-prioritarios.mjs");
@@ -282,10 +282,10 @@ const manualVideo=['P9000','TESTE001','Vídeo','Existe vídeo do imóvel?','','N
 console.log('PASS fluxo vídeo: decisões explícitas, responsável e próxima ação por etapa, notas preservadas.');
 
 const acaoDoc=['P9001','TESTE001','Documentos','Caderneta Predial','','Esclarecer a ausência e disponibilizar o documento.','Sara','Normal','A aguardar esclarecimento'];assert.equal(f.context.acaoFluxoPendencia_(acaoDoc,acaoDoc[8]),'Pedir esclarecimento à Sara.');
-const curto=['P9001','TESTE001','Documentos','Documentos obrigatórios sem ficheiro no eGO','','Verificar no dossier do escritório e carregar no eGO: Caderneta Predial. Se não estiverem no dossier, pedir esclarecimento à Sara.','Andreia','Normal','Por tratar'];assert.equal(f.context.acaoFluxoPendencia_(curto,curto[8]),'Verif. dossiê > digitalizar > upload eGO: Caderneta Predial.');
+const curto=['P9001','TESTE001','Documentos','Documentos obrigatórios sem ficheiro no eGO','','Verificar no dossiê do escritório e carregar no eGO: Caderneta Predial. Se não estiverem no dossiê, pedir esclarecimento à Sara.','Andreia','Normal','Por tratar'];assert.equal(f.context.acaoFluxoPendencia_(curto,curto[8]),'Verif. dossiê > digitalizar > upload eGO: Caderneta Predial.');
 
-assert.equal(f.context.simplificarAcaoClara_('Procurar no dossier e inserir no eGO.\nNota da equipa: Carregar a planta em imagem (JPG) no eGO.','Plantas'),'Verif. dossiê > digitalizar > upload eGO');
-assert.match(f.context.simplificarAcaoClara_('Procurar no dossier e inserir no eGO.\nNota da equipa: Confirmar medidas com a equipa.','Plantas'),/Confirmar medidas com a equipa/);
+assert.equal(f.context.simplificarAcaoClara_('Procurar no dossiê e inserir no eGO.\nNota da equipa: Carregar a planta em imagem (JPG) no eGO.','Plantas'),'Verif. dossiê > digitalizar > upload eGO');
+assert.match(f.context.simplificarAcaoClara_('Procurar no dossiê e inserir no eGO.\nNota da equipa: Confirmar medidas com a equipa.','Plantas'),/Confirmar medidas com a equipa/);
 assert.equal(f.context.textoCurtoClara_('Fotografias sem texto alternativo'),'Fotos sem texto alternativo');
 const fotoOld=fixture();fotoOld.pend.seed(6,['P9002',payload().ref,'Imagens','Imóvel sem fotografias','','Carregar fotografias no eGO.','Andreia','Normal','Por tratar']);const fotoLeitura={...payload(),fotos:0,fotosComAlt:0,fotosComLegenda:0};
 // A fixture principal usa referência própria; atualizar apenas a pendência para essa referência.

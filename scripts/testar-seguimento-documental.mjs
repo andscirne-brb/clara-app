@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 const code=fs.readFileSync(new URL('../apps-script/clara/EstadoDocumental.gs',import.meta.url),'utf8');
 const c=vm.createContext({LEV:{nome:'Levantamento'},PEND:{nome:'Pendências da equipa'}});vm.runInContext(code,c);
 const heads=['Referência EGO','Caderneta Predial (anexo)','Certificado Energético (anexo)','Contrato Mediação (anexo)','Licença Habitação (anexo)','Planta','Observações / justificação N/A','Resumo para a equipa','Vídeo','Imagens','Alt-text'];
-const fixture=()=>({ref:'TESTE',row:10,c:{col:n=>heads.indexOf(n)+1},values:['TESTE','Em falta','Em falta','Em falta','Em falta','Em falta','','Resumo antigo','Preenchido'],nota:'Nota manual a conservar',estados:{caderneta:'Digitalizado',certificado:'Falta no eGO + dossier',contrato:'Por verificar',licenca:'Por verificar',planta:'Digitalizado'},pv:[['P0001','TESTE','Documentos','Documentos obrigatórios sem ficheiro no eGO','Caderneta Predial, Certificado Energético','','Andreia','Normal','Digitalizado'],['P0002','TESTE','Plantas','Imóvel sem planta','','','Andreia','Normal','Digitalizado'],['P0003','TESTE','Vídeo','Existe vídeo do imóvel?','','','Sara','Normal','A aguardar esclarecimento']]});
+const fixture=()=>({ref:'TESTE',row:10,c:{col:n=>heads.indexOf(n)+1},values:['TESTE','Em falta','Em falta','Em falta','Em falta','Em falta','','Resumo antigo','Preenchido'],nota:'Nota manual a conservar',estados:{caderneta:'Digitalizado',certificado:'Falta no eGO + dossiê',contrato:'Por verificar',licenca:'Por verificar',planta:'Digitalizado'},pv:[['P0001','TESTE','Documentos','Documentos obrigatórios sem ficheiro no eGO','Caderneta Predial, Certificado Energético','','Andreia','Normal','Digitalizado'],['P0002','TESTE','Plantas','Imóvel sem planta','','','Andreia','Normal','Digitalizado'],['P0003','TESTE','Vídeo','Existe vídeo do imóvel?','','','Sara','Normal','A aguardar esclarecimento']]});
 let s=fixture(),p=c.edPlano_(s,{},'migração');const value=(sheet,row,col)=>p.find(x=>x.folha===sheet&&x.linha===row&&x.col===col)?.valor;
 assert.equal(value('Levantamento',10,2),'Digitalizado');assert.equal(value('Levantamento',10,6),'Digitalizado');assert.match(value('Levantamento',10,7),/Nota manual a conservar/);
 const cert=p.find(x=>x.col===4&&x.valor==='Certificado Energético').linha;
@@ -14,9 +14,9 @@ assert.doesNotMatch(value('Levantamento',10,8),/Existe vídeo|Resumo antigo/);
 // Replaying a plan must not create new IDs; manual work stays in progress.
 for(const x of p){if(x.folha==='Levantamento')s.values[x.col-1]=x.valor;else{while(s.pv.length<=x.linha-6)s.pv.push(Array(17).fill(''));s.pv[x.linha-6][x.col-1]=x.valor;}}
 s.nota=s.values[6];const existingIds=s.pv.map(r=>r[0]);p=c.edPlano_(s,{},'painel');assert(!p.some(x=>x.col===1&&!existingIds.includes(x.valor)));
-const cad=s.pv.find(r=>r[3]==='Caderneta Predial');cad[8]='Em correção';s.estados.caderneta='No dossier > digitalizar';p=c.edPlano_(s,{},'painel');assert.equal(value('Pendências da equipa',s.pv.indexOf(cad)+6,9),'Em correção');
-assert.equal(c.edEstado_('Em falta','Planta: em falta no eGO e no dossier; aguarda análise da Sara.','Planta'),'Falta no eGO + dossier');
-assert.equal(c.edEstado_('Preenchido','Planta: em falta no eGO e no dossier.','Planta'),'Preenchido');
+const cad=s.pv.find(r=>r[3]==='Caderneta Predial');cad[8]='Em correção';s.estados.caderneta='No dossiê > digitalizar';p=c.edPlano_(s,{},'painel');assert.equal(value('Pendências da equipa',s.pv.indexOf(cad)+6,9),'Em correção');
+assert.equal(c.edEstado_('Em falta','Planta: em falta no eGO e no dossiê; aguarda análise da Sara.','Planta'),'Falta no eGO + dossiê');
+assert.equal(c.edEstado_('Preenchido','Planta: em falta no eGO e no dossiê.','Planta'),'Preenchido');
 assert.throws(()=>c.edPlano_(fixture(),{planta:'inventado'},'painel'),/Estado não reconhecido/);
 const f='=IF(A10="","",COUNTIFS(N10:S10,"Em falta"))';assert.match(c.edFormula_(f),/Digitalizado/);assert.equal(c.edFormula_(c.edFormula_(f)),c.edFormula_(f));
 new vm.Script(fs.readFileSync(new URL('../apps-script/clara/EstadoDocumental.html',import.meta.url),'utf8').match(/<script>([\s\S]*)<\/script>/)[1]);
@@ -35,7 +35,7 @@ assert.equal(c.edCampoSimples_('Alt-text em falta'),'Alt-text');
 console.log('PASS tarefas antigas: vídeo duplicado consolidado na linha com resposta, sem apagar a resposta, e alt-text antigo reconhecido.');
 
 assert.equal(c.edAcao_('Formato errado','Planta'),'Converter para JPG > upload eGO');
-assert.equal(c.edAcao_('Falta no eGO + dossier','Caderneta Predial'),'Pedir esclarecimento à Sara.');
+assert.equal(c.edAcao_('Falta no eGO + dossiê','Caderneta Predial'),'Pedir esclarecimento à Sara.');
 assert.equal(c.edAcao_('Digitalizado','Planta'),'Upload eGO');
 s=fixture();s.estados.planta='Formato errado';s.pv[1][6]='Sara';p=c.edPlano_(s,{},'painel');assert.equal(value('Pendências da equipa',7,7),'Andreia');assert.match(value('Pendências da equipa',7,6),/Converter para JPG/);
 console.log('PASS ações curtas: planta em JPG atribuída à Andreia e ausência confirmada encaminhada para Sara.');

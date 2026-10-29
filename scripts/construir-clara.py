@@ -4,6 +4,7 @@ apps-script/clara/Clara-completo.gs, para colar no editor do Apps Script ligado 
 import json, pathlib, re, sys
 base = pathlib.Path(__file__).resolve().parent.parent / 'apps-script' / 'clara'
 codigo = (base / 'Codigo.gs').read_text(encoding='utf-8')
+codigo += '\n' + (base / 'Terminologia.gs').read_text(encoding='utf-8')
 codigo += '\n' + (base / 'EstadosCurtos.gs').read_text(encoding='utf-8')
 codigo += '\n' + (base / 'EstadoDocumental.gs').read_text(encoding='utf-8')
 codigo += '\n' + (base / 'RepararPlantas.gs').read_text(encoding='utf-8')
