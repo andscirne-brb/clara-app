@@ -1,3 +1,11 @@
+## Último ponto de situação — 29/10/2026 — primeira gravação do piloto conferida
+
+O percurso de gravação do piloto foi testado pela utilizadora e a persistência foi conferida independentemente. Este registo técnico não inclui resultados por imóvel, contagens, estados documentais, referências, tempos de operação, ligações ou dados do cliente. As evidências do teste permanecem exclusivamente no ambiente privado.
+
+Limites técnicos: o histórico CLARA1 não identifica inequivocamente versão da extensão versus marcador. Não afirmar auditoria independente da instalação. Rever a consistência do contador de campos atualizados com a normalização usada no histórico. Nenhum dado foi alterado no Sheets nesta conferência.
+
+Piloto mantém-se no ramo desenvolvimento-extensao-imoveis. Próximo: alargar os testes de leitura, incluindo galeria incompleta e campos desconhecidos, antes de substituir o marcador no percurso.
+
 ## Último ponto de situação — 29/10/2026 — piloto de fichas públicas na extensão 0.2.0
 
 Andreia aprovou integrar a leitura eGO na extensão, começando pela ficha pública e reutilizando o coletor do marcador. Preparado 0.2.0 com ações separadas para imóvel e Rightmove. Novo resumo mostra campos confirmados e desconhecidos; documentos continuam manuais. Protocolo CLARA1 compatível com o painel atual, sem alterações no Sheets nem publicação no Apps Script. A extensão não lê o CRM interno e não altera/publica imóveis. Permissões novas apenas para as duas variantes do website público da agência; instalação deve ser atualizada pela Andreia, incluindo confirmação de acesso no Chrome se solicitada.
