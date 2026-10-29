@@ -1,3 +1,9 @@
+## Último ponto de situação — 29/10/2026 — Arquivado aprovado
+
+Andreia escolheu Arquivado para tarefas substituídas ou duplicadas. Não aplicável fica reservado a dispensas reais. Não apagar linhas: manter ID, referência, notas, respostas, motivo, datas e histórico. Arquivado é fechado para listas, gestão de responsáveis, contagens, resumo de equipa e email semanal; não é conclusão de trabalho nem dispensa de documentos. Digitalizado mantém-se aberto até upload.
+
+Código e migração preparados: confirmar destinos antes de arquivar, acrescentar opção ao dropdown, preservar filtros e excluir Arquivado na vista diária. Fórmulas e resumos ajustados, incluindo distinção de arquivo no estado de equipa. Sem reabertura automática nem criação repetida da antiga tarefa agrupada. 26 suites locais aprovadas. Aplicação nativa concluída, fonte final relida e verificação independente confirmou: só linhas tecnicamente substituídas foram arquivadas; IDs, notas, respostas, datas, estados documentais e histórico anterior preservados; indicadores de abertura do dashboard iguais e sem erros de fórmula nas folhas operacionais. Vista diária exclui Arquivado. O filtro da tabela é aplicado pelo SpreadsheetApp após o lote de estados e fórmulas, por limitação do endpoint de filtros de tabelas nativas. Não exige reinstalação da extensão. Ramo desenvolvimento-extensao-imoveis.
+
 ## Último ponto de situação — 29/10/2026 — conferência Digitalizado
 
 Conferência independente das pendências documentais e de plantas face ao Levantamento, nos dois sentidos: os estados Digitalizado coincidem nas linhas individuais ativas. A aparente divergência reportada corresponde à antiga linha agrupada, encerrada por substituição; os documentos individuais mantêm Digitalizado e ação Upload eGO. Não reativar agrupamentos nem inferir dispensa documental a partir de uma linha técnica substituída.

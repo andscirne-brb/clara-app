@@ -14,9 +14,9 @@ function planoRepararPlantas_(s){
  const nota=String(s.nota||'').split(/\r?\n/).filter(l=>l&&!l.startsWith('Planta: ')).concat('Planta: '+estado+'.').join('\n');
  add(LEV.nome,s.row,s.c.col('Observações / justificação N/A'),nota);
  duplas.forEach(x=>{const motivo='Duplicada: acompanhamento na pendência '+original.r[0]+'. Encerrada na reparação de leitura pública; evidência e responsável preservados.';
-   [[9,'Não aplicável'],[11,dataHoje_()],[12,motivo],[15,'Confirmado'],[17,'']].forEach(v=>{rows[x.i][v[0]-1]=v[1];add(PEND.nome,x.i+6,v[0],v[1]);});
+   [[9,'Arquivado'],[11,dataHoje_()],[12,motivo],[15,'Confirmado'],[17,'']].forEach(v=>{rows[x.i][v[0]-1]=v[1];add(PEND.nome,x.i+6,v[0],v[1]);});
  });
- const abertas=rows.filter(r=>r[1]===s.ref&&!['Concluído','Não aplicável'].includes(r[8]));
+ const abertas=rows.filter(r=>r[1]===s.ref&&!['Concluído','Não aplicável','Arquivado'].includes(r[8]));
  add(LEV.nome,s.row,s.c.col('Resumo para a equipa'),abertas.map(r=>(r[6]||'Por atribuir')+': '+r[3]+' — '+r[8]+'.').join('\n')||'Sem pendências abertas.');
  return changes;
 }

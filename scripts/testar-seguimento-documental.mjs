@@ -9,7 +9,7 @@ let s=fixture(),p=c.edPlano_(s,{},'migração');const value=(sheet,row,col)=>p.f
 assert.equal(value('Levantamento',10,2),'Digitalizado');assert.equal(value('Levantamento',10,6),'Digitalizado');assert.match(value('Levantamento',10,7),/Nota manual a conservar/);
 const cert=p.find(x=>x.col===4&&x.valor==='Certificado Energético').linha;
 assert.equal(value('Pendências da equipa',cert,7),'Sara');assert.equal(value('Pendências da equipa',cert,9),'A aguardar esclarecimento');
-assert.equal(value('Pendências da equipa',6,9),'Não aplicável');assert.equal(value('Pendências da equipa',8,9),'Concluído');
+assert.equal(value('Pendências da equipa',6,9),'Arquivado');assert.equal(value('Pendências da equipa',8,9),'Concluído');
 assert.doesNotMatch(value('Levantamento',10,8),/Existe vídeo|Resumo antigo/);
 // Replaying a plan must not create new IDs; manual work stays in progress.
 for(const x of p){if(x.folha==='Levantamento')s.values[x.col-1]=x.valor;else{while(s.pv.length<=x.linha-6)s.pv.push(Array(17).fill(''));s.pv[x.linha-6][x.col-1]=x.valor;}}

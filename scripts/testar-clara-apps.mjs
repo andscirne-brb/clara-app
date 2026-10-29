@@ -292,3 +292,5 @@ const fotoOld=fixture();fotoOld.pend.seed(6,['P9002',payload().ref,'Imagens','Im
 const fotoPreview=analyse(fotoOld,fotoLeitura);assert.equal(fotoPreview.pendencias.find(p=>p.assunto==='Imóvel sem fotos').jaExiste,'P9002');
 console.log('PASS simplificação: fotos antigas reconhecidas, instrução redundante removida e nota distinta preservada.');
 
+
+const archivedFixture=fixture();archivedFixture.pend.seed(6,['P9003',payload().ref,'Documentos','Documentos obrigatórios sem ficheiro no eGO','Caderneta Predial','','Andreia','Normal','Arquivado','','','Desdobrada em pendências por documento/planta.']);const archivedRead=analyse(archivedFixture,payload(),{caderneta:'falta',certificado:'falta',contrato:'falta',licenca:'falta'});const archivedGroup=archivedRead.pendencias.find(p=>p.tema==='Documentos');if(archivedGroup){assert.equal(archivedGroup.jaExiste,'P9003');assert.equal(archivedGroup.reabrir,false);assert.equal(archivedGroup.atualizar,false);}

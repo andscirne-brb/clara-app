@@ -58,7 +58,7 @@ const ESTADOS_VIDEO_CLARA=['A carregar vídeo','Sem vídeo disponível','Criar v
 function acaoFluxoPendencia_(r,estado){
  const acao=String(r[5]||''),partes=acao.split('\nNota da equipa: '),base=partes.shift(),nota=partes.join('\nNota da equipa: ');
  let nova=null;
- if(estado==='Não aplicável'&&typeof edMotivoCurto_==='function'&&edMotivoCurto_(r[11]))return edMotivoCurto_(r[11]);
+ if(['Não aplicável','Arquivado'].includes(estado)&&typeof edMotivoCurto_==='function'&&edMotivoCurto_(r[11]))return edMotivoCurto_(r[11]);
  if(r[2]==='Vídeo'&&['Existe vídeo do imóvel?','Vídeo em falta'].includes(r[3])){
    const acoes={'A aguardar esclarecimento':'Confirmar com a Sara: carregar vídeo ou indicar se não há vídeo disponível.','A carregar vídeo':'Sara: carregar vídeo no eGO.','Sem vídeo disponível':'Pedir à Sara a criação de vídeo ou confirmar que não é necessário.','Criar vídeo':'Sara: criar vídeo > carregar no eGO.','Não aplicável':'Vídeo dispensado pela equipa.','Concluído':'Vídeo carregado no eGO.'};
    const antigas=['Esclarecer se existe vídeo e onde está, para a Andreia o carregar no eGO.','Confirmar se há vídeo disponível e anexar, ou justificar se não aplicável.','Esclarecer se existe vídeo e onde está, para a Andreia o carregar no eGO. Confirmado sem ficheiro no eGO nem no dossiê; aguarda Sara: .'];
@@ -85,7 +85,7 @@ function atualizarFluxosPendencias(){
 
 function gestaoPendencia_(r,coluna,anterior){
   let responsavel=String(r[6]||''),estado=String(r[8]||'');
-  const fechada=estado==='Concluído'||estado==='Não aplicável';
+  const fechada=estado==='Concluído'||estado==='Não aplicável'||estado==='Arquivado';
   if(!fechada){
     if(coluna===7&&responsavel==='Sara')estado='A aguardar esclarecimento';
     else if(coluna===7&&responsavel==='Andreia'&&estado==='A aguardar esclarecimento')estado='Por tratar';
@@ -192,7 +192,7 @@ function listaTrabalho() {
   const ps = ss.getSheetByName(PEND.nome);
   const minhas = {}, sara = [];
   ps.getRange(PEND.titulos + 1, 1, Math.max(1, ps.getLastRow() - PEND.titulos), 17).getDisplayValues().forEach(function (r, i) {
-    if (!r[1] || r[2] === 'Perfil do portal' || r[8] === 'Concluído' || r[8] === 'Não aplicável') return;
+    if (!r[1] || r[2] === 'Perfil do portal' || r[8] === 'Concluído' || r[8] === 'Não aplicável' || r[8] === 'Arquivado') return;
     const p = { id: r[0], ref: r[1], tema: r[2], assunto: r[3], acao: r[5], estado: r[8], linha: PEND.titulos + 1 + i };
     if (responsavelPendencia_(r) === 'Andreia') { (minhas[r[1]] = minhas[r[1]] || []).push(p); }
     else if (responsavelPendencia_(r) === 'Sara') sara.push(p);
@@ -204,7 +204,7 @@ function listaTrabalho() {
   // As tarefas dos portais usam a mesma lista da equipa.
   const perfis = [];
   ps.getRange(PEND.titulos + 1, 1, Math.max(1, ps.getLastRow() - PEND.titulos), 17).getDisplayValues().forEach(function (r, i) {
-    if (r[2] !== 'Perfil do portal' || r[8] === 'Concluído' || r[8] === 'Não aplicável') return;
+    if (r[2] !== 'Perfil do portal' || r[8] === 'Concluído' || r[8] === 'Não aplicável' || r[8] === 'Arquivado') return;
     perfis.push({ portal: r[1], assunto: r[3], acao: r[5], estado: r[8], url: '', linha: PEND.titulos + 1 + i });
   });
   // Compatibilidade enquanto a reorganização ainda aguarda confirmação.
@@ -445,25 +445,25 @@ function analisar(texto, docs) {
     const assuntoAtual=textoCurtoClara_(r[3]);
     const key = r[1].toUpperCase() + '|' + assuntoAtual;
     const registro = { id: r[0], linha: PEND.titulos + 1 + i, estado: r[8], aguarda: r[16], responsavel: r[6], evidencia: r[4], acao: r[5], assunto:r[3] };
-    if (!existentes[key] || existentes[key].estado === 'Concluído') existentes[key] = registro;
+    if (!existentes[key] || existentes[key].estado === 'Concluído' || existentes[key].estado === 'Arquivado' && r[8] !== 'Arquivado') existentes[key] = registro;
     // O seguimento manual de Planta cobre os dois avisos gerados pelo site.
     if(r[2]==='Plantas'&&r[3]==='Planta'){
       existentes[ref+'|Imóvel sem planta']=registro;existentes[ref+'|Planta só em PDF']=registro;
     }
-    const aberta = r[8] !== 'Concluído' && r[8] !== 'Não aplicável';
+    const aberta = r[8] !== 'Concluído' && r[8] !== 'Não aplicável' && r[8] !== 'Arquivado';
     if (aberta && verificaveis[assuntoAtual] && !detetados[assuntoAtual]) resolvidas.push({ id: r[0], assunto: r[3], linha: PEND.titulos + 1 + i });
   });
   pend.forEach(function (p) {
     const ex = p.tema==='Plantas'&&existentes[ref+'|Planta']||existentes[ref + '|' + p.assunto];
     p.jaExiste = ex ? ex.id : ''; p.linhaExistente = ex ? ex.linha : 0;
     p.reabrir = !!ex && ex.estado === 'Concluído';
-    p.atualizar = !!ex && ex.estado !== 'Concluído' && ex.estado !== 'Não aplicável' && (p.tema === 'Documentos' ? todosVistos : !!verificaveis[p.assunto]) && (ex.evidencia !== p.evidencia || ex.acao !== p.acao || (p.sara && (ex.aguarda !== 'Sara' || ex.responsavel !== 'Sara')));
+    p.atualizar = !!ex && ex.estado !== 'Concluído' && ex.estado !== 'Não aplicável' && ex.estado !== 'Arquivado' && (p.tema === 'Documentos' ? todosVistos : !!verificaveis[p.assunto]) && (ex.evidencia !== p.evidencia || ex.acao !== p.acao || (p.sara && (ex.aguarda !== 'Sara' || ex.responsavel !== 'Sara')));
     p.retomarAndreia = !!ex && p.tema==='Documentos' && todosVistos && !p.sara && ex.estado==='A aguardar esclarecimento' && ex.responsavel==='Sara';
     if(p.retomarAndreia)p.atualizar=true;
     if(p.tema==='Plantas'&&ex&&ex.assunto==='Planta'){p.reabrir=false;p.atualizar=false;p.retomarAndreia=false;}
     if(p.tema==='Vídeo'&&ex&&['A carregar vídeo','Sem vídeo disponível','Criar vídeo','Não aplicável'].includes(ex.estado)){p.reabrir=false;p.atualizar=false;p.sara=false;}
     p.responsavelReabertura=p.sara?'Sara':ex&&ex.responsavel==='Sara'?'Andreia':ex?ex.responsavel:'Andreia';
-    p.delegarSara = !!ex && ex.estado !== 'Concluído' && ex.estado !== 'Não aplicável' && p.sara;
+    p.delegarSara = !!ex && ex.estado !== 'Concluído' && ex.estado !== 'Não aplicável' && ex.estado !== 'Arquivado' && p.sara;
     if (p.tema === 'Documentos' && p.delegarSara && !todosVistos && semDossier.length) {
       const aviso = 'Confirmado sem ficheiro no eGO nem no dossiê; aguarda Sara: ' + semDossier.join(', ') + '.';
       p.evidencia = ex.evidencia.indexOf(aviso) >= 0 ? ex.evidencia : ex.evidencia + ' ' + aviso;

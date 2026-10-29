@@ -8,7 +8,7 @@ function rsModelo_(h,lev,pend,hist,inicio,fim){
  // Só um local externo explícito e uma realização descrita podem integrar correções.
  hist.forEach((r,i)=>{
   const ref=norm(r[1]);if(!ref||!dentro(r[0]))return;const onde=norm(r[4]),antes=norm(r[6]),depois=norm(r[7]),validacao=norm(r[9]),motivo=norm(r[8]);
-  if(/abreviação de estados|simplificação.*pendências/i.test(motivo))return;
+  if(/abreviação de estados|simplificação.*pendências|arquivo técnico de pendências/i.test(motivo))return;
   if(['eGO','Idealista','Green-Acres','Rightmove','website','Site da agência'].includes(onde)&&depois&&depois!==antes&&(validacao==='Confirmado'||/^Realizado pela autora/.test(validacao))){
    const campo=norm(r[5]),texto=/descrição|texto|título/i.test(campo)||depois.length>500?'Atualizado: '+(campo||'campo do anúncio')+'.':depois;
    correcao(ref,r[2]?'pend:'+r[2]:'hist:'+i,texto,onde,validacao,r[0]);return;
@@ -20,7 +20,7 @@ function rsModelo_(h,lev,pend,hist,inicio,fim){
   if(onde===LEV.nome||folha===LEV.nome){let campo=partes.length>1?partes.slice(1).join(' · '):norm(r[5]);const cel=/^([A-Z]+)\d+$/.exec(campo);if(cel){let c=0;for(const ch of cel[1])c=c*26+ch.charCodeAt(0)-64;campo=h[c-1]||'Estado do levantamento';}(campos[ref]||(campos[ref]=new Set())).add(campo||'Estado do levantamento');}
  });
  pend.forEach(r=>{
-  const ref=norm(r[1]);if(!ref)return;const estado=norm(r[8]),assunto=norm(r[3]),responsavel=responsavelPendencia_(r)||'Por atribuir',fechada=['Concluído','Não aplicável','N/A'].includes(estado);
+  const ref=norm(r[1]);if(!ref)return;const estado=norm(r[8]),assunto=norm(r[3]),responsavel=responsavelPendencia_(r)||'Por atribuir',fechada=['Concluído','Não aplicável','N/A','Arquivado'].includes(estado);
   if(estado==='Concluído'&&dentro(r[12])){
    const resposta=norm(r[11]),explicita=/^Correção realizada(?: (?:no|na) (eGO|Idealista|Green-Acres|Rightmove|website))?:\s*(.+)/i.exec(resposta);
    if(explicita&&r[14]==='Confirmado')correcao(ref,'pend:'+r[0],explicita[2],explicita[1]||'Local não especificado','Declarado pela equipa; sem reverificação independente',r[12]);
