@@ -1,3 +1,9 @@
+## Último ponto de situação — 29/10/2026 — conferência Digitalizado
+
+Conferência independente das pendências documentais e de plantas face ao Levantamento, nos dois sentidos: os estados Digitalizado coincidem nas linhas individuais ativas. A aparente divergência reportada corresponde à antiga linha agrupada, encerrada por substituição; os documentos individuais mantêm Digitalizado e ação Upload eGO. Não reativar agrupamentos nem inferir dispensa documental a partir de uma linha técnica substituída.
+
+Nenhuma alteração de dados ou código necessária nesta auditoria. Histórico e gestão manual preservados. A apresentação de linhas substituídas continua a poder causar confusão; considerar rótulo próprio, com tratamento consistente de estado fechado, em vez de reutilizar Não aplicável. Não implementar parcialmente esse rótulo sem rever filtros, fórmulas e resumos. Evidência individual apenas no ambiente privado.
+
 ## Último ponto de situação — 29/10/2026 — terminologia dossiê
 
 Regra da Andreia: usar dossiê de forma uniforme. Textos, estados, painel, ações e critérios gerados usam a mesma grafia. Compatibilidade explícita com estados da versão anterior; o código interno sem_dossier não muda. Fotos continua abreviado.
