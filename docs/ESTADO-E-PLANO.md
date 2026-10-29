@@ -1,3 +1,9 @@
+## Último ponto de situação — 29/10/2026 — regressão de seguimento encontrada na validação
+
+Piloto ainda não concluído. A conferência privada identificou um problema de integração já existente no analisador do Sheets: ausência de planta no website pode sobrepor estado operacional manual mais específico e criar tarefa genérica em paralelo com seguimento documental existente, por usar assuntos diferentes. Não confundir ausência na publicação com inexistência no dossier. A aquisição dos conteúdos e a preservação dos documentos são verificações separadas desta regressão.
+
+Próximo passo prioritário: reproduzir com fixture sintética, proteger estados operacionais de plantas perante leituras públicas negativas e reconciliar assuntos equivalentes antes de gerar pendências. Preparar reparação auditável, preservando IDs, tarefas manuais e histórico; não apagar linhas nem executar reparação global. A verificação atual foi apenas de leitura: não foi aplicada correção no Sheets nem na fonte. Não solicitar repetição de testes antes da correção. Resultados por imóvel e exportações permanecem privados, sem referências, contagens ou estados individuais neste registo.
+
 ## Último ponto de situação — 29/10/2026 — primeira gravação do piloto conferida
 
 O percurso de gravação do piloto foi testado pela utilizadora e a persistência foi conferida independentemente. Este registo técnico não inclui resultados por imóvel, contagens, estados documentais, referências, tempos de operação, ligações ou dados do cliente. As evidências do teste permanecem exclusivamente no ambiente privado.
