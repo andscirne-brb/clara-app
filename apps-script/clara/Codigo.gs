@@ -263,7 +263,8 @@ function analisar(texto, docs) {
   const prop = function (coluna, valor, motivo) {
     const k = c.col(coluna); if (!k) { notas.push('Coluna "' + coluna + '" não encontrada; ignorada.'); return; }
     // Uma ausência no site não apaga trabalho documental confirmado no dossier.
-    if(valor==='Em falta'&&(coluna==='Planta'||DOCS.some(x=>x[1]===coluna))&&['Digitalizado','No dossier > digitalizar','Falta no eGO + dossier'].includes(atual[k-1]))valor=atual[k-1];
+    if(coluna==='Planta'&&['Em falta','Formato errado','Por verificar'].includes(valor)&&['Digitalizado','No dossier > digitalizar','Falta no eGO + dossier','Falta no eGO > ver dossier','Categoria errada','Formato errado','N/A','Não aplicável','Preenchido'].includes(atual[k-1])){valor=atual[k-1];notas.push('Planta: estado operacional preservado. A leitura pública não confirma a situação no eGO nem no dossier.');}
+    if(valor==='Em falta'&&DOCS.some(x=>x[1]===coluna)&&['Digitalizado','No dossier > digitalizar','Falta no eGO + dossier','Falta no eGO > ver dossier','Categoria errada','Formato errado','N/A','Não aplicável'].includes(atual[k-1]))valor=atual[k-1];
     const existente = campos.find(function (x) { return x.col === k; });
     if (existente) { existente.novo = valor; existente.motivo = motivo || ''; }
     else campos.push({ coluna: coluna, col: k, atual: atual[k - 1], novo: valor, motivo: motivo || '' });
@@ -395,18 +396,23 @@ function analisar(texto, docs) {
   ps.getRange(PEND.titulos + 1, 1, Math.max(1, ps.getLastRow() - PEND.titulos), 17).getDisplayValues().forEach(function (r, i) {
     if (!r[1] || r[1].toUpperCase() !== ref) return;
     const key = r[1].toUpperCase() + '|' + r[3];
-    const registro = { id: r[0], linha: PEND.titulos + 1 + i, estado: r[8], aguarda: r[16], responsavel: r[6], evidencia: r[4], acao: r[5] };
+    const registro = { id: r[0], linha: PEND.titulos + 1 + i, estado: r[8], aguarda: r[16], responsavel: r[6], evidencia: r[4], acao: r[5], assunto:r[3] };
     if (!existentes[key] || existentes[key].estado === 'Concluído') existentes[key] = registro;
+    // O seguimento manual de Planta cobre os dois avisos gerados pelo site.
+    if(r[2]==='Plantas'&&r[3]==='Planta'){
+      existentes[ref+'|Imóvel sem planta']=registro;existentes[ref+'|Planta só em PDF']=registro;
+    }
     const aberta = r[8] !== 'Concluído' && r[8] !== 'Não aplicável';
     if (aberta && verificaveis[r[3]] && !detetados[r[3]]) resolvidas.push({ id: r[0], assunto: r[3], linha: PEND.titulos + 1 + i });
   });
   pend.forEach(function (p) {
-    const ex = existentes[ref + '|' + p.assunto];
+    const ex = p.tema==='Plantas'&&existentes[ref+'|Planta']||existentes[ref + '|' + p.assunto];
     p.jaExiste = ex ? ex.id : ''; p.linhaExistente = ex ? ex.linha : 0;
     p.reabrir = !!ex && ex.estado === 'Concluído';
     p.atualizar = !!ex && ex.estado !== 'Concluído' && ex.estado !== 'Não aplicável' && (p.tema === 'Documentos' ? todosVistos : !!verificaveis[p.assunto]) && (ex.evidencia !== p.evidencia || ex.acao !== p.acao || (p.sara && (ex.aguarda !== 'Sara' || ex.responsavel !== 'Sara')));
     p.retomarAndreia = !!ex && p.tema==='Documentos' && todosVistos && !p.sara && ex.estado==='A aguardar esclarecimento' && ex.responsavel==='Sara';
     if(p.retomarAndreia)p.atualizar=true;
+    if(p.tema==='Plantas'&&ex&&ex.assunto==='Planta'){p.reabrir=false;p.atualizar=false;p.retomarAndreia=false;}
     p.responsavelReabertura=p.sara?'Sara':ex&&ex.responsavel==='Sara'?'Andreia':ex?ex.responsavel:'Andreia';
     p.delegarSara = !!ex && ex.estado !== 'Concluído' && ex.estado !== 'Não aplicável' && p.sara;
     if (p.tema === 'Documentos' && p.delegarSara && !todosVistos && semDossier.length) {

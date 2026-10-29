@@ -263,7 +263,8 @@ function analisar(texto, docs) {
   const prop = function (coluna, valor, motivo) {
     const k = c.col(coluna); if (!k) { notas.push('Coluna "' + coluna + '" não encontrada; ignorada.'); return; }
     // Uma ausência no site não apaga trabalho documental confirmado no dossier.
-    if(valor==='Em falta'&&(coluna==='Planta'||DOCS.some(x=>x[1]===coluna))&&['Digitalizado','No dossier > digitalizar','Falta no eGO + dossier'].includes(atual[k-1]))valor=atual[k-1];
+    if(coluna==='Planta'&&['Em falta','Formato errado','Por verificar'].includes(valor)&&['Digitalizado','No dossier > digitalizar','Falta no eGO + dossier','Falta no eGO > ver dossier','Categoria errada','Formato errado','N/A','Não aplicável','Preenchido'].includes(atual[k-1])){valor=atual[k-1];notas.push('Planta: estado operacional preservado. A leitura pública não confirma a situação no eGO nem no dossier.');}
+    if(valor==='Em falta'&&DOCS.some(x=>x[1]===coluna)&&['Digitalizado','No dossier > digitalizar','Falta no eGO + dossier','Falta no eGO > ver dossier','Categoria errada','Formato errado','N/A','Não aplicável'].includes(atual[k-1]))valor=atual[k-1];
     const existente = campos.find(function (x) { return x.col === k; });
     if (existente) { existente.novo = valor; existente.motivo = motivo || ''; }
     else campos.push({ coluna: coluna, col: k, atual: atual[k - 1], novo: valor, motivo: motivo || '' });
@@ -395,18 +396,23 @@ function analisar(texto, docs) {
   ps.getRange(PEND.titulos + 1, 1, Math.max(1, ps.getLastRow() - PEND.titulos), 17).getDisplayValues().forEach(function (r, i) {
     if (!r[1] || r[1].toUpperCase() !== ref) return;
     const key = r[1].toUpperCase() + '|' + r[3];
-    const registro = { id: r[0], linha: PEND.titulos + 1 + i, estado: r[8], aguarda: r[16], responsavel: r[6], evidencia: r[4], acao: r[5] };
+    const registro = { id: r[0], linha: PEND.titulos + 1 + i, estado: r[8], aguarda: r[16], responsavel: r[6], evidencia: r[4], acao: r[5], assunto:r[3] };
     if (!existentes[key] || existentes[key].estado === 'Concluído') existentes[key] = registro;
+    // O seguimento manual de Planta cobre os dois avisos gerados pelo site.
+    if(r[2]==='Plantas'&&r[3]==='Planta'){
+      existentes[ref+'|Imóvel sem planta']=registro;existentes[ref+'|Planta só em PDF']=registro;
+    }
     const aberta = r[8] !== 'Concluído' && r[8] !== 'Não aplicável';
     if (aberta && verificaveis[r[3]] && !detetados[r[3]]) resolvidas.push({ id: r[0], assunto: r[3], linha: PEND.titulos + 1 + i });
   });
   pend.forEach(function (p) {
-    const ex = existentes[ref + '|' + p.assunto];
+    const ex = p.tema==='Plantas'&&existentes[ref+'|Planta']||existentes[ref + '|' + p.assunto];
     p.jaExiste = ex ? ex.id : ''; p.linhaExistente = ex ? ex.linha : 0;
     p.reabrir = !!ex && ex.estado === 'Concluído';
     p.atualizar = !!ex && ex.estado !== 'Concluído' && ex.estado !== 'Não aplicável' && (p.tema === 'Documentos' ? todosVistos : !!verificaveis[p.assunto]) && (ex.evidencia !== p.evidencia || ex.acao !== p.acao || (p.sara && (ex.aguarda !== 'Sara' || ex.responsavel !== 'Sara')));
     p.retomarAndreia = !!ex && p.tema==='Documentos' && todosVistos && !p.sara && ex.estado==='A aguardar esclarecimento' && ex.responsavel==='Sara';
     if(p.retomarAndreia)p.atualizar=true;
+    if(p.tema==='Plantas'&&ex&&ex.assunto==='Planta'){p.reabrir=false;p.atualizar=false;p.retomarAndreia=false;}
     p.responsavelReabertura=p.sara?'Sara':ex&&ex.responsavel==='Sara'?'Andreia':ex?ex.responsavel:'Andreia';
     p.delegarSara = !!ex && ex.estado !== 'Concluído' && ex.estado !== 'Não aplicável' && p.sara;
     if (p.tema === 'Documentos' && p.delegarSara && !todosVistos && semDossier.length) {
@@ -740,6 +746,7 @@ const ED_CAMPOS = [
   ['planta','Planta','Planta']
 ];
 const ED_ESTADOS = ['Por verificar','Falta no eGO > ver dossier','No dossier > digitalizar','Digitalizado','Falta no eGO + dossier','Categoria errada','Formato errado','Preenchido','Não aplicável','Em falta'];
+function edPendenciaSubstituida_(r){return /^(Desdobrada em pendências|Duplicada: acompanhamento na pendência )/.test(String(r[11]||''));}
 function edEstadoCompativel_(v){return ({'Em falta no eGO · verificar dossier':'Falta no eGO > ver dossier','No dossier · por digitalizar':'No dossier > digitalizar','Em falta no eGO e no dossier':'Falta no eGO + dossier','N/A':'Não aplicável'})[v]||v;}
 function edCampoPendencia_(r){
   if(r[2]==='Plantas'&&['Planta','Imóvel sem planta','Planta só em PDF'].includes(r[3]))return ED_CAMPOS[4];
@@ -779,7 +786,7 @@ function edSnapshot_(ref){
   // Um Digitalizado existente tem prioridade sobre a antiga falta genérica.
   pv.filter(r=>r[1]===ref).forEach(r=>{const campo=edCampoPendencia_(r);
     ED_CAMPOS.forEach(x=>{
-      if(campo===x&&!String(r[11]||'').startsWith('Desdobrada em pendências')&&['Concluído','Não aplicável'].includes(r[8]))estados[x[0]]=r[8]==='Concluído'?'Preenchido':'Não aplicável';
+      if(campo===x&&!edPendenciaSubstituida_(r)&&['Concluído','Não aplicável'].includes(r[8]))estados[x[0]]=r[8]==='Concluído'?'Preenchido':'Não aplicável';
       if(r[8]==='Digitalizado'&&(campo===x||r[2]==='Documentos'&&r[3]==='Documentos obrigatórios sem ficheiro no eGO'&&r[4].includes(x[2]))&&!['Preenchido','Não aplicável'].includes(estados[x[0]]))estados[x[0]]='Digitalizado';
       if(campo===x&&r[6]==='Sara'&&/^(?:O documento|A planta) não está no dossier\.?$/i.test(String(r[5]||'').trim())&&estados[x[0]]===ED_ESTADOS[1])estados[x[0]]='Falta no eGO + dossier';
     });
@@ -818,7 +825,7 @@ function edPlano_(s,alteracoes,origem){
     add(LEV.nome,s.row,s.c.col(x[1]),estado==='Não aplicável'?'N/A':estado);
     notas=notas.filter(l=>!l.startsWith(x[2]+': '));
     if(estado!=='Preenchido')notas.push(x[2]+': '+estado+(estado==='Falta no eGO + dossier'?'; aguarda análise da Sara.':'.'));
-    let indices=[];pend.forEach((r,i)=>{const campo=edCampoPendencia_(r);if(r[1]===s.ref&&campo===x&&!String(r[11]||'').startsWith('Desdobrada em pendências'))indices.push(i);});
+    let indices=[];pend.forEach((r,i)=>{const campo=edCampoPendencia_(r);if(r[1]===s.ref&&campo===x&&!edPendenciaSubstituida_(r))indices.push(i);});
     if(indices.length>1)throw Error('Pendências repetidas para '+x[2]+'. Rever antes de sincronizar.');
     let i=indices[0];const fechado=['Preenchido','Não aplicável'].includes(estado);
     if(i===undefined&&fechado)return;
@@ -986,6 +993,43 @@ function migrarSeguimentoDocumental(){
     for(let i=0;i<4&&refs.length;i++){const ref=refs[0];edAplicar_(edSnapshot_(ref),{},'migração dos estados existentes');refs.shift();done.push(ref);p.setProperty('CLARA_MIGRAR_DOCUMENTOS',JSON.stringify(refs));}
     const r={atualizados:done,restantes:refs.length};console.log(JSON.stringify(r));return r;
   }finally{lock.releaseLock();}
+}
+
+/* Reparação dirigida e auditada. Não faz varrimento nem apaga histórico. */
+function planoRepararPlantas_(s){
+ const rows=s.pv.map(r=>r.slice()),atual=s.values[s.c.col('Planta')-1];
+ const originais=rows.map((r,i)=>({r,i})).filter(x=>x.r[1]===s.ref&&x.r[2]==='Plantas'&&x.r[3]==='Planta'&&!edPendenciaSubstituida_(x.r));
+ if(originais.length!==1)throw Error('É necessária uma única pendência original de planta.');
+ const original=originais[0],estado=edEstadoCompativel_(original.r[8]);
+ if(!['Falta no eGO > ver dossier','No dossier > digitalizar','Digitalizado','Falta no eGO + dossier','Categoria errada','Formato errado'].includes(estado))throw Error('O estado original exige revisão manual.');
+ const duplas=rows.map((r,i)=>({r,i})).filter(x=>x.r[1]===s.ref&&x.r[2]==='Plantas'&&x.r[3]==='Imóvel sem planta'&&!edPendenciaSubstituida_(x.r));
+ if(!duplas.length){if(atual===estado)return[];throw Error('Não há duplicado reconhecido; não alterar automaticamente.');}
+ if(atual!=='Em falta'&&atual!==estado)throw Error('A planta foi alterada entretanto; não restaurar automaticamente.');
+ duplas.forEach(x=>{if(x.r[8]!=='Por tratar'||x.r[11]||x.r[12]||x.r[17]||!String(x.r[4]||'').startsWith('O site não mostra planta')||x.r[5]!=='Carregar a planta em imagem (JPG) no eGO.')throw Error('A pendência adicional tem alterações ou respostas; rever manualmente.');});
+ const changes=[],add=(folha,linha,col,valor)=>changes.push({folha,linha,col,valor});
+ add(LEV.nome,s.row,s.c.col('Planta'),estado);
+ const nota=String(s.nota||'').split(/\r?\n/).filter(l=>l&&!l.startsWith('Planta: ')).concat('Planta: '+estado+'.').join('\n');
+ add(LEV.nome,s.row,s.c.col('Observações / justificação N/A'),nota);
+ duplas.forEach(x=>{const motivo='Duplicada: acompanhamento na pendência '+original.r[0]+'. Encerrada na reparação de leitura pública; evidência e responsável preservados.';
+   [[9,'Não aplicável'],[11,dataHoje_()],[12,motivo],[15,'Confirmado'],[17,'']].forEach(v=>{rows[x.i][v[0]-1]=v[1];add(PEND.nome,x.i+6,v[0],v[1]);});
+ });
+ const abertas=rows.filter(r=>r[1]===s.ref&&!['Concluído','Não aplicável'].includes(r[8]));
+ add(LEV.nome,s.row,s.c.col('Resumo para a equipa'),abertas.map(r=>(r[6]||'Por atribuir')+': '+r[3]+' — '+r[8]+'.').join('\n')||'Sem pendências abertas.');
+ return changes;
+}
+function repararSeguimentoPlantas(){
+ const ui=SpreadsheetApp.getUi(),r=ui.prompt('Reparar seguimento das plantas','Indica apenas as referências a reparar, separadas por vírgula (máximo duas). A operação preserva as linhas e regista as alterações.',ui.ButtonSet.OK_CANCEL);
+ if(r.getSelectedButton()!==ui.Button.OK)return;
+ const refs=Array.from(new Set(r.getResponseText().split(',').map(x=>x.trim().toUpperCase()).filter(Boolean)));
+ if(!refs.length||refs.length>2||refs.some(x=>!/^\w{2,5}\d+$/.test(x)))throw Error('Indica uma ou duas referências válidas.');
+ const lock=LockService.getDocumentLock();if(!lock.tryLock(5000))throw Error('Outra gravação está em curso.');
+ const resultados=[];try{
+   // Preflight de todos os alvos antes de qualquer alteração.
+   const planos=refs.map(ref=>{const s=edSnapshot_(ref);return{s,mudancas:planoRepararPlantas_(s)};});
+   planos.forEach(p=>{if(!p.mudancas.length){resultados.push({ref:p.s.ref,alteracoes:0});return;}p.s.websiteMudancas=p.mudancas;resultados.push(edAplicar_(p.s,{},'reparação dirigida de plantas após leitura pública'));});
+ }catch(e){throw Error('Reparação interrompida. Referências já processadas: '+resultados.map(x=>x.ref).join(', ')+'. '+e.message);}finally{lock.releaseLock();}
+ console.log(JSON.stringify({reparacao:'plantas',referencias:resultados.length,alteracoes:resultados.map(x=>x.alteracoes)}));
+ ui.alert('Reparação concluída. '+resultados.length+' referências conferidas. Linhas e histórico preservados.');
 }
 
 /* Vista derivada, apenas de leitura. Estado registado não comprova qualidade nem publicação atual. */

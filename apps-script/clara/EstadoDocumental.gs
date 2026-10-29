@@ -7,6 +7,7 @@ const ED_CAMPOS = [
   ['planta','Planta','Planta']
 ];
 const ED_ESTADOS = ['Por verificar','Falta no eGO > ver dossier','No dossier > digitalizar','Digitalizado','Falta no eGO + dossier','Categoria errada','Formato errado','Preenchido','Não aplicável','Em falta'];
+function edPendenciaSubstituida_(r){return /^(Desdobrada em pendências|Duplicada: acompanhamento na pendência )/.test(String(r[11]||''));}
 function edEstadoCompativel_(v){return ({'Em falta no eGO · verificar dossier':'Falta no eGO > ver dossier','No dossier · por digitalizar':'No dossier > digitalizar','Em falta no eGO e no dossier':'Falta no eGO + dossier','N/A':'Não aplicável'})[v]||v;}
 function edCampoPendencia_(r){
   if(r[2]==='Plantas'&&['Planta','Imóvel sem planta','Planta só em PDF'].includes(r[3]))return ED_CAMPOS[4];
@@ -46,7 +47,7 @@ function edSnapshot_(ref){
   // Um Digitalizado existente tem prioridade sobre a antiga falta genérica.
   pv.filter(r=>r[1]===ref).forEach(r=>{const campo=edCampoPendencia_(r);
     ED_CAMPOS.forEach(x=>{
-      if(campo===x&&!String(r[11]||'').startsWith('Desdobrada em pendências')&&['Concluído','Não aplicável'].includes(r[8]))estados[x[0]]=r[8]==='Concluído'?'Preenchido':'Não aplicável';
+      if(campo===x&&!edPendenciaSubstituida_(r)&&['Concluído','Não aplicável'].includes(r[8]))estados[x[0]]=r[8]==='Concluído'?'Preenchido':'Não aplicável';
       if(r[8]==='Digitalizado'&&(campo===x||r[2]==='Documentos'&&r[3]==='Documentos obrigatórios sem ficheiro no eGO'&&r[4].includes(x[2]))&&!['Preenchido','Não aplicável'].includes(estados[x[0]]))estados[x[0]]='Digitalizado';
       if(campo===x&&r[6]==='Sara'&&/^(?:O documento|A planta) não está no dossier\.?$/i.test(String(r[5]||'').trim())&&estados[x[0]]===ED_ESTADOS[1])estados[x[0]]='Falta no eGO + dossier';
     });
@@ -85,7 +86,7 @@ function edPlano_(s,alteracoes,origem){
     add(LEV.nome,s.row,s.c.col(x[1]),estado==='Não aplicável'?'N/A':estado);
     notas=notas.filter(l=>!l.startsWith(x[2]+': '));
     if(estado!=='Preenchido')notas.push(x[2]+': '+estado+(estado==='Falta no eGO + dossier'?'; aguarda análise da Sara.':'.'));
-    let indices=[];pend.forEach((r,i)=>{const campo=edCampoPendencia_(r);if(r[1]===s.ref&&campo===x&&!String(r[11]||'').startsWith('Desdobrada em pendências'))indices.push(i);});
+    let indices=[];pend.forEach((r,i)=>{const campo=edCampoPendencia_(r);if(r[1]===s.ref&&campo===x&&!edPendenciaSubstituida_(r))indices.push(i);});
     if(indices.length>1)throw Error('Pendências repetidas para '+x[2]+'. Rever antes de sincronizar.');
     let i=indices[0];const fechado=['Preenchido','Não aplicável'].includes(estado);
     if(i===undefined&&fechado)return;

@@ -6,6 +6,7 @@ base = pathlib.Path(__file__).resolve().parent.parent / 'apps-script' / 'clara'
 codigo = (base / 'Codigo.gs').read_text(encoding='utf-8')
 codigo += '\n' + (base / 'EstadosCurtos.gs').read_text(encoding='utf-8')
 codigo += '\n' + (base / 'EstadoDocumental.gs').read_text(encoding='utf-8')
+codigo += '\n' + (base / 'RepararPlantas.gs').read_text(encoding='utf-8')
 codigo += '\n' + (base / 'AuditoriaPrioritarios.gs').read_text(encoding='utf-8')
 codigo += '\n' + (base / 'AlertasDesempenho.gs').read_text(encoding='utf-8')
 codigo += '\n' + (base / 'PresencaPortais.gs').read_text(encoding='utf-8')

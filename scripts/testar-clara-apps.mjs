@@ -62,6 +62,13 @@ const analyse=(f,d,documents=docs)=>f.context.analisar('CLARA1:'+JSON.stringify(
 const save=(f,d,documents=docs)=>f.context.gravar('CLARA1:'+JSON.stringify(d),documents);
 const get=(s,r,c)=>s.getRange(r,c).getValue();
 const snapshot=f=>JSON.stringify([...f.sheets].map(([n,s])=>[n,[...s.cells], [...s.forms]]));
+// Public absence must preserve the operational state and reuse the canonical task.
+for(const estado of ['Falta no eGO > ver dossier','No dossier > digitalizar','Digitalizado','Falta no eGO + dossier','Categoria errada','Formato errado','N/A','Preenchido']){
+ const pf=fixture(),col=headers.indexOf('Planta')+1;pf.lev.getRange(10,col).setValue(estado);pf.pend.seed(6,['P0001','TESTE-001','Plantas','Planta','Evidência manual','Nota da equipa','Sara','Normal',estado]);
+ const pp=analyse(pf,{...payload(),plantas:[]},{});assert.equal(pp.campos.find(p=>p.coluna==='Planta').novo,estado);const task=pp.pendencias.find(p=>p.tema==='Plantas');assert.equal(task.jaExiste,'P0001');assert.equal(task.atualizar,false);assert.equal(task.reabrir,false);
+ save(pf,{...payload(),plantas:[]},{});assert.equal(get(pf.lev,10,col),estado);assert.equal(get(pf.pend,6,6),'Nota da equipa');assert.equal(get(pf.pend,6,7),'Sara');assert.equal(get(pf.pend,7,1),'');
+}
+console.log('PASS plantas: ausência pública preserva oito estados operacionais, ID, responsável e nota; nenhuma tarefa equivalente nova.');
 let f=fixture(),d=payload();
 assert.equal(analyse(f,d).completa,true);
 d.parcial=true;assert.equal(analyse(f,d).campos.find(p=>p.coluna==='Estado da verificação').novo,'Em curso');

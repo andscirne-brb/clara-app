@@ -1,3 +1,11 @@
+## Último ponto de situação — 29/10/2026 — proteção de plantas corrigida
+
+Correção no analisador: leituras públicas negativas preservam estados operacionais específicos das plantas. Assuntos equivalentes reutilizam o seguimento documental original, sem substituir responsável, ação ou notas manuais. Pendências explicitamente substituídas são excluídas da inferência documental e da sincronização.
+
+Incluída reparação dirigida com preflight de todos os alvos, recusa de alterações concorrentes, preservação de linhas e registo auditável. Correção aplicada no ambiente autorizado e conferida por exportação independente. Dados e evidências individuais permanecem privados. Função temporária de execução retirada; fonte final relida no editor. As 24 suites locais passaram, incluindo oito estados operacionais e repetição idempotente. Não exige reinstalar a extensão.
+
+Trabalho no ramo desenvolvimento-extensao-imoveis. Próximo: repetir uma análise de seguimento para confirmar o percurso completo com a proteção aplicada, incluindo estados manuais. Restantes condições do piloto continuam sujeitas a validação; não afirmar cobertura universal.
+
 ## Último ponto de situação — 29/10/2026 — regressão de seguimento encontrada na validação
 
 Piloto ainda não concluído. A conferência privada identificou um problema de integração já existente no analisador do Sheets: ausência de planta no website pode sobrepor estado operacional manual mais específico e criar tarefa genérica em paralelo com seguimento documental existente, por usar assuntos diferentes. Não confundir ausência na publicação com inexistência no dossier. A aquisição dos conteúdos e a preservação dos documentos são verificações separadas desta regressão.
