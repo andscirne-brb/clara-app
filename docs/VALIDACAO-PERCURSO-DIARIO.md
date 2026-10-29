@@ -1,3 +1,11 @@
+# Bloqueios documentais explícitos — 29/10/2026
+
+Pedido da utilizadora: a ação deve identificar o documento, o bloqueio confirmado no eGO e no dossiê e o próximo passo para a responsável. A ação genérica de pedir esclarecimento foi substituída por: «[Documento]: falta no eGO + dossiê. Sara: disponibilizar ou indicar onde obter o ficheiro.» O assunto e o responsável mantêm-se.
+
+Regra aplicada no gerador documental e nas ações de espera com evidência explícita do bloqueio. A ausência no dossiê não é inferida do estado de espera, do website ou do responsável. Texto genérico antigo reconhecido como automático, evitando duplicação em Nota da equipa; notas manuais distintas preservadas.
+
+Aplicação delimitada às ações antigas equivalentes cujo bloqueio estava confirmado no Levantamento. Preflight conferiu ID, referência, assunto, ação, responsável, estado e valor documental antes de gravar. Só texto da ação foi atualizado e cada alteração acrescentada ao histórico. Filtros repostos. Leitura independente confirma os textos e a manutenção dos estados, responsáveis e notas. Fonte final relida sem função temporária. 28 suites locais aprovadas. Sem necessidade de reinstalar extensão ou marcador. Dados individuais e provas mantidos privados.
+
 # Revisão das correspondências — 29/10/2026
 
 Revisão concluída das ligações pendentes no ambiente autorizado. Referências explícitas conferidas no browser e cruzadas com correspondência única no Levantamento foram confirmadas. Referências ausentes no catálogo permanecem não associadas, com nota de próxima ação. Não retirar sufixos, normalizar acentos para encontrar outra referência, aproximar por preço/morada/foto ou criar imóveis automaticamente.

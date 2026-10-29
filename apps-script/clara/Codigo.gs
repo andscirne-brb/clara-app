@@ -71,7 +71,8 @@ function acaoFluxoPendencia_(r,estado){
  if(r[2]==='Documentos'){
    if(/^Verificar no dossiê do escritório e carregar no eGO: [^\n]+$/.test(base))nova=base.replace('Verificar no dossiê do escritório e carregar no eGO: ','Verif. dossiê > digitalizar > carregar no eGO: ').replace(/\s*Se não estiverem no dossiê, pedir esclarecimento à Sara\.$/,'');
    const campo=typeof edCampoPendencia_==='function'?edCampoPendencia_(r):null;
-   if(campo&&typeof edAcao_==='function'&&edAcoesAntigas_().includes(base))nova=edAcao_(estado,campo[2])||(base==='Esclarecer a ausência e disponibilizar o documento.'?'Pedir esclarecimento à Sara.':null);
+   const bloqueioConfirmado=estado==='A aguardar esclarecimento'&&/Falta no eGO \+ dossiê|em falta no eGO e no dossiê/i.test(String(r[4]||''));
+   if(campo&&typeof edAcao_==='function'&&edAcoesAntigas_().includes(base))nova=edAcao_(bloqueioConfirmado?'Falta no eGO + dossiê':estado,campo[2])||(base==='Esclarecer a ausência e disponibilizar o documento.'?'Pedir esclarecimento à Sara.':null);
  }
  const resultado=simplificarAcaoClara_(nova===null?acao:nova+(nota?'\nNota da equipa: '+nota:''),r[2]);
  return resultado===acao?null:resultado;

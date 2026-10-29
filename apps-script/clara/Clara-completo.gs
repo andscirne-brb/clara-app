@@ -71,7 +71,8 @@ function acaoFluxoPendencia_(r,estado){
  if(r[2]==='Documentos'){
    if(/^Verificar no dossiê do escritório e carregar no eGO: [^\n]+$/.test(base))nova=base.replace('Verificar no dossiê do escritório e carregar no eGO: ','Verif. dossiê > digitalizar > carregar no eGO: ').replace(/\s*Se não estiverem no dossiê, pedir esclarecimento à Sara\.$/,'');
    const campo=typeof edCampoPendencia_==='function'?edCampoPendencia_(r):null;
-   if(campo&&typeof edAcao_==='function'&&edAcoesAntigas_().includes(base))nova=edAcao_(estado,campo[2])||(base==='Esclarecer a ausência e disponibilizar o documento.'?'Pedir esclarecimento à Sara.':null);
+   const bloqueioConfirmado=estado==='A aguardar esclarecimento'&&/Falta no eGO \+ dossiê|em falta no eGO e no dossiê/i.test(String(r[4]||''));
+   if(campo&&typeof edAcao_==='function'&&edAcoesAntigas_().includes(base))nova=edAcao_(bloqueioConfirmado?'Falta no eGO + dossiê':estado,campo[2])||(base==='Esclarecer a ausência e disponibilizar o documento.'?'Pedir esclarecimento à Sara.':null);
  }
  const resultado=simplificarAcaoClara_(nova===null?acao:nova+(nota?'\nNota da equipa: '+nota:''),r[2]);
  return resultado===acao?null:resultado;
@@ -900,11 +901,11 @@ function edEstado_(valor,nota,nome){
   if(valor==='Em falta'||/dossiê por verificar/i.test(linha))return ED_ESTADOS[1];
   return 'Por verificar';
 }
-function edAcoesAntigas_(){return ['Verif. dossiê > digitalizar > carregar no eGO.','Digitalizar > carregar no eGO.','Carregar no eGO.','Converter para JPG > carregar no eGO.','Procurar no dossiê e inserir no eGO.','Digitalizar, preparar e inserir no eGO.','Preparar o ficheiro digitalizado e inserir no eGO.','Esclarecer a ausência e disponibilizar o documento.','Preparar o formato correto e inserir no eGO.'];}
+function edAcoesAntigas_(){return ['Verif. dossiê > digitalizar > carregar no eGO.','Digitalizar > carregar no eGO.','Carregar no eGO.','Converter para JPG > carregar no eGO.','Procurar no dossiê e inserir no eGO.','Digitalizar, preparar e inserir no eGO.','Preparar o ficheiro digitalizado e inserir no eGO.','Pedir esclarecimento à Sara.','Esclarecer a ausência e disponibilizar o documento.','Preparar o formato correto e inserir no eGO.'];}
 function edAcao_(estado,nome){
   return ({'Em falta':'Verif. dossiê > digitalizar > upload eGO','Por verificar':'Confirmar o estado de '+nome+'.','Falta no eGO > ver dossiê':'Verif. dossiê > digitalizar > upload eGO',
     'No dossiê > digitalizar':'Digitalizar > upload eGO','Digitalizado':'Upload eGO',
-    'Falta no eGO + dossiê':'Pedir esclarecimento à Sara.',
+    'Falta no eGO + dossiê':nome+': falta no eGO + dossiê. Sara: disponibilizar ou indicar onde obter o ficheiro.',
     'Categoria errada':'Mover para a categoria correta no eGO.','Formato errado':nome==='Planta'?'Converter para JPG > upload eGO':'Corrigir formato > carregar no eGO.'})[estado]||'';
 }
 function edSnapshot_(ref){

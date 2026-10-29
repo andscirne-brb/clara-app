@@ -35,7 +35,9 @@ assert.equal(c.edCampoSimples_('Alt-text em falta'),'Alt-text');
 console.log('PASS tarefas antigas: vídeo duplicado consolidado na linha com resposta, sem apagar a resposta, e alt-text antigo reconhecido.');
 
 assert.equal(c.edAcao_('Formato errado','Planta'),'Converter para JPG > upload eGO');
-assert.equal(c.edAcao_('Falta no eGO + dossiê','Caderneta Predial'),'Pedir esclarecimento à Sara.');
+assert.equal(c.edAcao_('Falta no eGO + dossiê','Caderneta Predial'),'Caderneta Predial: falta no eGO + dossiê. Sara: disponibilizar ou indicar onde obter o ficheiro.');
+assert(c.edAcoesAntigas_().includes('Pedir esclarecimento à Sara.'));
+for(const nome of ['Certificado Energético','Contrato de Mediação','Licença de Habitação','Planta'])assert.equal(c.edAcao_('Falta no eGO + dossiê',nome),nome+': falta no eGO + dossiê. Sara: disponibilizar ou indicar onde obter o ficheiro.');
 assert.equal(c.edAcao_('Digitalizado','Planta'),'Upload eGO');
 s=fixture();s.estados.planta='Formato errado';s.pv[1][6]='Sara';p=c.edPlano_(s,{},'painel');assert.equal(value('Pendências da equipa',7,7),'Andreia');assert.match(value('Pendências da equipa',7,6),/Converter para JPG/);
 console.log('PASS ações curtas: planta em JPG atribuída à Andreia e ausência confirmada encaminhada para Sara.');

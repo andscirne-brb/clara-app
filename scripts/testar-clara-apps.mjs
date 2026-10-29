@@ -308,3 +308,8 @@ daily=dailyFixture();daily.lev.getRange(10,headers.indexOf('Vídeo')+1).setValue
 for(const [estado,owner] of [['A carregar vídeo','Sara'],['Sem vídeo disponível','Andreia'],['Criar vídeo','Sara']]){editDaily(daily,daily.pend,6,9,estado);assert.equal(get(daily.pend,6,9),estado);assert.equal(get(daily.pend,6,7),owner);assert.match(get(daily.lev,10,headers.indexOf('Resumo para a equipa')+1),new RegExp(estado));}
 editDaily(daily,daily.pend,6,9,'Não aplicável');assert.equal(get(daily.lev,10,headers.indexOf('Vídeo')+1),'Não aplicável');assert.equal(get(daily.pend,6,17),'');
 console.log('PASS percurso diário: callbacks reais de edição com fixtures, documento nos dois sentidos, histórico, resumo e três etapas de vídeo.');
+
+const docBloqueado=['P9004','TESTE001','Documentos','Caderneta Predial','Caderneta Predial: Falta no eGO + dossiê.','Pedir esclarecimento à Sara.\nNota da equipa: Confirmar com o proprietário.','Sara','Normal','A aguardar esclarecimento'];
+assert.equal(f.context.acaoFluxoPendencia_(docBloqueado,docBloqueado[8]),'Caderneta Predial: falta no eGO + dossiê. Sara: disponibilizar ou indicar onde obter o ficheiro.\nNota da equipa: Confirmar com o proprietário.');
+const semProva=[...docBloqueado];semProva[4]='Documento por verificar';semProva[5]='Pedir esclarecimento à Sara.';assert.equal(f.context.acaoFluxoPendencia_(semProva,semProva[8]),null);
+console.log('PASS bloqueio documental: documento e próximos passos explícitos, nota manual preservada, ausência no dossiê não inferida.');
