@@ -1,6 +1,6 @@
 ## Último ponto de situação — 31/10/2026 — testes da 0.3.0 (Claude)
 
-Andreia confirmou a 0.3.0 instalada. A leitura eGO foi testada em três imóveis diferentes. Conferi o Registo de alterações e as três gravações estão no Sheet, com data do dia. Falta só ela rever os valores: num caso, o número de fotos baixou.
+Andreia confirmou a 0.3.0 instalada. A leitura eGO foi testada em três imóveis diferentes. Conferi o Registo de alterações e as três gravações estão no Sheet, com data do dia. Num caso, o número de fotos baixou sem que a Andreia tenha retirado fotos. Conferi a página pública: a galeria e a API mostram o valor novo. A leitura antiga pelo marcador (fallback parcial) contava todos os IDs /Tphoto/ do HTML, incluindo imagens fora da galeria, e por isso dava um número a mais. A leitura da extensão está correta. Pode haver contagens antigas inflacionadas noutros imóveis lidos pelo fallback; voltam a ficar certas quando forem relidos pela extensão.
 
 Rightmove 0.3.0: a recolha fica em «A recolher os dois relatórios…» e não conclui. Conferido no Chrome dela, só em leitura:
 - os dois relatórios abrem com a sessão ativa;
