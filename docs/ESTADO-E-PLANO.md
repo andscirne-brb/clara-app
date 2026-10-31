@@ -1,3 +1,14 @@
+## Último ponto de situação — 31/10/2026 — leitura de todos os imóveis, 0.4.0 pronta para teste (Claude)
+
+Decisões da Andreia: ler todos os imóveis do sitemap (cerca de 400), não só os do Levantamento; passar ao Sheet por lotes de copiar e colar. O envio direto fica para depois de tudo validado.
+
+O que a 0.4.0 faz:
+- **Extensão:** o botão «eGO: ler todos os imóveis do site» lê o `sitemap-pt-pt.xml`, sem duplicados e só com fichas. Abre 3 separadores numa janela minimizada e corre em cada um o mesmo coletor da leitura individual. As falhas e os redirecionamentos são listados e nunca entram nos lotes, e as referências repetidas são bloqueadas. O progresso fica em `storage.local`, com botões Continuar e Parar. No fim gera lotes CLARA7 de 25. O botão «Teste: ler só 10 imóveis» faz um ensaio curto.
+- **Sheet (`LoteImoveis.gs` e painel):** analisa e grava ficha a ficha pelas mesmas funções do CLARA1, com uma chamada por imóvel para respeitar o limite de 6 minutos. Os documentos não são alterados. Imóveis fora do Levantamento são listados e não são criados.
+- **Testes:** as suites da extensão passam, incluindo `testar-extensao-massa.mjs`.
+
+Estado: o código do Apps Script já está no projeto nativo e foi conferido por hash igual ao `Clara-completo.gs` deste ramo. Falta a Andreia substituir os ficheiros da extensão pela 0.4.0 e fazer o teste de 10. Depois confiro os valores gravados contra a página pública. Ramo `desenvolvimento-leitura-em-massa`; junta-se a `main` após validação real.
+
 ## Último ponto de situação — 31/10/2026 — ramo da extensão junto a main (Claude)
 
 A Andreia aprovou e o ramo `desenvolvimento-extensao-imoveis` foi junto a `main`. A versão em vigor da extensão passa a ser a «Clara · imóveis e portais» 0.3.0, em `apps-script/rightmove-extension/`. Inclui ainda as alterações do Apps Script feitas pelo Codex a 29/10, que já estavam aplicadas no Sheet nativo. Não é preciso reinstalar nada.
