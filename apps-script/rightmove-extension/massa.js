@@ -1,6 +1,6 @@
 /* Leitura em massa das fichas públicas: usa o mesmo coletor da leitura individual, separador a separador.
    Os resultados ficam em chrome.storage.local (só neste computador) até serem copiados por lotes para o Sheets. */
-const MASSA={versao:'0.4.1',paralelo:3,porLote:25,limiteFichaMs:60000,sitemap:'https://www.janela-imobiliaria.com/sitemap-pt-pt.xml'};
+const MASSA={versao:'0.4.2',paralelo:3,porLote:25,limiteFichaMs:60000,sitemap:'https://www.janela-imobiliaria.com/sitemap-pt-pt.xml'};
 let massaAtiva=null,massaParar=false;
 const esperar=ms=>new Promise(r=>setTimeout(r,ms));
 const caminhoFicha=u=>{try{const x=new URL(u);return decodeURI(x.pathname).replace(/\/+$/,'').toLowerCase();}catch(e){return '';}};
@@ -26,6 +26,8 @@ async function lerFichaEmSeparador(tabId,url){
  const res=await chrome.scripting.executeScript({target:{tabId},world:'MAIN',func:async()=>{const raiz=document.documentElement;if(raiz.dataset.claraFichaBusy)return{ok:false,erro:'Leitura repetida no mesmo separador.'};raiz.dataset.claraFichaBusy='true';try{return{ok:true,d:await recolherFichaClara(document,{estado(){}})};}catch(e){return{ok:false,erro:String(e.message||e).slice(0,300)};}finally{delete raiz.dataset.claraFichaBusy;}}});
  if(caminhoFicha((await chrome.tabs.get(tabId)).url)!==alvo)throw Error('A página mudou durante a leitura.');
  const r=res[0]?.result;if(!r?.ok)throw Error(r?.erro||'A ficha não respondeu.');
+ /* Em massa, só serve a leitura completa pela API da página: a parcial deixaria valores antigos (ex.: alt texts) sem confirmar. */
+ if(r.d.parcial)throw Error('Os dados da ficha não ficaram disponíveis a tempo (leitura parcial). Volta a tentar este imóvel.');
  resumoFichaClara(r.d);return r.d;
 }
 

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Clara · imóveis e portais",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Recolhe imóveis e estatísticas dos portais para rever no Sheets.",
   "permissions": [
     "scripting",

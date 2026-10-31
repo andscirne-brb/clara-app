@@ -15,9 +15,9 @@ async function recolherFichaClara(doc,ui){
   const ext = x => ((JSON.stringify(x).match(/\.(pdf|jpe?g|png|webp|gif)\b/i) || [])[1] || '?').toLowerCase().replace('jpeg', 'jpg');
   const out = { v: 1, marcadorVersao: '20261028.2', origem: 'site', lido: new Date().toISOString(), url: location.href.split('?')[0], ref: null, idiomaCaracteristicas: (doc.documentElement.lang || '').slice(0,2).toUpperCase(), textos: {} };
   let p = null;
-  /* A API pública é reutilizada da cache da página (pedido novo é recusado pelo servidor); espera até 6 s pelo pedido da página. */
+  /* A API pública é reutilizada da cache da página (pedido novo é recusado pelo servidor); espera até 10 s pelo pedido da página. */
   const apiUrl=()=>performance.getEntriesByType('resource').map(e => e.name).find(n => /websiteapi\.egorealestate\.com\/v1\/Properties\/\d+\?.*propertyid=/.test(n));
-  let u=apiUrl();for(let i=0;!u&&i<20;i++){await new Promise(r=>setTimeout(r,300));u=apiUrl();}
+  let u=apiUrl();for(let i=0;!u&&i<34;i++){await new Promise(r=>setTimeout(r,300));u=apiUrl();}
   if (u) { try { p = await fetchClara(u,true); } catch (e) {} }
   const refDom=(doc.querySelector('.detailContainer')||doc.body).textContent.match(/Ref\.\s*([A-Z]{2,5}\d+)/);
   if(p&&p.Reference&&refDom&&p.Reference!==refDom[1])throw Error('As referências da página e dos dados não correspondem. Atualiza a ficha.');

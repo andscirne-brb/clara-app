@@ -1,3 +1,17 @@
+## Último ponto de situação — 31/10/2026 — segundo teste de 10 com a 0.4.1; leitura parcial bloqueada em massa (0.4.2) (Claude)
+
+Segundo teste com a 0.4.1, conferido no Registo de alterações. Quatro imóveis passaram de «Alt-text: Preenchido» para «Em falta», cada um com a pendência «Fotos sem texto alternativo» (de P0218 a P0237). Nesses quatro, o eGO não tem nenhum texto alternativo; os valores conferem com a API pública. Um outro imóvel sem fotos não tem alt a avaliar, como deve.
+
+Dois imóveis não receberam nenhuma alteração nesta leitura e ficaram com o «Preenchido» errado de 0.4.0. Conferidos à mão, a API da página tem 0 alt texts. Ou estavam entre os 3 não lidos, ou caíram na leitura parcial, que mantém o valor anterior quando não o pode confirmar.
+
+0.4.2:
+- na leitura em massa, uma leitura parcial (sem dados da API da página) é tratada como falha: é repetida e, se persistir, aparece em «Imóveis não lidos», sem entrar nos lotes;
+- a espera pelo pedido da API passa de 6 s para 10 s, também no marcador e na leitura individual;
+- teste novo em `testar-extensao-massa.mjs`; todas as suites passam;
+- `Clara-completo.gs` publicado no Apps Script nativo e conferido por hash.
+
+Próximo: a Andreia instala a 0.4.2 e faz a leitura de todos os imóveis. Os dois imóveis com alt errado ficam corrigidos nessa leitura. Conferir a lista de não lidos.
+
 ## Último ponto de situação — 31/10/2026 — teste de 10 feito; erro nos alt texts corrigido (0.4.1) (Claude)
 
 O teste de leitura em massa correu do princípio ao fim: 10 imóveis, 7 lidos, 3 não lidos e listados. Os 7 foram guardados em 172 s. A conferência no site confirmou o número de fotos, as plantas, os vídeos, os folhetos e as descrições por idioma. Quando falta tradução, o site mostra o texto em PT ou EN, e a leitura marca essas descrições como Em falta, como deve.
