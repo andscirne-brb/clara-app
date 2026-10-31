@@ -1,3 +1,20 @@
+## Último ponto de situação — 31/10/2026 — revisão do trabalho da extensão (Claude)
+
+Revisão só de leitura, sem alterações ao código nem ao Sheet. Em `main` está a extensão Rightmove 0.1.4, validada em recolha real a 28/10. Fica por resolver a usabilidade: abre dois separadores e o popup fecha.
+
+O trabalho mais recente está no ramo `desenvolvimento-extensao-imoveis` (17 commits, 29/10), ainda não junto a `main`. A extensão passou a «Clara · imóveis e portais» 0.3.0 com quatro ações: eGO ler este imóvel, Idealista, Green-Acres e Rightmove. O ramo inclui ainda Arquivado, terminologia dossiê, fluxos de vídeo, plantas e documentos, revisão de correspondências e normalização de fórmulas. Todas estas alterações já estão aplicadas no Sheet nativo.
+
+Validado com uso real: a primeira gravação da leitura eGO (0.2.0) e a recolha Idealista + Green-Acres, conferida no documento.
+
+Por fazer:
+1. Confirmar o percurso documental durante um upload real.
+2. Repetir a leitura eGO noutros imóveis antes de substituir o marcador.
+3. Rever as correspondências pendentes e atualizar a lista de referências eGO.
+4. Reduzir o passo do popup do Rightmove.
+5. Juntar o ramo a `main` quando a Andreia aprovar.
+
+Próximo passo: a Andreia confirma que tem a 0.3.0 instalada (chrome://extensions). Depois testa a leitura eGO em 2 ou 3 imóveis diferentes e faz uma recolha Rightmove com a 0.3.0. Com isso validado, junta-se o ramo a `main`.
+
 ## Último ponto de situação — 28/10/2026 — 0.1.4 validada em recolha real
 
 Andreia instalou 0.1.4, realizou nova recolha e guardou no documento principal. Screenshot do popup identifica a versão e ambos os blocos completos. Conferência independente através de exportação privada do documento: novo lote diário completo, somas por canal correspondem ao resultado do popup; o dashboard passou a mostrar a revisão correta e as séries do gráfico apontam para os dados diários atualizados. Desempenho CSV mantém carteira completa em cada janela. Lote anterior incorreto permanece no histórico; a nova revisão é usada no dashboard. Nenhum dado real, referência, exportação ou identificador do documento incluído no repositório. Duração exata não medida; utilizadora reportou rapidez. Este teste valida a recolha e gravação desta versão neste caso, não todas as condições de sessão, zero e falha parcial.
