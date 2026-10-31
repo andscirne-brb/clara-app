@@ -1,3 +1,15 @@
+## Último ponto de situação — 31/10/2026 — Rightmove 0.3.0 validada em recolha real (Claude)
+
+Na nova tentativa, a recolha Rightmove com a 0.3.0 concluiu: os dois relatórios foram recolhidos e gravados no Sheet em 55 s, 181 linhas. Conferência independente no documento, só em leitura:
+- leads diárias com um lote de 31 dias, um único ID de recolha e somas iguais ao relatório;
+- desempenho CSV com as três janelas completas, sem IDs repetidos;
+- histórico com uma linha por anúncio;
+- uma importação CSV nova.
+
+Não há registo do erro da tentativa anterior. Se voltar a ficar presa, é preciso a mensagem final e a consola do service worker. As três funções da 0.3.0 já usadas em real (eGO, Idealista + Green-Acres, Rightmove) estão validadas.
+
+Próximo: a Andreia aprova juntar `desenvolvimento-extensao-imoveis` a `main`. Depois, reler com a extensão os imóveis lidos pelo marcador antigo, cujas contagens de fotos podem estar inflacionadas.
+
 ## Último ponto de situação — 31/10/2026 — testes da 0.3.0 (Claude)
 
 Andreia confirmou a 0.3.0 instalada. A leitura eGO foi testada em três imóveis diferentes. Conferi o Registo de alterações e as três gravações estão no Sheet, com data do dia. Num caso, o número de fotos baixou sem que a Andreia tenha retirado fotos. Conferi a página pública: a galeria e a API mostram o valor novo. A leitura antiga pelo marcador (fallback parcial) contava todos os IDs /Tphoto/ do HTML, incluindo imagens fora da galeria, e por isso dava um número a mais. A leitura da extensão está correta. Pode haver contagens antigas inflacionadas noutros imóveis lidos pelo fallback; voltam a ficar certas quando forem relidos pela extensão.
