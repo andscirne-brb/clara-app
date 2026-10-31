@@ -32,6 +32,7 @@ codigo += '\n' + (base / 'DashboardIdealista.gs').read_text(encoding='utf-8')
 codigo += '\n' + (base / 'ContactosIdealista.gs').read_text(encoding='utf-8')
 codigo += '\n' + (base / 'DashboardVisual.gs').read_text(encoding='utf-8')
 codigo += '\n' + (base / 'ProgressoDashboard.gs').read_text(encoding='utf-8')
+codigo += '\n' + (base / 'LoteImoveis.gs').read_text(encoding='utf-8')
 painel = (base / 'Painel.html').read_text(encoding='utf-8')
 for marca, uri in json.loads((base / 'logos' / 'logos.json').read_text(encoding='utf-8')).items():
     painel = painel.replace('__LOGO_' + marca.upper() + '__', uri)
