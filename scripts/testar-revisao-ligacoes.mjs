@@ -1,0 +1,14 @@
+import fs from 'node:fs';import vm from 'node:vm';import assert from 'node:assert/strict';
+const c={};vm.createContext(c);for(const name of ['ImoveisPortais.gs','RevisaoLigacoes.gs'])vm.runInContext(fs.readFileSync(new URL('../apps-script/clara/'+name,import.meta.url),'utf8'),c);
+for(const ref of ['TESTE10001 (2)','TÉST_10001','TESTE10001 -1','10001']){assert(c.ipRefValida_(ref));const html='<div class="label-value"><label>Número de mandato</label><p>'+ref+'</p></div>';assert.equal(c.ipExtrairRef_('Green-Acres',html),ref);assert.equal(c.ipExtrairRef_('Rightmove','<p>#ref:'+ref+'</p>'),ref);}
+for(const ref of ['TESTE10001 (abc)','<script>','TESTE10001/other','TESTE10001 MORE'])assert(!c.ipRefValida_(ref));
+assert.equal(c.ipExtrairRef_('Rightmove','<p>#ref:TESTE10001 (abc)</p>'),'');assert.throws(()=>c.ipExtrairRef_('Rightmove','<p>#ref:TESTE10001</p><p>#ref:TESTE10002</p>'),/divergentes/);
+const url='https://www.green-acres.pt/pt/properties/Atest.htm',row=(id,ref,state,note='')=>['Green-Acres',id,id,ref,state,'Fonte',url,'2026-01-01',note],old=[row('101','','Por rever'),row('102','TESTE10002 (2)','Referência ausente no levantamento'),row('103','TESTE10003','Confirmada','Nota manual')],ego={'TESTE10001':{linhas:[10]},TESTE10002:{linhas:[11]},TESTE10003:{linhas:[12]}};
+const proof={portal:'Green-Acres',id:'101',ref:'TESTE10001',url};let next=c.ipPlanoRevisao_(old,ego,[proof],'2026-01-02');assert.equal(next[0][4],'Confirmada');assert.equal(next[1][3],'TESTE10002 (2)');assert.match(next[1][8],/Atualizar a lista eGO/);assert.deepEqual(Array.from(next[2]),old[2]);assert.equal(old[0][3],'');assert.deepEqual(JSON.parse(JSON.stringify(c.ipPlanoRevisao_(next,ego,[],'2026-01-02'))),JSON.parse(JSON.stringify(next)));
+assert.throws(()=>c.ipPlanoRevisao_(old,ego,[proof,proof],'2026-01-02'),/repetida/);assert.throws(()=>c.ipPlanoRevisao_(old,ego,[{...proof,url:url.replace('Atest','Aother')}],'2026-01-02'),/outro anúncio/);
+const dupe={...ego,TESTE10001:{linhas:[10,20]}};assert.equal(c.ipPlanoRevisao_(old,dupe,[proof],'2026-01-02')[0][4],'Referência duplicada no levantamento');
+console.log('PASS revisão: referências exatas com acentos e sufixos, sem truncar/aproximar, provas por anúncio, duplicados, notas e estados anteriores preservados.');
+
+const browser={location:{hostname:'www.rightmove.co.uk',origin:'https://www.rightmove.co.uk',pathname:'/properties/101'},Date};vm.createContext(browser);vm.runInContext(fs.readFileSync(new URL('../apps-script/clara/ligacao-portal.js',import.meta.url),'utf8'),browser);
+assert.equal(browser.recolherLigacaoPublica({body:{innerText:'#ref:TÉST_10001 (2)'}}).refEgo,'TÉST_10001 (2)');assert.throws(()=>browser.recolherLigacaoPublica({body:{innerText:'#ref:TESTE10001\n#ref:TESTE10002'}}),/ambígua/);
+console.log('PASS marcador público: mesmo vocabulário do servidor e divergências recusadas.');

@@ -5,7 +5,7 @@ function apClassificar_(v){
   if(v==='Preenchido')return 'registado';
   if(v==='Não aplicável'||v==='N/A')return 'na';
   if(!v||v==='Por verificar')return 'desconhecido';
-  if(['Em falta','Falta no eGO > ver dossier','No dossier > digitalizar','Digitalizado','Falta no eGO + dossier','Categoria errada','Formato errado'].includes(v))return 'acao';
+  if(['Em falta','Falta no eGO > ver dossiê','No dossiê > digitalizar','Digitalizado','Falta no eGO + dossiê','Categoria errada','Formato errado'].includes(v))return 'acao';
   return 'desconhecido';
 }
 function apModelo_(h,rows,ligacoes){

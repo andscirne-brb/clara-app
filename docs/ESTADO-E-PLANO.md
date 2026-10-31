@@ -1,3 +1,9 @@
+## Último ponto de situação — 31/10/2026 — ramo da extensão junto a main (Claude)
+
+A Andreia aprovou e o ramo `desenvolvimento-extensao-imoveis` foi junto a `main`. A versão em vigor da extensão passa a ser a «Clara · imóveis e portais» 0.3.0, em `apps-script/rightmove-extension/`. Inclui ainda as alterações do Apps Script feitas pelo Codex a 29/10, que já estavam aplicadas no Sheet nativo. Não é preciso reinstalar nada.
+
+Próximo: reler com a extensão os imóveis lidos pelo marcador antigo, para acertar as contagens de fotos. Depois, rever as correspondências pendentes e confirmar o percurso documental num upload real.
+
 ## Último ponto de situação — 31/10/2026 — Rightmove 0.3.0 validada em recolha real (Claude)
 
 Na nova tentativa, a recolha Rightmove com a 0.3.0 concluiu: os dois relatórios foram recolhidos e gravados no Sheet em 55 s, 181 linhas. Conferência independente no documento, só em leitura:
@@ -38,6 +44,70 @@ Por fazer:
 5. Juntar o ramo a `main` quando a Andreia aprovar.
 
 Próximo passo: a Andreia confirma que tem a 0.3.0 instalada (chrome://extensions). Depois testa a leitura eGO em 2 ou 3 imóveis diferentes e faz uma recolha Rightmove com a 0.3.0. Com isso validado, junta-se o ramo a `main`.
+
+## Último ponto de situação — 29/10/2026 — Arquivado aprovado
+
+Andreia escolheu Arquivado para tarefas substituídas ou duplicadas. Não aplicável fica reservado a dispensas reais. Não apagar linhas: manter ID, referência, notas, respostas, motivo, datas e histórico. Arquivado é fechado para listas, gestão de responsáveis, contagens, resumo de equipa e email semanal; não é conclusão de trabalho nem dispensa de documentos. Digitalizado mantém-se aberto até upload.
+
+Código e migração preparados: confirmar destinos antes de arquivar, acrescentar opção ao dropdown, preservar filtros e excluir Arquivado na vista diária. Fórmulas e resumos ajustados, incluindo distinção de arquivo no estado de equipa. Sem reabertura automática nem criação repetida da antiga tarefa agrupada. 26 suites locais aprovadas. Aplicação nativa concluída, fonte final relida e verificação independente confirmou: só linhas tecnicamente substituídas foram arquivadas; IDs, notas, respostas, datas, estados documentais e histórico anterior preservados; indicadores de abertura do dashboard iguais e sem erros de fórmula nas folhas operacionais. Vista diária exclui Arquivado. O filtro da tabela é aplicado pelo SpreadsheetApp após o lote de estados e fórmulas, por limitação do endpoint de filtros de tabelas nativas. Não exige reinstalação da extensão. Ramo desenvolvimento-extensao-imoveis.
+
+## Último ponto de situação — 29/10/2026 — conferência Digitalizado
+
+Conferência independente das pendências documentais e de plantas face ao Levantamento, nos dois sentidos: os estados Digitalizado coincidem nas linhas individuais ativas. A aparente divergência reportada corresponde à antiga linha agrupada, encerrada por substituição; os documentos individuais mantêm Digitalizado e ação Upload eGO. Não reativar agrupamentos nem inferir dispensa documental a partir de uma linha técnica substituída.
+
+Nenhuma alteração de dados ou código necessária nesta auditoria. Histórico e gestão manual preservados. A apresentação de linhas substituídas continua a poder causar confusão; considerar rótulo próprio, com tratamento consistente de estado fechado, em vez de reutilizar Não aplicável. Não implementar parcialmente esse rótulo sem rever filtros, fórmulas e resumos. Evidência individual apenas no ambiente privado.
+
+## Último ponto de situação — 29/10/2026 — terminologia dossiê
+
+Regra da Andreia: usar dossiê de forma uniforme. Textos, estados, painel, ações e critérios gerados usam a mesma grafia. Compatibilidade explícita com estados da versão anterior; o código interno sem_dossier não muda. Fotos continua abreviado.
+
+Migração ortográfica das folhas operacionais preparada em lote atómico: células atuais, fórmulas, opções de tabelas, regras e filtros atualizados em conjunto; preflight recusa alterações concorrentes. Histórico e cópias originais preservados. Alterações textuais auditadas; fórmulas agrupadas por folha no registo para não inflacionar o resumo semanal. 25 suites locais aprovadas. Aplicação nativa concluída; exportação independente confirma substituições estritamente ortográficas, fórmulas coerentes, dropdowns atualizados e histórico anterior preservado. Fonte final conferida sem função temporária.
+
+## Último ponto de situação — 29/10/2026 — linguagem curta e motivos de substituição
+
+Andreia pediu Fotos em vez de Fotografias e instruções por passos. Ações documentais/planta usam Verif. dossiê > digitalizar > upload eGO; formato errado usa Converter para JPG > upload eGO. Instruções automáticas repetidas são removidas; notas distintas mantêm-se. Assuntos antigos de fotos continuam reconhecidos por alias para evitar duplicação. Histórico anterior não é reescrito.
+
+Auditoria dos estados Não aplicável: distinguir substituição técnica de dispensa real. A ação visível indica Separada por documento > ver pendências do imóvel ou Duplicada > ver ID; o motivo detalhado e o registo original permanecem guardados. Não converter automaticamente estes estados em conclusão de trabalho nem em dispensa documental. Foi conferida a existência dos destinos no ambiente privado.
+
+24 suites de regressão aprovadas. Aplicação nativa concluída; exportação independente confirmou preservação de IDs, estados, responsáveis, respostas, resoluções, Levantamento e histórico anterior. Motivos de substituição visíveis e rótulos Fotos conferidos. Código no ramo desenvolvimento-extensao-imoveis. Nenhum dado individual ou exportação no repositório.
+
+## Último ponto de situação — 29/10/2026 — fluxos de vídeo, plantas e documentos
+
+Vídeo: falta inicial pede confirmação à Sara. Estados explícitos A carregar vídeo (Sara), Sem vídeo disponível (Andreia pede criação ou dispensa), Criar vídeo (Sara) e Não aplicável (dispensado). Uma nova leitura negativa não sobrepõe a decisão operacional nem reabre a dispensa. Texto livre de respostas não é interpretado como decisão automática. A conclusão continua dependente de confirmação humana ou evidência positiva.
+
+Plantas em Formato errado: Converter para JPG > carregar no eGO, a cargo da Andreia. Documentos: Verif. dossiê > digitalizar > carregar no eGO; ausência confirmada em ambos pede esclarecimento à Sara. Digitalizado mantém-se aberto até carregar. Ações reconhecidas são encurtadas; notas personalizadas e respostas são preservadas.
+
+Fonte nativa atualizada por alterações delimitadas. Opções de vídeo acrescentadas sem retirar valores existentes. Atualização das ações existentes auditada; exportação independente confirma preservação das respostas, do Levantamento e do histórico anterior. Testes de regressão aprovados. Não exige reinstalar extensão. Próximo: validar edição manual de uma etapa de vídeo no uso diário, sem simular decisões em registos reais. Ramo desenvolvimento-extensao-imoveis.
+
+## Último ponto de situação — 29/10/2026 — proteção de plantas corrigida
+
+Correção no analisador: leituras públicas negativas preservam estados operacionais específicos das plantas. Assuntos equivalentes reutilizam o seguimento documental original, sem substituir responsável, ação ou notas manuais. Pendências explicitamente substituídas são excluídas da inferência documental e da sincronização.
+
+Incluída reparação dirigida com preflight de todos os alvos, recusa de alterações concorrentes, preservação de linhas e registo auditável. Correção aplicada no ambiente autorizado e conferida por exportação independente. Dados e evidências individuais permanecem privados. Função temporária de execução retirada; fonte final relida no editor. As 24 suites locais passaram, incluindo oito estados operacionais e repetição idempotente. Não exige reinstalar a extensão.
+
+Trabalho no ramo desenvolvimento-extensao-imoveis. Próximo: repetir uma análise de seguimento para confirmar o percurso completo com a proteção aplicada, incluindo estados manuais. Restantes condições do piloto continuam sujeitas a validação; não afirmar cobertura universal.
+
+## Último ponto de situação — 29/10/2026 — regressão de seguimento encontrada na validação
+
+Piloto ainda não concluído. A conferência privada identificou um problema de integração já existente no analisador do Sheets: ausência de planta no website pode sobrepor estado operacional manual mais específico e criar tarefa genérica em paralelo com seguimento documental existente, por usar assuntos diferentes. Não confundir ausência na publicação com inexistência no dossier. A aquisição dos conteúdos e a preservação dos documentos são verificações separadas desta regressão.
+
+Próximo passo prioritário: reproduzir com fixture sintética, proteger estados operacionais de plantas perante leituras públicas negativas e reconciliar assuntos equivalentes antes de gerar pendências. Preparar reparação auditável, preservando IDs, tarefas manuais e histórico; não apagar linhas nem executar reparação global. A verificação atual foi apenas de leitura: não foi aplicada correção no Sheets nem na fonte. Não solicitar repetição de testes antes da correção. Resultados por imóvel e exportações permanecem privados, sem referências, contagens ou estados individuais neste registo.
+
+## Último ponto de situação — 29/10/2026 — primeira gravação do piloto conferida
+
+O percurso de gravação do piloto foi testado pela utilizadora e a persistência foi conferida independentemente. Este registo técnico não inclui resultados por imóvel, contagens, estados documentais, referências, tempos de operação, ligações ou dados do cliente. As evidências do teste permanecem exclusivamente no ambiente privado.
+
+Limites técnicos: o histórico CLARA1 não identifica inequivocamente versão da extensão versus marcador. Não afirmar auditoria independente da instalação. Rever a consistência do contador de campos atualizados com a normalização usada no histórico. Nenhum dado foi alterado no Sheets nesta conferência.
+
+Piloto mantém-se no ramo desenvolvimento-extensao-imoveis. Próximo: alargar os testes de leitura, incluindo galeria incompleta e campos desconhecidos, antes de substituir o marcador no percurso.
+
+## Último ponto de situação — 29/10/2026 — piloto de fichas públicas na extensão 0.2.0
+
+Andreia aprovou integrar a leitura eGO na extensão, começando pela ficha pública e reutilizando o coletor do marcador. Preparado 0.2.0 com ações separadas para imóvel e Rightmove. Novo resumo mostra campos confirmados e desconhecidos; documentos continuam manuais. Protocolo CLARA1 compatível com o painel atual, sem alterações no Sheets nem publicação no Apps Script. A extensão não lê o CRM interno e não altera/publica imóveis. Permissões novas apenas para as duas variantes do website público da agência; instalação deve ser atualizada pela Andreia, incluindo confirmação de acesso no Chrome se solicitada.
+
+Gerador dedicado extrai a lógica eGO da fonte do marcador e é chamado pelo builder existente. Galeria incompleta devolve fotografias/alt desconhecidos, não zero; referência API divergente da página é recusada. Espera pelo DOM e prazo global mantidos. Campos desconhecidos e documentos não são reconfirmados. 23 suites locais aprovadas, incluindo testes novos de coletor real com DOM/Chrome sintéticos, cópia/destino e regressões do Rightmove. Sem dados reais nas fixtures ou no repositório.
+
+Pacote local Clara-extensao-0.2.0.zip. Trabalho no ramo desenvolvimento-extensao-imoveis. Próximo: instalação e teste no imóvel conhecido já conferido pela Andreia, confirmar contagens e estados no Sheets, depois repetir noutros imóveis. Não declarar a nova ação validada em produção antes desse percurso real. Ver docs/EXTENSAO-IMOVEIS.md. O marcador permanece disponível como alternativa; não foi alterado nem é necessário reinstalá-lo.
 
 ## Último ponto de situação — 28/10/2026 — 0.1.4 validada em recolha real
 

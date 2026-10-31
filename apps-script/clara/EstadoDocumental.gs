@@ -1,4 +1,4 @@
-/* Seguimento após o levantamento. As notas de dossier nunca são inferidas do site. */
+/* Seguimento após o levantamento. As notas de dossiê nunca são inferidas do site. */
 const ED_CAMPOS = [
   ['caderneta','Caderneta Predial (anexo)','Caderneta Predial'],
   ['certificado','Certificado Energético (anexo)','Certificado Energético'],
@@ -6,8 +6,10 @@ const ED_CAMPOS = [
   ['licenca','Licença Habitação (anexo)','Licença de Habitação'],
   ['planta','Planta','Planta']
 ];
-const ED_ESTADOS = ['Por verificar','Falta no eGO > ver dossier','No dossier > digitalizar','Digitalizado','Falta no eGO + dossier','Categoria errada','Formato errado','Preenchido','Não aplicável','Em falta'];
-function edEstadoCompativel_(v){return ({'Em falta no eGO · verificar dossier':'Falta no eGO > ver dossier','No dossier · por digitalizar':'No dossier > digitalizar','Em falta no eGO e no dossier':'Falta no eGO + dossier','N/A':'Não aplicável'})[v]||v;}
+const ED_ESTADOS = ['Por verificar','Falta no eGO > ver dossiê','No dossiê > digitalizar','Digitalizado','Falta no eGO + dossiê','Categoria errada','Formato errado','Preenchido','Não aplicável','Em falta'];
+function edMotivoCurto_(motivo){const t=String(motivo||'');if(t.startsWith('Desdobrada em pendências'))return 'Separada por documento > ver pendências do imóvel';const m=t.match(/^Duplicada: acompanhamento na pendência (P\d+)/);return m?'Duplicada > ver '+m[1]:'';}
+function edPendenciaSubstituida_(r){return r[8]==='Arquivado'||/^(Desdobrada em pendências|Duplicada: acompanhamento na pendência )/.test(String(r[11]||''));}
+function edEstadoCompativel_(v){v=String(v||'').replace(/\bdossier\b/gi,'dossiê');return ({'Em falta no eGO · verificar dossiê':'Falta no eGO > ver dossiê','No dossiê · por digitalizar':'No dossiê > digitalizar','Em falta no eGO e no dossiê':'Falta no eGO + dossiê','N/A':'Não aplicável'})[v]||v;}
 function edCampoPendencia_(r){
   if(r[2]==='Plantas'&&['Planta','Imóvel sem planta','Planta só em PDF'].includes(r[3]))return ED_CAMPOS[4];
   if(r[2]!=='Documentos')return null;
@@ -15,23 +17,24 @@ function edCampoPendencia_(r){
   const regras=[/caderneta predial/,/certificado energetico/,/contrato.*mediacao/,/licenca.*habitacao/];
   const hits=regras.map((re,i)=>re.test(t)?i:-1).filter(i=>i>=0);return hits.length===1?ED_CAMPOS[hits[0]]:null;
 }
-function edCampoSimples_(assunto){return {'Imóvel sem fotografias':'Imagens','Fotografias sem texto alternativo':'Alt-text','Alt-text em falta':'Alt-text','Existe vídeo do imóvel?':'Vídeo','Vídeo em falta':'Vídeo'}[assunto]||'';}
+function edCampoSimples_(assunto){return {'Imóvel sem fotos':'Imagens','Imóvel sem fotografias':'Imagens','Fotos sem texto alternativo':'Alt-text','Fotografias sem texto alternativo':'Alt-text','Alt-text em falta':'Alt-text','Existe vídeo do imóvel?':'Vídeo','Vídeo em falta':'Vídeo'}[assunto]||'';}
 function edEstado_(valor,nota,nome){
   valor=edEstadoCompativel_(valor);
   const linha=String(nota||'').split(/\r?\n/).find(l=>l.startsWith(nome+': '))||'';
   if(valor==='Preenchido'||valor==='Não aplicável')return valor;
-  if(/em falta no eGO e no dossier|Falta no eGO \+ dossier/i.test(linha))return 'Falta no eGO + dossier';
+  if(/em falta no eGO e no dossiê|Falta no eGO \+ dossiê/i.test(linha))return 'Falta no eGO + dossiê';
   if(ED_ESTADOS.includes(valor)&&valor!=='Por verificar')return valor;
   if(/digitalizado/i.test(linha))return 'Digitalizado';
-  if(/por digitalizar|No dossier > digitalizar/i.test(linha))return 'No dossier > digitalizar';
-  if(valor==='Em falta'||/dossier por verificar/i.test(linha))return ED_ESTADOS[1];
+  if(/por digitalizar|No dossiê > digitalizar/i.test(linha))return 'No dossiê > digitalizar';
+  if(valor==='Em falta'||/dossiê por verificar/i.test(linha))return ED_ESTADOS[1];
   return 'Por verificar';
 }
+function edAcoesAntigas_(){return ['Verif. dossiê > digitalizar > carregar no eGO.','Digitalizar > carregar no eGO.','Carregar no eGO.','Converter para JPG > carregar no eGO.','Procurar no dossiê e inserir no eGO.','Digitalizar, preparar e inserir no eGO.','Preparar o ficheiro digitalizado e inserir no eGO.','Pedir esclarecimento à Sara.','Esclarecer a ausência e disponibilizar o documento.','Preparar o formato correto e inserir no eGO.'];}
 function edAcao_(estado,nome){
-  return ({'Em falta':'Procurar no dossier e inserir no eGO.','Por verificar':'Confirmar o estado de '+nome+'.','Falta no eGO > ver dossier':'Procurar no dossier e inserir no eGO.',
-    'No dossier > digitalizar':'Digitalizar, preparar e inserir no eGO.','Digitalizado':'Preparar o ficheiro digitalizado e inserir no eGO.',
-    'Falta no eGO + dossier':'Esclarecer a ausência e disponibilizar o documento.',
-    'Categoria errada':'Mover para a categoria correta no eGO.','Formato errado':'Preparar o formato correto e inserir no eGO.'})[estado]||'';
+  return ({'Em falta':'Verif. dossiê > digitalizar > upload eGO','Por verificar':'Confirmar o estado de '+nome+'.','Falta no eGO > ver dossiê':'Verif. dossiê > digitalizar > upload eGO',
+    'No dossiê > digitalizar':'Digitalizar > upload eGO','Digitalizado':'Upload eGO',
+    'Falta no eGO + dossiê':nome+': falta no eGO + dossiê. Sara: disponibilizar ou indicar onde obter o ficheiro.',
+    'Categoria errada':'Mover para a categoria correta no eGO.','Formato errado':nome==='Planta'?'Converter para JPG > upload eGO':'Corrigir formato > carregar no eGO.'})[estado]||'';
 }
 function edSnapshot_(ref){
   ref=String(ref||'').trim().toUpperCase();if(!ref)throw Error('Indica a referência do imóvel.');
@@ -46,9 +49,9 @@ function edSnapshot_(ref){
   // Um Digitalizado existente tem prioridade sobre a antiga falta genérica.
   pv.filter(r=>r[1]===ref).forEach(r=>{const campo=edCampoPendencia_(r);
     ED_CAMPOS.forEach(x=>{
-      if(campo===x&&!String(r[11]||'').startsWith('Desdobrada em pendências')&&['Concluído','Não aplicável'].includes(r[8]))estados[x[0]]=r[8]==='Concluído'?'Preenchido':'Não aplicável';
+      if(campo===x&&!edPendenciaSubstituida_(r)&&['Concluído','Não aplicável','Arquivado'].includes(r[8]))estados[x[0]]=r[8]==='Concluído'?'Preenchido':'Não aplicável';
       if(r[8]==='Digitalizado'&&(campo===x||r[2]==='Documentos'&&r[3]==='Documentos obrigatórios sem ficheiro no eGO'&&r[4].includes(x[2]))&&!['Preenchido','Não aplicável'].includes(estados[x[0]]))estados[x[0]]='Digitalizado';
-      if(campo===x&&r[6]==='Sara'&&/^(?:O documento|A planta) não está no dossier\.?$/i.test(String(r[5]||'').trim())&&estados[x[0]]===ED_ESTADOS[1])estados[x[0]]='Falta no eGO + dossier';
+      if(campo===x&&r[6]==='Sara'&&/^(?:O documento|A planta) não está no dossiê\.?$/i.test(String(r[5]||'').trim())&&estados[x[0]]===ED_ESTADOS[1])estados[x[0]]='Falta no eGO + dossiê';
     });
   });
   const assinatura=JSON.stringify([values,pv.filter(r=>r[1]===ref)]);
@@ -76,7 +79,7 @@ function edPlano_(s,alteracoes,origem){
   let max=pend.reduce((m,r)=>Math.max(m,/^P\d+$/.test(r[0])?+r[0].slice(1):0),0);
   function livre(){let i=pend.findIndex(r=>r.every((v,j)=>!v||j===15));if(i<0){i=pend.length;pend.push(Array(17).fill(''));}return i;}
   function set(i,col,value){pend[i][col-1]=value;add(PEND.nome,i+6,col,value);}
-  const fechar=(i,motivo)=>{set(i,9,'Não aplicável');set(i,12,motivo);set(i,15,'Confirmado');set(i,17,'');};
+  const fechar=(i,motivo)=>{set(i,9,'Arquivado');set(i,6,edMotivoCurto_(motivo)||pend[i][5]);set(i,12,motivo);set(i,15,'Confirmado');set(i,17,'');};
   let notas=s.nota.split(/\r?\n/);
   ED_CAMPOS.forEach(x=>{
     const estado=estados[x[0]];if(!ED_ESTADOS.includes(estado))throw Error('Estado não reconhecido: '+x[2]);
@@ -84,37 +87,37 @@ function edPlano_(s,alteracoes,origem){
     if(estado==='Por verificar'&&!Object.prototype.hasOwnProperty.call(alteracoes||{},x[0]))return;
     add(LEV.nome,s.row,s.c.col(x[1]),estado==='Não aplicável'?'N/A':estado);
     notas=notas.filter(l=>!l.startsWith(x[2]+': '));
-    if(estado!=='Preenchido')notas.push(x[2]+': '+estado+(estado==='Falta no eGO + dossier'?'; aguarda análise da Sara.':'.'));
-    let indices=[];pend.forEach((r,i)=>{const campo=edCampoPendencia_(r);if(r[1]===s.ref&&campo===x&&!String(r[11]||'').startsWith('Desdobrada em pendências'))indices.push(i);});
+    if(estado!=='Preenchido')notas.push(x[2]+': '+estado+(estado==='Falta no eGO + dossiê'?'; aguarda análise da Sara.':'.'));
+    let indices=[];pend.forEach((r,i)=>{const campo=edCampoPendencia_(r);if(r[1]===s.ref&&campo===x&&!edPendenciaSubstituida_(r))indices.push(i);});
     if(indices.length>1)throw Error('Pendências repetidas para '+x[2]+'. Rever antes de sincronizar.');
     let i=indices[0];const fechado=['Preenchido','Não aplicável'].includes(estado);
     if(i===undefined&&fechado)return;
     if(i===undefined){i=livre();[[1,'P'+String(++max).padStart(4,'0')],[2,s.ref],[3,x[0]==='planta'?'Plantas':'Documentos'],[4,x[2]],[8,'Normal'],[14,'eGO']].forEach(v=>set(i,v[0],v[1]));}
     else set(i,4,x[2]);
-    const anterior=pend[i],manual=origem==='pendencia',responsavel=estado==='Falta no eGO + dossier'?'Sara':manual?anterior[6]||'Andreia':anterior[6]==='Sara'&&anterior[8]==='A aguardar esclarecimento'?'Andreia':anterior[6]||'Andreia';
+    const anterior=pend[i],manual=origem==='pendencia',responsavel=estado==='Falta no eGO + dossiê'?'Sara':x[0]==='planta'&&estado==='Formato errado'?'Andreia':manual?anterior[6]||'Andreia':anterior[6]==='Sara'&&anterior[8]==='A aguardar esclarecimento'?'Andreia':anterior[6]||'Andreia';
     const status=estado==='Preenchido'?'Concluído':estado==='Não aplicável'?'Não aplicável':responsavel==='Sara'?'A aguardar esclarecimento':estado==='Digitalizado'?'Digitalizado':anterior[8]==='Em correção'?'Em correção':estado==='Por verificar'?'Por tratar':estado;
-    const automaticas=ED_ESTADOS.map(e=>edAcao_(e,x[2])),acaoAnterior=String(anterior[5]||''),manualNota=acaoAnterior.includes('\nNota da equipa: ')?acaoAnterior.split('\nNota da equipa: ').slice(1).join('\nNota da equipa: '):automaticas.includes(acaoAnterior)?'':acaoAnterior;
-    set(i,5,x[2]+': '+estado+'.');set(i,6,edAcao_(estado,x[2])+(manualNota?'\nNota da equipa: '+manualNota:''));set(i,7,responsavel);set(i,9,status);set(i,17,!fechado&&responsavel==='Sara'?'Sara':'');
+    const automaticas=ED_ESTADOS.map(e=>edAcao_(e,x[2])).concat(edAcoesAntigas_()),acaoAnterior=String(anterior[5]||''),manualNota=acaoAnterior.includes('\nNota da equipa: ')?acaoAnterior.split('\nNota da equipa: ').slice(1).join('\nNota da equipa: '):automaticas.includes(acaoAnterior)?'':acaoAnterior;
+    set(i,5,x[2]+': '+estado+'.');const instrucao=edAcao_(estado,x[2])+(manualNota?'\nNota da equipa: '+manualNota:'');set(i,6,typeof simplificarAcaoClara_==='function'?simplificarAcaoClara_(instrucao,x[0]==='planta'?'Plantas':'Documentos'):instrucao);set(i,7,responsavel);set(i,9,status);set(i,17,!fechado&&responsavel==='Sara'?'Sara':'');
     if(fechado){set(i,12,'Estado confirmado: '+estado+'.');set(i,15,'Confirmado');}
-    else if(['Concluído','Não aplicável'].includes(s.pv[i]&&s.pv[i][8])){set(i,12,'');set(i,13,'');set(i,15,'Por verificar');}
+    else if(['Concluído','Não aplicável','Arquivado'].includes(s.pv[i]&&s.pv[i][8])){set(i,12,'');set(i,13,'');set(i,15,'Por verificar');}
   });
   // Mantém linhas antigas e notas: encerra apenas os agrupamentos substituídos.
   pend.forEach((r,i)=>{
-    if(r[1]!==s.ref||['Concluído','Não aplicável'].includes(r[8]))return;
+    if(r[1]!==s.ref||['Concluído','Não aplicável','Arquivado'].includes(r[8]))return;
     const agrupado=['Documentos obrigatórios sem ficheiro no eGO','Documentos na categoria errada no eGO'].includes(r[3]);
     if(agrupado&&ED_CAMPOS.slice(0,4).some(x=>r[4].includes(x[2])))fechar(i,'Desdobrada em pendências por documento/planta. Notas e estado anterior conservados no histórico.');
   });
   add(LEV.nome,s.row,s.c.col('Observações / justificação N/A'),notas.filter(Boolean).join('\n'));
-  const grupos={};pend.forEach((r,i)=>{const campo=edCampoSimples_(r[3]);if(r[1]===s.ref&&campo&&!['Concluído','Não aplicável'].includes(r[8]))(grupos[campo]||(grupos[campo]=[])).push(i);});
+  const grupos={};pend.forEach((r,i)=>{const campo=edCampoSimples_(r[3]);if(r[1]===s.ref&&campo&&!['Concluído','Não aplicável','Arquivado'].includes(r[8]))(grupos[campo]||(grupos[campo]=[])).push(i);});
   Object.keys(grupos).forEach(campo=>{const ids=grupos[campo];if(ids.length<2)return;const principal=ids.find(i=>pend[i][17])??ids[0];ids.filter(i=>i!==principal).forEach(i=>fechar(i,'Duplicada: acompanhamento na pendência '+pend[principal][0]+'. Evidência e respostas preservadas nesta linha.'));});
-  pend.forEach((r,i)=>{const campo=edCampoSimples_(r[3]);if(r[1]!==s.ref||!campo||['Concluído','Não aplicável'].includes(r[8]))return;
+  pend.forEach((r,i)=>{const campo=edCampoSimples_(r[3]);if(r[1]!==s.ref||!campo||['Concluído','Não aplicável','Arquivado'].includes(r[8]))return;
     if(s.values[s.c.col(campo)-1]==='Preenchido'){set(i,9,'Concluído');set(i,12,'Confirmado no Levantamento: '+campo+' preenchido.');set(i,15,'Confirmado');set(i,17,'');}
   });
-  const caracteristicas=pend.filter(r=>r[1]===s.ref&&r[2]==='Características');
-  if(caracteristicas.length&&caracteristicas.every(r=>['Concluído','Não aplicável'].includes(r[8]))&&s.values[s.c.col('Características')-1]==='Em falta')add(LEV.nome,s.row,s.c.col('Características'),'Preenchido');
+  const caracteristicas=pend.filter(r=>r[1]===s.ref&&r[2]==='Características'&&r[8]!=='Arquivado');
+  if(caracteristicas.length&&caracteristicas.every(r=>['Concluído','Não aplicável','Arquivado'].includes(r[8]))&&s.values[s.c.col('Características')-1]==='Em falta')add(LEV.nome,s.row,s.c.col('Características'),'Preenchido');
   // Conclusão indicada pela equipa: regista a origem humana, sem inventar uma leitura do site.
   pend.forEach((r,i)=>{if(r[1]===s.ref&&r[8]==='Concluído'&&!r[11]){set(i,12,'Conclusão indicada pela equipa. Ação e respostas preservadas na linha.');set(i,15,'Confirmado');}});
-  const abertas=pend.filter(r=>r[1]===s.ref&&!['Concluído','Não aplicável'].includes(r[8]));
+  const abertas=pend.filter(r=>r[1]===s.ref&&!['Concluído','Não aplicável','Arquivado'].includes(r[8]));
   const resumo=abertas.map(r=>(r[6]||'Por atribuir')+': '+r[3]+' — '+r[8]+'.').join('\n')||'Sem pendências abertas.';
   add(LEV.nome,s.row,s.c.col('Resumo para a equipa'),resumo);
   return cambios;
@@ -137,7 +140,7 @@ function edAplicar_(s,alteracoes,origem){
   mudancas.forEach(x=>agendar(x.folha===LEV.nome?s.sh:s.ps,x.linha,x.col,x.valor,true));
   const rows=s.websiteMudancas?[]:[...new Set(plano.filter(p=>p.sh===s.ps).map(p=>p.linha).concat(s.pv.flatMap((r,i)=>r[1]===s.ref&&r[8]==='Concluído'&&!r[12]?[i+6]:[])))];
   rows.forEach(row=>{agendar(s.ps,row,11,hoje,true);if(!linha(s.ps,row).v[9])agendar(s.ps,row,10,hoje,true);
-    const estado=mudancas.find(x=>x.folha===PEND.nome&&x.linha===row&&x.col===9),final=estado?estado.valor:linha(s.ps,row).v[8];if(['Concluído','Não aplicável'].includes(final)&&!linha(s.ps,row).v[12])agendar(s.ps,row,13,hoje,true);
+    const estado=mudancas.find(x=>x.folha===PEND.nome&&x.linha===row&&x.col===9),final=estado?estado.valor:linha(s.ps,row).v[8];if(['Concluído','Não aplicável','Arquivado'].includes(final)&&!linha(s.ps,row).v[12])agendar(s.ps,row,13,hoje,true);
   });
   if(!plano.length&&!historico.length)return{ref:s.ref,alteracoes:0};
   const start=hs.sh.getLastRow()+1;if(start+historico.length>hs.sh.getMaxRows())hs.sh.insertRowsAfter(hs.sh.getMaxRows(),Math.max(200,start+historico.length-hs.sh.getMaxRows()));
@@ -188,11 +191,11 @@ function edSincronizarEdicao_(e){
 function prepararSeguimentoDocumental(){
   const ss=SpreadsheetApp.getActive(),sh=ss.getSheetByName(LEV.nome),c=colunas_(sh,9);
   const valores=ED_ESTADOS.map(v=>v==='Não aplicável'?'N/A':v),ps=ss.getSheetByName(PEND.nome);
-  edConfigurarDropdowns_(ss,ED_CAMPOS.map(x=>({nome:LEV.nome,col:c.col(x[1]),opcoes:valores,substituir:true})).concat([{nome:PEND.nome,col:9,opcoes:[...new Set(['Por tratar','Em correção','A aguardar esclarecimento','Concluído'].concat(ED_ESTADOS.filter(x=>x!=='Preenchido')))]}]));
+  edConfigurarDropdowns_(ss,ED_CAMPOS.map(x=>({nome:LEV.nome,col:c.col(x[1]),opcoes:valores,substituir:true})).concat([{nome:PEND.nome,col:9,opcoes:[...new Set(['Por tratar','Em correção','A aguardar esclarecimento','Concluído','Arquivado'].concat(ESTADOS_VIDEO_CLARA,ED_ESTADOS.filter(x=>x!=='Preenchido')))]}]));
   PropertiesService.getDocumentProperties().setProperty('CLARA_SEGUIMENTO_DOCUMENTAL','1');
   const refs=ps.getRange(6,2,ps.getLastRow()-5,1).getDisplayValues().flat().filter(Boolean);
   const ls=sh.getRange(10,1,sh.getLastRow()-9,c.titulos.length).getDisplayValues();
-  ls.forEach(r=>{if(/dossier|digitalizado/i.test(r[c.col('Observações / justificação N/A')-1]||''))refs.push(r[c.col('Referência EGO')-1]);});
+  ls.forEach(r=>{if(/dossiê|digitalizado/i.test(r[c.col('Observações / justificação N/A')-1]||''))refs.push(r[c.col('Referência EGO')-1]);});
   const conhecidas=new Set(ls.map(r=>r[c.col('Referência EGO')-1]));
   PropertiesService.getDocumentProperties().setProperty('CLARA_MIGRAR_DOCUMENTOS',JSON.stringify([...new Set(refs)].filter(r=>conhecidas.has(r))));
   console.log('Estados disponíveis; registos existentes preservados.');
@@ -223,13 +226,14 @@ function edConfigurarDropdowns_(ss,alvos){
   fora.forEach(a=>{const sh=ss.getSheetByName(a.nome),start=a.nome===LEV.nome?10:6;sh.getRange(start,a.col,sh.getMaxRows()-start+1,1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(a.opcoes,true).setAllowInvalid(false).build());});
 }
 function edFormula_(f){
-  f=f.replace(/"Em falta no eGO · verificar dossier"/g,'"Falta no eGO > ver dossier"').replace(/"No dossier · por digitalizar"/g,'"No dossier > digitalizar"').replace(/"Em falta no eGO e no dossier"/g,'"Falta no eGO + dossier"');
+  if(typeof arFormula_==='function')f=arFormula_(f);
+  f=f.replace(/"Em falta no eGO · verificar dossiê"/g,'"Falta no eGO > ver dossiê"').replace(/"No dossiê · por digitalizar"/g,'"No dossiê > digitalizar"').replace(/"Em falta no eGO e no dossiê"/g,'"Falta no eGO + dossiê"');
   if(!f.includes('PendenciasEquipe['))f=f.replace(/"Não aplicável"/g,'"N/A"');
   else f=f.replace(/"N\/A"/g,'"Não aplicável"');
   let quoted=false,semi=false,normal='';
   for(let i=0;i<f.length;i++){const ch=f[i];if(ch==='"'){if(quoted&&f[i+1]==='"'){normal+='""';i++;continue;}quoted=!quoted;}if(!quoted&&ch===';')semi=true;normal+=!quoted&&ch===';'?',':ch;}
   f=normal;
-  const estados=['Em falta','Digitalizado','No dossier > digitalizar','Falta no eGO > ver dossier','Falta no eGO + dossier','Categoria errada','Formato errado'];
+  const estados=['Em falta','Digitalizado','No dossiê > digitalizar','Falta no eGO > ver dossiê','Falta no eGO + dossiê','Categoria errada','Formato errado'];
   f=f.replace(/COUNTIFS\((N\d+:S\d+),"Em falta"\)/g,(_,r)=>'('+estados.map(s=>'COUNTIF('+r+',"'+s+'")').join('+')+')');
   f=f.replace(/IF\(([NOPQR]\d+)="Em falta",/g,(_,c)=>'IF(OR('+estados.map(s=>c+'="'+s+'"').join(',')+'),');
   if(f.includes('PendenciasEquipe[Estado]')&&!f.includes('"Digitalizado"')){

@@ -4,8 +4,11 @@ apps-script/clara/Clara-completo.gs, para colar no editor do Apps Script ligado 
 import json, pathlib, re, sys
 base = pathlib.Path(__file__).resolve().parent.parent / 'apps-script' / 'clara'
 codigo = (base / 'Codigo.gs').read_text(encoding='utf-8')
+codigo += '\n' + (base / 'ArquivarPendencias.gs').read_text(encoding='utf-8')
+codigo += '\n' + (base / 'Terminologia.gs').read_text(encoding='utf-8')
 codigo += '\n' + (base / 'EstadosCurtos.gs').read_text(encoding='utf-8')
 codigo += '\n' + (base / 'EstadoDocumental.gs').read_text(encoding='utf-8')
+codigo += '\n' + (base / 'RepararPlantas.gs').read_text(encoding='utf-8')
 codigo += '\n' + (base / 'AuditoriaPrioritarios.gs').read_text(encoding='utf-8')
 codigo += '\n' + (base / 'AlertasDesempenho.gs').read_text(encoding='utf-8')
 codigo += '\n' + (base / 'PresencaPortais.gs').read_text(encoding='utf-8')
@@ -15,6 +18,7 @@ codigo += '\n' + (base / 'ResumoSemanal.gs').read_text(encoding='utf-8')
 identidade = (base / 'ImoveisPortais.gs').read_text(encoding='utf-8')
 consulta = (base / 'LeituraPublicaPortais.gs').read_text(encoding='utf-8') if '--sem-fichas-publicas' not in sys.argv else "function ipLerPublicas_(){throw Error('Consulta pública ainda não ativada. A ficha e as ligações das recolhas continuam disponíveis.');}\n"
 codigo += '\n' + identidade.replace('/* LEITURA_PUBLICA_PORTAIS */', consulta)
+codigo += '\n' + (base / 'RevisaoLigacoes.gs').read_text(encoding='utf-8')
 codigo += '\n' + (base / 'AutomacaoPortais.gs').read_text(encoding='utf-8')
 codigo += '\n' + (base / 'OrganizacaoAbas.gs').read_text(encoding='utf-8')
 codigo += '\n' + (base / 'FichaImovel.gs').read_text(encoding='utf-8')
@@ -57,3 +61,7 @@ print(len(out), 'caracteres')
 extensao = base.parent / 'rightmove-extension'
 if extensao.exists():
     (extensao / 'collectors.js').write_text((base / 'rightmove-csv.js').read_text(encoding='utf-8') + '\n' + (base / 'rightmove.js').read_text(encoding='utf-8'), encoding='utf-8')
+    import subprocess, sys
+    subprocess.run([sys.executable, str(pathlib.Path(__file__).with_name('construir-coletor-imovel.py'))], check=True)
+
+    subprocess.run([sys.executable, str(pathlib.Path(__file__).with_name('construir-coletor-portais.py'))], check=True)

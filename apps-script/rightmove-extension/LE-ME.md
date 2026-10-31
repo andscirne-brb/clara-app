@@ -1,41 +1,20 @@
-# Clara · Rightmove — versão de teste 0.1.3
+# Clara · imóveis e portais — 0.3.0 (piloto)
 
-## Instalar uma vez no Chrome
-1. Extrai o ZIP para uma pasta fixa. Mantém todos os ficheiros juntos.
-2. Abre chrome://extensions e ativa Modo de programador.
-3. Escolhe Carregar expandida (ou Carregar sem compactação) e seleciona a pasta que contém manifest.json.
-4. Fixa Clara · Rightmove na barra das extensões.
+Uma extensão com quatro ações: eGO: ler este imóvel; Idealista: estatísticas; Green-Acres: estatísticas; Rightmove: recolher os dois relatórios. A extensão lê, permite copiar e indica o painel do Sheets. A gravação continua a exigir revisão e confirmação.
 
-A instalação concede acesso apenas aos dois domínios dos relatórios Rightmove, execução dos coletores nesses relatórios, memória temporária da extensão e cópia para a área de transferência. Não pede palavras-passe, cookies, histórico geral, acesso ao Sheets ou acesso a todos os sites. Não há instalação automática nem publicação na loja nesta versão.
+## Atualizar
 
-## Utilizar
-1. Inicia sessão no Rightmove Plus. Abre Leads > Summary e Property Performance; confirma a agência e escolhe os períodos pretendidos. Mantém apenas um separador de cada relatório. Os períodos são independentes.
-2. Clica na extensão e em Recolher os dois relatórios. Evita alterar filtros ou navegar nesses separadores durante a recolha.
-3. Se mantiveres a janela pequena aberta até terminar, a leitura é copiada automaticamente. Podes fechar a janela pequena; ao reabrir, recupera o resultado enquanto a sessão do navegador se mantiver. A leitura expira para cópia após 30 minutos. Limpar leitura remove-a da memória da extensão.
-4. Se a cópia automática não ocorreu, clica Copiar leitura para o Sheets. No documento, Clara > Rightmove: estatísticas, cola, revê cada fonte e confirma a gravação.
+Substituir os ficheiros na pasta da extensão instalada e clicar Atualizar em chrome://extensions. Confirmar 0.3.0. O Chrome pode pedir os novos acessos ao Idealista e Green-Acres; não há acesso ao CRM interno, contactos individuais nem todos os sites. A atualização não altera o documento.
 
-Se um relatório não estiver aberto, a extensão tenta abrir a página oficial em segundo plano. Pode ser necessário iniciar sessão ou selecionar agência/período nessa página e repetir. Os separadores abertos pela extensão ficam disponíveis para esta verificação. Se faltar sessão ou algum relatório, o resultado indica o bloco em falta; não se apresenta como recolha completa. O CSV de desempenho tem prioridade. Se falhar e a leitura integral da página funcionar, só a janela escolhida é recolhida e isso é indicado no resumo.
+## Páginas e fontes
 
-Só se copiam datas e contagens agregadas de leads, nunca nomes, emails, telefones ou mensagens individuais. O CSV de leads não é usado, porque pode conter dados pessoais. Os resultados ficam em chrome.storage.session; não há servidor da extensão, telemetria, recolha periódica nem envio automático para o Sheets. O CSV de desempenho pode também ser descarregado pelo próprio botão do portal.
+- eGO: ficha pública do website, documentos confirmados manualmente no Sheets.
+- Idealista: Estatísticas dos teus anúncios, em Gráfico ou Ranking. Reutiliza o Excel oficial do ranking; no Gráfico tenta também as séries diárias e carteira ativa. Mantém/restaura os filtros existentes.
+- Green-Acres: Resumo da conta para cinco CSV e a lista dos anúncios; Anúncios para apenas a lista completa. Ficheiros oficiais têm prioridade. Componentes em falta são apresentados explicitamente.
+- Rightmove: mantém a recolha conjunta de leads e desempenho CSV. Mantém o relatório de leads visível; se o popup fechar, reabre para copiar.
 
-## Estado de validação
-Testes locais com Chrome simulado e regressões dos coletores/Apps Script aprovados. Código do painel preparado para a leitura conjunta. A instalação real, a execução entre os dois domínios e a primeira gravação desta versão ainda precisam de teste no Chrome da Andreia. Não confundir testes simulados com validação real.
+## Garantias e limites
 
-## Manutenção
-collectors.js é gerado por scripts/construir-clara.py a partir dos coletores partilhados. Não editar esse ficheiro manualmente. Depois de uma atualização local, clicar Atualizar no cartão da extensão em chrome://extensions.
+Sem envio direto ao Sheets, edição de portais ou registo de palavras-passe. Leituras temporárias expiram após 30 minutos e ficam em storage.session. Os novos coletores usam a mesma fonte do marcador, sem bibliotecas remotas. Origem e versão da extensão acompanham o resultado. Página incompatível, mudança de URL e fonte de outro portal bloqueiam a cópia. Prazo externo de 90 segundos; uma resposta tardia não substitui o resultado. Se o prazo terminar, deixar a página terminar/atualizá-la antes de repetir.
 
-Correção 0.1.1: o resumo aguarda estabilidade dos totais, com espera adicional quando começa em zero. No primeiro teste real, a versão 0.1.0 guardou zeros transitórios; esse teste não valida as leads. O desempenho CSV foi guardado. A nova versão requer teste real e conferência das somas antes de ser considerada validada.
-
-Correção 0.1.3: cada clique cria um identificador novo. A cópia automática só aceita o resultado desse pedido, impedindo a corrida que podia copiar o resultado antigo antes de começar a recolha nova. Resultados de versões anteriores não podem ser copiados pelo painel. Versão e hora do resultado são apresentadas. A atualização exige substituir todos os ficheiros na pasta carregada e clicar Atualizar em chrome://extensions; não basta mudar o manifest. A leitura corrigida ainda exige conferência real.
-
-## Validação de leads em 0.1.3
-
-As contagens são conferidas independentemente nas tabelas Calls e Emails e cruzadas com o resumo final. Um zero sem prova não é exportado. Zero legítimo exige cartão zero, tabela vazia e mensagem oficial No leads estáveis. Loading... nunca confirma ausência. O desempenho pode ser recolhido como bloco parcial. Instalação e recolha real desta versão ainda por validar.
-
-## Atualização 0.1.4: espera limitada
-
-Depois de substituir todos os ficheiros e clicar Atualizar no cartão da extensão, atualiza também os dois relatórios para terminar qualquer execução antiga na página. Uma atualização da extensão não interrompe necessariamente código já lançado na página pela versão anterior.
-
-O relatório de leads passa a ser o separador ativo durante a recolha. Mantém-no visível, sem minimizar a janela. A extensão não altera o período selecionado. Se a mudança de separador fechar o popup, volta a abri-lo para copiar o resultado. O desempenho continua a dar prioridade ao CSV.
-
-Cada relatório tem um limite de 90 segundos no worker, independente dos temporizadores da página. Um bloco concluído é preservado quando o outro excede o tempo. Respostas tardias não voltam a escrever o resultado. O coletor também verifica um prazo de 85 segundos ao retomar cada espera. O painel deteta uma execução antiga e mostra recuperação em vez de ficar indefinidamente desativado. Sem novas permissões. Testes simulados aprovados; execução real instalada ainda por validar.
+Testes locais não substituem validação com sessões reais. Idealista e Green-Acres ainda precisam de teste instalado e conferência da gravação. O marcador continua disponível durante o piloto. Não há necessidade de alterar a estrutura nem a fonte nativa do Sheets para ler estes formatos.
