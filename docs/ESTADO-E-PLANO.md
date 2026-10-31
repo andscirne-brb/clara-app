@@ -1,3 +1,15 @@
+## Último ponto de situação — 31/10/2026 — testes da 0.3.0 (Claude)
+
+Andreia confirmou a 0.3.0 instalada. A leitura eGO foi testada em três imóveis diferentes. Conferi o Registo de alterações e as três gravações estão no Sheet, com data do dia. Falta só ela rever os valores: num caso, o número de fotos baixou.
+
+Rightmove 0.3.0: a recolha fica em «A recolher os dois relatórios…» e não conclui. Conferido no Chrome dela, só em leitura:
+- os dois relatórios abrem com a sessão ativa;
+- os seletores esperados existem: `stat-value-total-leads`, `#property-performance-report .export-report`;
+- a leitura da página de desempenho funciona;
+- a navegação pelos separadores de leads (resumo, chamadas, emails) devolve as datas em cerca de 8 segundos.
+
+O coletor, em primeiro plano, não é a causa. Suspeitas: o service worker pára durante a recolha, ou os separadores de leads ficam em segundo plano. A mensagem final ao fim de 2 minutos e a consola do service worker ainda não foram vistas. Próximo: obter essa mensagem e os erros do service worker, e corrigir no ramo `desenvolvimento-extensao-imoveis`.
+
 ## Último ponto de situação — 31/10/2026 — revisão do trabalho da extensão (Claude)
 
 Revisão só de leitura, sem alterações ao código nem ao Sheet. Em `main` está a extensão Rightmove 0.1.4, validada em recolha real a 28/10. Fica por resolver a usabilidade: abre dois separadores e o popup fecha.
