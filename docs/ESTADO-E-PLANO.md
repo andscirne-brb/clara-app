@@ -1,3 +1,19 @@
+## Último ponto de situação — 31/10/2026 — teste de 10 feito; erro nos alt texts corrigido (0.4.1) (Claude)
+
+O teste de leitura em massa correu do princípio ao fim: 10 imóveis, 7 lidos, 3 não lidos e listados. Os 7 foram guardados em 172 s. A conferência no site confirmou o número de fotos, as plantas, os vídeos, os folhetos e as descrições por idioma. Quando falta tradução, o site mostra o texto em PT ou EN, e a leitura marca essas descrições como Em falta, como deve.
+
+**Erro encontrado: alt texts.** A API pública só responde ao pedido feito pela própria página; um pedido novo com `cache:'no-store'` (usado em `fetchClara` desde 22/10) é recusado. Por isso, todas as leituras caíam na leitura parcial pelo DOM. Aí, o `alt` das miniaturas é preenchido pelo site com o título ou a legenda quando falta o texto alternativo, e todas as leituras davam «Alt-text: Preenchido». Na API, os imóveis conferidos têm 0 alt texts.
+
+Corrigido em `marcador-ui.js` e `marcador.js`:
+- a API é lida com `force-cache`, reutilizando a resposta da página, e a leitura espera até 6 s que o pedido da página apareça;
+- a leitura parcial deixa de confirmar alt texts.
+
+Testes atualizados, com um teste novo do caminho da API. Todas as suites passam. Extensão 0.4.1; `Clara-completo.gs` publicado no Apps Script nativo, com hash igual ao do repositório.
+
+Dados afetados: 14 imóveis passaram a «Alt-text: Preenchido» indevidamente entre 27/10 e 31/10. Não são corrigidos à mão. A leitura de todos os imóveis com a 0.4.1 regrava o valor certo (Em falta, de N fotos) e cria a pendência «Fotos sem texto alternativo».
+
+Próximo: a Andreia instala a 0.4.1, repete o teste de 10 e confirma que o alt text aparece como Em falta. Depois lê todos os imóveis.
+
 ## Último ponto de situação — 31/10/2026 — leitura de todos os imóveis, 0.4.0 pronta para teste (Claude)
 
 Decisões da Andreia: ler todos os imóveis do sitemap (cerca de 400), não só os do Levantamento; passar ao Sheet por lotes de copiar e colar. O envio direto fica para depois de tudo validado.

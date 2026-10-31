@@ -1,6 +1,6 @@
 /* Leitura em massa das fichas públicas: usa o mesmo coletor da leitura individual, separador a separador.
    Os resultados ficam em chrome.storage.local (só neste computador) até serem copiados por lotes para o Sheets. */
-const MASSA={versao:'0.4.0',paralelo:3,porLote:25,limiteFichaMs:60000,sitemap:'https://www.janela-imobiliaria.com/sitemap-pt-pt.xml'};
+const MASSA={versao:'0.4.1',paralelo:3,porLote:25,limiteFichaMs:60000,sitemap:'https://www.janela-imobiliaria.com/sitemap-pt-pt.xml'};
 let massaAtiva=null,massaParar=false;
 const esperar=ms=>new Promise(r=>setTimeout(r,ms));
 const caminhoFicha=u=>{try{const x=new URL(u);return decodeURI(x.pathname).replace(/\/+$/,'').toLowerCase();}catch(e){return '';}};

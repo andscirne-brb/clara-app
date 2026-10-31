@@ -2,7 +2,7 @@ importScripts('core.js','massa.js');
 let ativo=null,pedidoAtual="";
 const LIMITE_RELATORIO_MS=90000;
 async function comLimite(operacao,ms,nome){let timer;try{return await Promise.race([Promise.resolve().then(operacao),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('O relatório '+nome+' excedeu 90 segundos. Atualiza esse relatório antes de repetir.')),ms);})]);}finally{clearTimeout(timer);}}
-const guardar=state=>chrome.storage.session.set({clara:{...state,pedido:pedidoAtual,versao:"0.4.0",quando:Date.now()}});
+const guardar=state=>chrome.storage.session.set({clara:{...state,pedido:pedidoAtual,versao:"0.4.1",quando:Date.now()}});
 async function abrir(tipo){const url=RM_RELATORIOS[tipo],tabs=await chrome.tabs.query({url:url+'*'}),exatas=tabs.filter(t=>rmUrlPermitido(t.url,tipo));if(exatas.length>1)throw Error('Há vários separadores deste relatório. Mantém apenas um para evitar escolher filtros errados.');if(exatas.length)return exatas[0];return chrome.tabs.create({url,active:false});}
 async function recolher(tipo){const tab=await abrir(tipo);if(tipo==='leads'){await chrome.tabs.update(tab.id,{active:true});}for(let i=0;i<80;i++){const t=await chrome.tabs.get(tab.id);if(!rmUrlPermitido(t.url,tipo)){if(t.status==='complete')throw Error('Inicia sessão no separador '+tipo+' e volta a tentar.');}else if(t.status==='complete'){const r=await chrome.scripting.executeScript({target:{tabId:tab.id},world:'ISOLATED',func:(kind)=>kind==='leads'?!!document.querySelector('[data-testid="stat-value-total-leads"]'):!!document.querySelector('#property-performance-report .export-report'),args:[tipo]});if(r[0]?.result)break;}if(i===79)throw Error('O relatório não terminou de carregar.');await new Promise(r=>setTimeout(r,250));}
 const atual=await chrome.tabs.get(tab.id);if(!rmUrlPermitido(atual.url,tipo))throw Error('O separador mudou.');
@@ -19,7 +19,7 @@ async function recolherFichaAtual(){
  const info=resumoFichaClara(result.d);return{d:result.d,info};
 }
 function identificarExtensao(d){
- d.recolha={ferramenta:'extensao',versao:'0.4.0'};
+ d.recolha={ferramenta:'extensao',versao:'0.4.1'};
  if(Array.isArray(d.blocos))for(const b of d.blocos){const prefixo=b.texto.slice(0,7),x=JSON.parse(b.texto.slice(7));x.recolha={...d.recolha};b.texto=prefixo+JSON.stringify(x);}
  return d;
 }

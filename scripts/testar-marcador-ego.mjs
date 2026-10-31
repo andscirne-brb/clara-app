@@ -10,7 +10,7 @@ function read(total,photos,videoUrls=[]){
  const c={document,out:{parcial:true,videos:null}};vm.createContext(c);vm.runInContext(block,c);return c.out;
 }
 let r=read(2,[photo('aaaa','Sala'),photo('bbbb','')],['https://example.invalid/a.mp4','https://example.invalid/a.mp4']);
-assert.equal(r.fotos,2);assert.equal(r.fotosComAlt,1);assert.equal(r.fotosComAltCompletos,true);assert.equal(r.videos,1);
+assert.equal(r.fotos,2);assert.equal(r.fotosComAlt,undefined,'alt das miniaturas não confirma alt texts');assert.equal(r.fotosComAltCompletos,undefined);assert.equal(r.videos,1);
 r=read(3,[photo('aaaa','Sala'),photo('bbbb','Quarto')]);assert.equal(r.fotosComAltCompletos,undefined);assert.equal(r.videos,null);
 r=read(2,[photo('aaaa','Sala'),photo('aaaa','Sala')]);assert.equal(r.fotosComAltCompletos,undefined);
 console.log('PASS marcador eGO: galeria completa, alt vazio, duplicados, galeria incompleta e vídeo desconhecido.');

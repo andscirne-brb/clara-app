@@ -24,7 +24,9 @@
   const ext = x => ((JSON.stringify(x).match(/\.(pdf|jpe?g|png|webp|gif)\b/i) || [])[1] || '?').toLowerCase().replace('jpeg', 'jpg');
   const out = { v: 1, marcadorVersao: '20261028.2', origem: 'site', lido: new Date().toISOString(), url: location.href.split('?')[0], ref: null, idiomaCaracteristicas: (document.documentElement.lang || '').slice(0,2).toUpperCase(), textos: {} };
   let p = null;
-  const u = performance.getEntriesByType('resource').map(e => e.name).find(n => /websiteapi\.egorealestate\.com\/v1\/Properties\/\d+\?.*propertyid=/.test(n));
+  /* A API pública é reutilizada da cache da página (pedido novo é recusado pelo servidor); espera até 6 s pelo pedido da página. */
+  const apiUrl=()=>performance.getEntriesByType('resource').map(e => e.name).find(n => /websiteapi\.egorealestate\.com\/v1\/Properties\/\d+\?.*propertyid=/.test(n));
+  let u=apiUrl();for(let i=0;!u&&i<20;i++){await new Promise(r=>setTimeout(r,300));u=apiUrl();}
   if (u) { try { p = await fetchClara(u,true); } catch (e) {} }
   if (p && p.Reference) {
     const I = p.Images || [];
@@ -62,7 +64,7 @@
     if(galerias.length===1){
       const g=galerias[0],total=Number(g.querySelector('.totalImgCounter').textContent.trim()),fotos=new Map();
       for(const t of g.querySelectorAll('.thumbItens[data-mediaid]')){const img=t.querySelector('img'),id=((t.getAttribute('data-url')||'').match(/\/Tphoto\/ID[0-9a-f-]+/i)||[])[0];if(id&&img)fotos.set(id,img);}
-      if(Number.isInteger(total)&&total>0&&fotos.size===total){out.fotos=total;out.fotosComAlt=Array.from(fotos.values()).filter(i=>(i.getAttribute('alt')||'').trim()).length;out.fotosComAltCompletos=true;out.fotosComLegenda=Array.from(g.querySelectorAll('.thumbItens[data-mediaid]')).filter(t=>(t.getAttribute('data-description')||'').trim()).length;}
+      if(Number.isInteger(total)&&total>0&&fotos.size===total){out.fotos=total;/* O alt das miniaturas é preenchido pelo site com o título ou a legenda quando falta o texto alternativo: não confirma alt texts. */out.fotosComLegenda=Array.from(g.querySelectorAll('.thumbItens[data-mediaid]')).filter(t=>(t.getAttribute('data-description')||'').trim()).length;}
     }
     const video=document.querySelector('#videoContent'),urls=video?Array.from(video.querySelectorAll('.thumbItens.video[data-url]')).map(e=>e.getAttribute('data-url').trim()):[];
     if(urls.length&&urls.every(u=>/^https?:\/\//i.test(u)))out.videos=new Set(urls).size;
