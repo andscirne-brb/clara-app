@@ -51,6 +51,20 @@ function pgRegisto_(ss,linhas){
  const vs=linhas.map(function(l){const r=new Array(largura).fill('');Object.keys(l).forEach(function(k){const i=hs.col(k);if(i)r[i-1]=l[k];});return r;});
  hs.sh.getRange(inicio,1,vs.length,largura).setValues(vs);
 }
+/* A conferência (coluna P) exige uma referência do Levantamento; nas linhas de tema a referência é «Vários imóveis». */
+function pgFormulaConferencia_(f){
+ if(!f||f.indexOf(PG_REF)>=0)return f;
+ return f.replace(/COUNTIFS\((Levantamento![^;,()]+)([;,])([^;,()]+)\)<>1/,function(_,range,sep,ref){return 'AND('+ref+'<>"'+PG_REF+'"'+sep+'COUNTIFS('+range+sep+ref+')<>1)';});
+}
+/* A coluna P é uma coluna calculada da tabela: a alteração tem de ser igual em todas as linhas, como no arquivo técnico. */
+function pgGarantirConferencia_(ps,linha,modelo){
+ const n=ps.getLastRow()-PEND.titulos;if(n<1)return;
+ const rg=ps.getRange(PEND.titulos+1,16,n,1),fs=rg.getFormulasR1C1();
+ if(linha>=PEND.titulos+1&&linha<=PEND.titulos+n&&!fs[linha-PEND.titulos-1][0]&&modelo)fs[linha-PEND.titulos-1][0]=modelo;
+ let mudou=false;const novas=fs.map(function(r){const f=pgFormulaConferencia_(r[0]);if(f!==r[0])mudou=true;return [f];});
+ if(mudou&&novas.every(function(r){return r[0];}))rg.setFormulasR1C1(novas);
+ else if(mudou)novas.forEach(function(r,i){if(r[0]&&r[0]!==fs[i][0])ps.getRange(PEND.titulos+1+i,16).setFormulaR1C1(r[0]);});
+}
 /* Cria ou atualiza as pendências de grupo. Não altera respostas nem notas da equipa. */
 function atualizarPendenciasAgrupadas(){
  const lock=LockService.getDocumentLock();if(!lock.tryLock(30000))throw Error('Há outra gravação da Clara em curso. Tenta novamente.');
@@ -74,13 +88,14 @@ function atualizarPendenciasAgrupadas(){
      if(!aberta){ps.getRange(linha,9).setValue(g.sara?'A aguardar esclarecimento':'Por tratar');ps.getRange(linha,12).setValue('');ps.getRange(linha,13).setValue('');}
      log.push({'Data da alteração':hoje,'Referência EGO':PG_REF,'ID da pendência':r[0],'Autor':'Clara','Onde foi alterado':PEND.nome,'Campo / assunto':g.assunto+' · Evidência','Antes':String(r[4]).slice(0,200),'Depois / alteração realizada':ev.slice(0,200)});
     }
+    pgGarantirConferencia_(ps,linha,formulaP);
     res[g.chave]={id:r[0],imoveis:refs.length};
    }else if(refs.length){
     const k=livres.shift();if(k===undefined)throw Error('Sem linhas livres nas Pendências da equipa.');
     const linha=PEND.titulos+1+k,id='P'+String(++maxId).padStart(4,'0');
     ps.getRange(linha,1,1,15).setValues([[id,PG_REF,g.tema,g.assunto,ev,g.acao,g.sara?'Sara':'Andreia','Normal',g.sara?'A aguardar esclarecimento':'Por tratar',hoje,hoje,'','','eGO','Por verificar']]);
     ps.getRange(linha,17).setValue(g.sara?'Sara':'');
-    if(!fs[k][15]&&formulaP)ps.getRange(linha,16).setFormulaR1C1(formulaP);
+    pgGarantirConferencia_(ps,linha,formulaP);
     log.push({'Data da alteração':hoje,'Referência EGO':PG_REF,'ID da pendência':id,'Autor':'Clara','Onde foi alterado':PEND.nome,'Campo / assunto':g.assunto+' · criada','Antes':'','Depois / alteração realizada':ev.slice(0,200)});
     res[g.chave]={id:id,imoveis:refs.length};
    }else res[g.chave]={id:'',imoveis:0};

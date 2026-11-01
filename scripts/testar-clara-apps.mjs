@@ -341,6 +341,7 @@ console.log('PASS bloqueio documental: documento e próximos passos explícitos,
  const g=t.context.atualizarPendenciasAgrupadas();assert.equal(g.alt.imoveis,2);assert.equal(g.video.imoveis,1);
  const gr=[...Array(20)].map((_,i)=>6+i).filter(r=>P.cells.get(`${r},2`)==='Vários imóveis');assert.equal(gr.length,3,'só temas com imóveis em falta (alt, vídeo, planta)');
  assert.ok(gr.every(r=>P.forms.get(`${r},16`)||P.forms.get('2000,16')),'fórmula de conferência presente');
+ assert.equal(t.context.pgFormulaConferencia_('=IF(B7="";"";IF(COUNTIFS(Levantamento!R10C1:R1009C1;RC[-14])<>1;"Rever referência";""))'),'=IF(B7="";"";IF(AND(RC[-14]<>"Vários imóveis";COUNTIFS(Levantamento!R10C1:R1009C1;RC[-14])<>1);"Rever referência";""))','conferência aceita a referência de tema');
  const altRow=gr.find(r=>P.cells.get(`${r},4`).startsWith('Fotos'));assert.match(P.cells.get(`${altRow},5`),/^2 imóveis não prioritários .*TESTE-001, TESTE-002\.$/);
  const r=t.context.pgArquivarIndividuais_(false);assert.equal(r.arquivadas,2);assert.equal(P.cells.get('10,9'),'Arquivado','planta em falta automática arquivada');assert.equal(P.cells.get('11,9'),'Digitalizado','planta em curso mantida');
  assert.equal(P.cells.get('6,9'),'Arquivado');assert.match(P.cells.get('6,12'),/^Agrupada em P\d{4}/);
