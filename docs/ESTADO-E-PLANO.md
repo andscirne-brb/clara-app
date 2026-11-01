@@ -10,7 +10,7 @@ Os 71 não lidos:
 
 Testes novos em `testar-extensao-imovel.mjs`; todas as suites passam.
 
-Por fazer: publicar no Apps Script o padrão de referência de `LoteImoveis.gs` e o `MARCADOR_JS`. O patch está em `scratchpad/deploy-0.5.1.js`, com hash final `c262560cda81`. O Claude in Chrome perdeu outra vez a permissão para script.google.com. Até lá, as referências com sufixo dão erro na gravação em massa e o resto grava normalmente.
+Publicado no Apps Script nativo a 01/11; conferido por hash (`c262560cda81`) depois de recarregar. Nota: estão ligados dois Chrome à extensão Claude, e só o perfil «ZION» tem a conta da Janela.
 
 ## Último ponto de situação — 01/11/2026 — todos os imóveis numa só colagem (0.5.0) (Claude)
 
