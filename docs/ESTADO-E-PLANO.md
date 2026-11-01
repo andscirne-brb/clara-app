@@ -1,3 +1,15 @@
+## Último ponto de situação — 01/11/2026 — prioridade «Alta» para os imóveis «melhora» (Claude)
+
+Conferência: os 22 imóveis com a etiqueta «melhora» no eGO, segundo a lista enviada pela Andreia, coincidem com os 22 «Prioritária» do Levantamento. No eGO, MO14296 está «Retirado» e MO13493 «Em Prospecção».
+
+Decisão da Andreia: usar a coluna Prioridade (H) das Pendências.
+- O analisador marca `p.prioridade` como «Alta» quando o imóvel é «Prioritária», e as pendências novas são gravadas com esse valor.
+- Migração `pgPrioridadeAlta_` aplicada: 107 pendências abertas dos prioritários passaram de «Normal» a «Alta». Ficou registo no Registo de alterações; as fechadas e arquivadas não mudaram.
+- O filtro não foi aplicado à vista: a Andreia filtra quando precisa, para não mudar o que a Sara vê.
+- Criada a P1316 para a Sara: MO14296 está «Retirado» no eGO; confirmar se sai dos prioritários. Prioridade «Alta», a aguardar esclarecimento. O imóvel continua prioritário até à resposta.
+
+Teste novo; todas as suites passam. Publicado e conferido por hash (`d63b22e2375d`), sem funções temporárias.
+
 ## Último ponto de situação — 01/11/2026 — Conferência das linhas de tema aplicada (Claude)
 
 A Andreia aprovou a exceção «Vários imóveis» na fórmula da coluna P (Conferência). A coluna é calculada pela tabela e só aceita mudanças pela API do Sheets.
