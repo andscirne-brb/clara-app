@@ -321,6 +321,7 @@ console.log('PASS bloqueio documental: documento e próximos passos explícitos,
  assert.ok(!assuntos.includes('Fotos sem texto alternativo')&&!assuntos.includes('Existe vídeo do imóvel?')&&!assuntos.includes('Imóvel sem planta'),'não prioritário: sem pendências individuais agrupadas');
  assert.ok(a.campos.some(c=>c.coluna==='Alt-text'&&c.novo==='Em falta'),'estado continua no Levantamento');
  t=comPrioridade('Prioritária');a=analyse(t,leitura);assuntos=a.pendencias.map(p=>p.assunto);
+ assert.ok(a.pendencias.every(p=>p.prioridade==='Alta'),'prioritário: pendências com Prioridade Alta');save(t,leitura);assert.ok([...t.pend.cells.entries()].some(([k,v])=>k.endsWith(',8')&&v==='Alta'),'gravada com Alta');
  assert.ok(assuntos.includes('Fotos sem texto alternativo')&&assuntos.includes('Existe vídeo do imóvel?'),'prioritário mantém pendências individuais');
  t=comPrioridade('Normal');a=analyse(t,{...payload(),fotos:0,fotosComAlt:null});assert.ok(a.pendencias.some(p=>p.assunto==='Imóvel sem fotos'),'sem fotos continua individual');
  assert.equal(t.context.grupoPendenciaClara_('Fotografias sem texto alternativo'),'alt','alias antigo reconhecido');assert.equal(t.context.grupoPendenciaClara_('Caderneta Predial'),'');
@@ -349,4 +350,5 @@ console.log('PASS bloqueio documental: documento e próximos passos explícitos,
  const again=t.context.atualizarPendenciasAgrupadas();assert.equal(again.alt.id,g.alt.id,'grupo reutilizado, sem duplicar');
  assert.ok([...t.hist.cells.values()].some(v=>String(v).startsWith('Arquivado (agrupada em')),'arquivo registado no histórico');
  assert.equal(t.context.pgFormulaLocal_('=IF(B6="a,b","",COUNTIFS(A1:A2,B6))',';'),'=IF(B6="a,b";"";COUNTIFS(A1:A2;B6))','separadores do idioma da folha, texto entre aspas intacto');
+ const pa=t.context.pgPrioridadeAlta_(false);assert.equal(pa.alteradas,1);assert.equal(P.cells.get('8,8'),'Alta','prioritário aberto passa a Alta');assert.equal(P.cells.get('9,8'),'Normal','não prioritário mantém Normal');
  console.log('PASS migração por tema: grupos a partir do Levantamento, sem duplicar, arquivo só sem trabalho humano, prioritários e documentos intactos, histórico registado.');}

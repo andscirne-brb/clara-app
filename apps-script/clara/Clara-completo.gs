@@ -475,6 +475,8 @@ function analisar(texto, docs) {
   // Imóveis não prioritários: os temas agrupados não criam pendências individuais novas (decisão de 01/11/2026).
   // O estado fica no Levantamento e a contagem na pendência do tema (PendenciasAgrupadas.gs).
   const prioritario=c.col('Prioridade')&&atual[c.col('Prioridade')-1]==='Prioritária';
+  // Pendências de imóveis prioritários (etiqueta «melhora») são criadas com Prioridade «Alta» (decisão de 01/11/2026).
+  pend.forEach(function(p){p.prioridade=prioritario?'Alta':'Normal';});
   if(!prioritario&&typeof grupoPendenciaClara_==='function'){for(let i=pend.length-1;i>=0;i--){if(!pend[i].jaExiste&&grupoPendenciaClara_(pend[i].assunto))pend.splice(i,1);}}
   const mudam = campos.filter(function (x) { return String(x.atual) !== String(x.novo); }).length;
   return { ref: ref, linha: linha, campos: campos, pendencias: pend, resolvidas: resolvidas, notas: notas, naoVerificados: naoVerificados, cruzamento: cruzamento, mudam: mudam, url: d.url || '', hoje: hoje, completa: completa, textos: Object.keys(IDIOMAS).filter(function (k) { return T[k] && !T[k].erro && typeof T[k].descricao === 'string' && typeof T[k].titulo === 'string'; }).map(function (k) { return { idioma: k, titulo: T[k].titulo, descricao: T[k].descricao }; }) };
@@ -665,7 +667,7 @@ function gravar(texto, docs) {
         [[5, p.evidencia], [6, p.acao]].concat([[7,p.responsavelReabertura||'Andreia']]).concat([[9, p.sara ? 'A aguardar esclarecimento' : 'Por tratar'], [11, hoje], [12, ''], [13, ''], [15, 'Por verificar'], [17, p.sara ? 'Sara' : '']]).forEach(function (v) { agendar(ps, linha, v[0], v[1], p.assunto + ' · reabertura (coluna ' + v[0] + ')', id); });
         reabertas.push(id + ' ' + p.assunto);
       } else {
-        const values = [id, a.ref, p.tema, p.assunto, p.evidencia, p.acao, p.sara ? 'Sara' : 'Andreia', 'Normal', p.sara ? 'A aguardar esclarecimento' : 'Por tratar', hoje, hoje, '', '', p.onde, 'Por verificar'];
+        const values = [id, a.ref, p.tema, p.assunto, p.evidencia, p.acao, p.sara ? 'Sara' : 'Andreia', p.prioridade || 'Normal', p.sara ? 'A aguardar esclarecimento' : 'Por tratar', hoje, hoje, '', '', p.onde, 'Por verificar'];
         values.forEach(function (v, i) { agendar(ps, linha, i + 1, v, p.assunto + ' · coluna ' + (i + 1), id); });
         agendar(ps, linha, 17, p.sara ? 'Sara' : '', p.assunto + ' · aguarda análise', id);
         criadas.push(id + ' ' + p.assunto);
@@ -2187,6 +2189,24 @@ function pgArquivarIndividuais_(simular){
   ps.getRange(PEND.titulos+1,9,n,1).setValues(I);ps.getRange(PEND.titulos+1,11,n,1).setValues(K);ps.getRange(PEND.titulos+1,12,n,1).setValues(L);
   SpreadsheetApp.flush();pgRegisto_(ss,log);
   return {arquivadas:alvo.length,grupos:grupos};
+ }finally{lock.releaseLock();}
+}
+
+/* Migração única (01/11/2026): pendências abertas dos imóveis prioritários passam a Prioridade «Alta».
+   Só altera a coluna H; fechadas e arquivadas ficam como estão. */
+function pgPrioridadeAlta_(simular){
+ const lock=LockService.getDocumentLock();if(!lock.tryLock(30000))throw Error('Há outra gravação da Clara em curso.');
+ try{
+  const ss=SpreadsheetApp.getActive(),ps=ss.getSheetByName(PEND.nome),hoje=dataHoje_(),prior=pgContagem_(ss).prioritarios;
+  const n=ps.getLastRow()-PEND.titulos,vs=ps.getRange(PEND.titulos+1,1,n,9).getValues(),H=vs.map(function(r){return [r[7]];}),log=[];
+  vs.forEach(function(r,i){
+   const ref=String(r[1]||'').toUpperCase();if(!/^P\d+$/.test(r[0])||!prior[ref])return;
+   if(['Concluído','Não aplicável','Arquivado'].indexOf(r[8])>=0||r[7]==='Alta')return;
+   H[i][0]='Alta';log.push({'Data da alteração':hoje,'Referência EGO':r[1],'ID da pendência':r[0],'Autor':'Clara','Onde foi alterado':PEND.nome,'Campo / assunto':r[3]+' · Prioridade','Antes':r[7],'Depois / alteração realizada':'Alta (imóvel prioritário)'});
+  });
+  if(simular)return {alterar:log.length,ids:log.map(function(l){return l['ID da pendência'];})};
+  if(log.length){ps.getRange(PEND.titulos+1,8,n,1).setValues(H);SpreadsheetApp.flush();pgRegisto_(ss,log);}
+  return {alteradas:log.length};
  }finally{lock.releaseLock();}
 }
 

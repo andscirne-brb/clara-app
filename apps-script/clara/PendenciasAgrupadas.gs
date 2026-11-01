@@ -141,3 +141,21 @@ function pgArquivarIndividuais_(simular){
   return {arquivadas:alvo.length,grupos:grupos};
  }finally{lock.releaseLock();}
 }
+
+/* Migração única (01/11/2026): pendências abertas dos imóveis prioritários passam a Prioridade «Alta».
+   Só altera a coluna H; fechadas e arquivadas ficam como estão. */
+function pgPrioridadeAlta_(simular){
+ const lock=LockService.getDocumentLock();if(!lock.tryLock(30000))throw Error('Há outra gravação da Clara em curso.');
+ try{
+  const ss=SpreadsheetApp.getActive(),ps=ss.getSheetByName(PEND.nome),hoje=dataHoje_(),prior=pgContagem_(ss).prioritarios;
+  const n=ps.getLastRow()-PEND.titulos,vs=ps.getRange(PEND.titulos+1,1,n,9).getValues(),H=vs.map(function(r){return [r[7]];}),log=[];
+  vs.forEach(function(r,i){
+   const ref=String(r[1]||'').toUpperCase();if(!/^P\d+$/.test(r[0])||!prior[ref])return;
+   if(['Concluído','Não aplicável','Arquivado'].indexOf(r[8])>=0||r[7]==='Alta')return;
+   H[i][0]='Alta';log.push({'Data da alteração':hoje,'Referência EGO':r[1],'ID da pendência':r[0],'Autor':'Clara','Onde foi alterado':PEND.nome,'Campo / assunto':r[3]+' · Prioridade','Antes':r[7],'Depois / alteração realizada':'Alta (imóvel prioritário)'});
+  });
+  if(simular)return {alterar:log.length,ids:log.map(function(l){return l['ID da pendência'];})};
+  if(log.length){ps.getRange(PEND.titulos+1,8,n,1).setValues(H);SpreadsheetApp.flush();pgRegisto_(ss,log);}
+  return {alteradas:log.length};
+ }finally{lock.releaseLock();}
+}

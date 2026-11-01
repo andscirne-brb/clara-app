@@ -475,6 +475,8 @@ function analisar(texto, docs) {
   // Imóveis não prioritários: os temas agrupados não criam pendências individuais novas (decisão de 01/11/2026).
   // O estado fica no Levantamento e a contagem na pendência do tema (PendenciasAgrupadas.gs).
   const prioritario=c.col('Prioridade')&&atual[c.col('Prioridade')-1]==='Prioritária';
+  // Pendências de imóveis prioritários (etiqueta «melhora») são criadas com Prioridade «Alta» (decisão de 01/11/2026).
+  pend.forEach(function(p){p.prioridade=prioritario?'Alta':'Normal';});
   if(!prioritario&&typeof grupoPendenciaClara_==='function'){for(let i=pend.length-1;i>=0;i--){if(!pend[i].jaExiste&&grupoPendenciaClara_(pend[i].assunto))pend.splice(i,1);}}
   const mudam = campos.filter(function (x) { return String(x.atual) !== String(x.novo); }).length;
   return { ref: ref, linha: linha, campos: campos, pendencias: pend, resolvidas: resolvidas, notas: notas, naoVerificados: naoVerificados, cruzamento: cruzamento, mudam: mudam, url: d.url || '', hoje: hoje, completa: completa, textos: Object.keys(IDIOMAS).filter(function (k) { return T[k] && !T[k].erro && typeof T[k].descricao === 'string' && typeof T[k].titulo === 'string'; }).map(function (k) { return { idioma: k, titulo: T[k].titulo, descricao: T[k].descricao }; }) };
@@ -665,7 +667,7 @@ function gravar(texto, docs) {
         [[5, p.evidencia], [6, p.acao]].concat([[7,p.responsavelReabertura||'Andreia']]).concat([[9, p.sara ? 'A aguardar esclarecimento' : 'Por tratar'], [11, hoje], [12, ''], [13, ''], [15, 'Por verificar'], [17, p.sara ? 'Sara' : '']]).forEach(function (v) { agendar(ps, linha, v[0], v[1], p.assunto + ' · reabertura (coluna ' + v[0] + ')', id); });
         reabertas.push(id + ' ' + p.assunto);
       } else {
-        const values = [id, a.ref, p.tema, p.assunto, p.evidencia, p.acao, p.sara ? 'Sara' : 'Andreia', 'Normal', p.sara ? 'A aguardar esclarecimento' : 'Por tratar', hoje, hoje, '', '', p.onde, 'Por verificar'];
+        const values = [id, a.ref, p.tema, p.assunto, p.evidencia, p.acao, p.sara ? 'Sara' : 'Andreia', p.prioridade || 'Normal', p.sara ? 'A aguardar esclarecimento' : 'Por tratar', hoje, hoje, '', '', p.onde, 'Por verificar'];
         values.forEach(function (v, i) { agendar(ps, linha, i + 1, v, p.assunto + ' · coluna ' + (i + 1), id); });
         agendar(ps, linha, 17, p.sara ? 'Sara' : '', p.assunto + ' · aguarda análise', id);
         criadas.push(id + ' ' + p.assunto);
