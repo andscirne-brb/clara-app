@@ -15,7 +15,7 @@ Primeira leitura completa com a 0.4.2: 324 de 401 imóveis lidos, 77 não lidos,
 
 Decisão: na gravação de todos os imóveis não há revisão imóvel a imóvel. Cada alteração fica no Registo de alterações.
 
-Por fazer: publicar o `Clara-completo.gs` (só muda `PAINEL_HTML`) no Apps Script nativo. O Claude in Chrome ficou sem permissão para script.google.com, e o patch está pronto e verificado por hash (`6f154bddcdeb`). Depois analisar a lista dos 77 não lidos.
+`Clara-completo.gs` publicado no Apps Script nativo a 01/11, depois de a Andreia repor o acesso; conferido por hash (`6f154bddcdeb`) depois de recarregar. Próximo: a Andreia instala a 0.5.0, volta a ler, guarda tudo numa só colagem e envia a lista de não lidos para análise.
 
 ## Último ponto de situação — 31/10/2026 — segundo teste de 10 com a 0.4.1; leitura parcial bloqueada em massa (0.4.2) (Claude)
 
