@@ -348,4 +348,5 @@ console.log('PASS bloqueio documental: documento e próximos passos explícitos,
  assert.equal(P.cells.get('7,9'),'A aguardar esclarecimento','com resposta da Sara não é arquivada');assert.equal(P.cells.get('8,9'),'Por tratar','prioritário mantém individual');assert.equal(P.cells.get('9,9'),'Por tratar','documentos não são agrupados');
  const again=t.context.atualizarPendenciasAgrupadas();assert.equal(again.alt.id,g.alt.id,'grupo reutilizado, sem duplicar');
  assert.ok([...t.hist.cells.values()].some(v=>String(v).startsWith('Arquivado (agrupada em')),'arquivo registado no histórico');
+ assert.equal(t.context.pgFormulaLocal_('=IF(B6="a,b","",COUNTIFS(A1:A2,B6))',';'),'=IF(B6="a,b";"";COUNTIFS(A1:A2;B6))','separadores do idioma da folha, texto entre aspas intacto');
  console.log('PASS migração por tema: grupos a partir do Levantamento, sem duplicar, arquivo só sem trabalho humano, prioritários e documentos intactos, histórico registado.');}

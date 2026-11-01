@@ -1,3 +1,13 @@
+## Último ponto de situação — 01/11/2026 — Conferência das linhas de tema aplicada (Claude)
+
+A Andreia aprovou a exceção «Vários imóveis» na fórmula da coluna P (Conferência). A coluna é calculada pela tabela e só aceita mudanças pela API do Sheets.
+
+Incidente, resolvido no momento: a primeira escrita pela API usou «,» como separador, como faz `arFormulaApi_`, e as 1500 linhas da Conferência ficaram com #ERROR! durante alguns minutos. Nesta folha (pt_PT) a API interpreta a fórmula no idioma da folha e exige «;». Primeiro testei numa linha e depois reescrevi a coluna com «;». Resultado final, conferido: 1489 vazias, 7 «Validar conclusão» e 4 «Rever referência», que já existiam antes; as 4 linhas de tema não têm aviso. Nenhum dado das pendências foi alterado, só as fórmulas da coluna P.
+
+`pgGarantirConferencia_` passa a usar o separador do idioma da folha (`pgFormulaLocal_`) e escreve em blocos de 500. Teste novo; todas as suites passam. Publicado e conferido por hash (`3deff4c2435e`), sem funções temporárias.
+
+**Aviso para quem continuar:** `arFormulaApi_`, em ArquivarPendencias.gs (Codex), converte «;» em «,». Com `getFormulas()` a devolver «,», escrever por esse caminho nesta folha dá #ERROR!. Confirmar antes de voltar a usar a reparação de fórmulas.
+
 ## Último ponto de situação — 01/11/2026 — pendências por tema aplicadas (Claude)
 
 Decisão da Andreia: individuais só para os imóveis com Prioridade «Prioritária» (etiqueta «melhora»). Os restantes imóveis passam a ter uma pendência por tema, com a lista de referências. Os 2 imóveis sem fotos e os documentos continuam individuais.

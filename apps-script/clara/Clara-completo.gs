@@ -2110,11 +2110,14 @@ function pgGarantirConferencia_(ps){
  SpreadsheetApp.flush();
  const n=ps.getLastRow()-PEND.titulos;if(n<1)return 0;
  const fs=ps.getRange(PEND.titulos+1,16,n,1).getFormulas(),req=[],sid=ps.getSheetId();
+ /* A API interpreta a fórmula no idioma da folha: em pt_PT o separador é «;» (verificado a 01/11/2026; «,» dá #ERROR!). */
+ const sep=/^(en|ja|zh|ko|th|he|iw)/i.test(SpreadsheetApp.getActive().getSpreadsheetLocale())?',':';';
  fs.forEach(function(r,i){const f=r[0];if(!f)return;const g=pgFormulaConferencia_(f);if(g===f)return;
-  req.push({updateCells:{range:{sheetId:sid,startRowIndex:PEND.titulos+i,endRowIndex:PEND.titulos+i+1,startColumnIndex:15,endColumnIndex:16},rows:[{values:[{userEnteredValue:{formulaValue:arFormulaApi_(g)}}]}],fields:'userEnteredValue'}});});
- if(req.length)Sheets.Spreadsheets.batchUpdate({requests:req},SpreadsheetApp.getActive().getId());
+  req.push({updateCells:{range:{sheetId:sid,startRowIndex:PEND.titulos+i,endRowIndex:PEND.titulos+i+1,startColumnIndex:15,endColumnIndex:16},rows:[{values:[{userEnteredValue:{formulaValue:pgFormulaLocal_(g,sep)}}]}],fields:'userEnteredValue'}});});
+ for(let k=0;k<req.length;k+=500)Sheets.Spreadsheets.batchUpdate({requests:req.slice(k,k+500)},SpreadsheetApp.getActive().getId());
  return req.length;
 }
+function pgFormulaLocal_(f,sep){let q=false,o='';for(let i=0;i<f.length;i++){const ch=f[i];if(ch==='"')q=!q;o+=!q&&(ch===','||ch===';')?sep:ch;}return o;}
 /* Cria ou atualiza as pendências de grupo. Não altera respostas nem notas da equipa. */
 function atualizarPendenciasAgrupadas(){
  const lock=LockService.getDocumentLock();if(!lock.tryLock(30000))throw Error('Há outra gravação da Clara em curso. Tenta novamente.');
