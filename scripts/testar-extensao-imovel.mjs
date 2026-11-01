@@ -32,3 +32,8 @@ let observer,timeout,disconnected=0,ready=false;c.MutationObserver=class{constru
 const lazy={documentElement:{},querySelectorAll:()=>ready?[listing]:[],querySelector:()=>ready?{}:null};const loading=c.aguardarFichaClara(lazy);ready=true;observer();await loading;assert.equal(disconnected,1);
 ready=false;const unfinished=c.aguardarFichaClara(lazy);timeout();await assert.rejects(()=>unfinished,/carregar/);assert.equal(disconnected,2);
 console.log('PASS ficha: referências divergentes recusadas, espera pelo DOM, observador desligado no sucesso e timeout.');
+// Pedido da API de um imóvel semelhante é ignorado; sufixo «(2)» da API aceite face à referência da página.
+{c.performance={getEntriesByType:()=>[{name:'https://websiteapi.egorealestate.com/v1/Properties/999?propertyid=999'},{name:'https://websiteapi.egorealestate.com/v1/Properties/123?propertyid=123'}]};
+ const pedidos=[];c.fetch=async(u)=>{if(/websiteapi/.test(u)){pedidos.push(u);return{ok:true,json:async()=>({Reference:'MO0001 (2)',Images:[{AlternativeText:'x'}],BluePrints:[],Videos:[],Features:[]})};}throw Error('sem rede');};
+ const x=await c.recolherFichaClara(doc,{estado(){}});assert.ok(pedidos.every(u=>/Properties\/123\?/.test(u)),'só o pedido deste imóvel');assert.equal(x.ref,'MO0001 (2)');assert.ok(c.resumoFichaClara(x).confirmados.length,'referência com sufixo aceite');c.performance={getEntriesByType:()=>[]};
+ console.log('PASS API do próprio imóvel e referência com sufixo.');}

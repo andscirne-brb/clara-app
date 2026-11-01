@@ -1,7 +1,7 @@
 /* Sem dados pessoais de leads; apenas os resultados agregados dos coletores. */
 function fichaUrlPermitido(url){return /^https:\/\/(?:www\.)?janela-imobiliaria\.com\/[^?#]+\/\d+\/?(?:\?[^#]*)?(?:#.*)?$/.test(url||'');}
 function resumoFichaClara(d){
- if(!d||d.v!==1||d.origem!=='site'||!fichaUrlPermitido(d.url)||!/^\w{2,5}\d+$/.test(d.ref||''))throw Error('A leitura não corresponde a uma ficha identificada.');
+ if(!d||d.v!==1||d.origem!=='site'||!fichaUrlPermitido(d.url)||!/^[A-Za-z0-9][A-Za-z0-9_\- ()]{1,30}$/.test(d.ref||''))throw Error('A leitura não corresponde a uma ficha identificada.');
  const confirmados=[],porVerificar=[];
  const numero=(campo,n)=>{if(Number.isInteger(n)&&n>=0)confirmados.push(campo+': '+n);else porVerificar.push(campo);};
  numero('Fotos',d.fotos);

@@ -7,7 +7,7 @@ s=(base/'marcador.js').read_text(encoding='utf8')
 body=s[s.index("  ui.estado('A ler a ficha do imóvel…');"):s.rindex('  }catch(e)')]
 body=body.replace("if(!me){ui.falhar('Esta página não é uma ficha de imóvel. Abre o anúncio e volta a clicar no marcador.');return;}","if(!me)throw Error('Abre a ficha pública completa do imóvel no website.');")
 body=body.replace("if(!out.ref){ui.falhar('Não consegui identificar a referência. Confirma que abriste a ficha completa do imóvel e volta a tentar.');return;}","if(!out.ref)throw Error('A referência do imóvel não ficou identificada.');")
-body=body.replace('  if (p && p.Reference) {',"  const refDom=(doc.querySelector('.detailContainer')||doc.body).textContent.match(/Ref\\.\\s*([A-Z]{2,5}\\d+)/);\n  if(p&&p.Reference&&refDom&&p.Reference!==refDom[1])throw Error('As referências da página e dos dados não correspondem. Atualiza a ficha.');\n  if (p && p.Reference) {")
+body=body.replace('  if (p && p.Reference) {',"  const refDom=(doc.querySelector('.detailContainer')||doc.body).textContent.match(/Ref\\.\\s*([A-Za-z0-9][\\w-]*)/);\n  /* A API pode acrescentar um sufixo de anúncio, ex. «MO1 (2)»; a página mostra só a referência base. */\n  if(p&&p.Reference&&refDom&&String(p.Reference).trim().replace(/\\s*\\(\\d+\\)$/,'')!==refDom[1])throw Error('As referências da página e dos dados não correspondem. Atualiza a ficha.');\n  if (p && p.Reference) {")
 last=body.index('  const falharam=')
 body=body[:last]+"  return out;\n"
 body=re.sub(r'\bdocument\b','doc',body)

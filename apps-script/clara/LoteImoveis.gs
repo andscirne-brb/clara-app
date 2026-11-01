@@ -1,7 +1,7 @@
 /* Leitura em lote (CLARA7) vinda da extensão: cada ficha é analisada e gravada pela mesma via da leitura individual (CLARA1).
    Documentos ficam como estão (sem confirmação manual nesta leitura). Imóveis fora do Levantamento são apenas listados. */
 function loteValidarFicha_(f){
-  if(!f||typeof f!=='object'||f.v!==1||f.origem!=='site'||!/^\w{2,5}\d+$/.test(String(f.ref||''))||!/^https:\/\/(?:www\.)?janela-imobiliaria\.com\//.test(String(f.url||'')))throw Error('Ficha inválida no lote.');
+  if(!f||typeof f!=='object'||f.v!==1||f.origem!=='site'||!/^[A-Za-z0-9][A-Za-z0-9_\- ()]{1,30}$/.test(String(f.ref||''))||!/^https:\/\/(?:www\.)?janela-imobiliaria\.com\//.test(String(f.url||'')))throw Error('Ficha inválida no lote.');
   return 'CLARA1:'+JSON.stringify(f);
 }
 function analisarFichaLote(ficha){

@@ -1,3 +1,17 @@
+## Último ponto de situação — 01/11/2026 — análise dos 71 não lidos; 0.5.1 (Claude)
+
+Leitura com a 0.5.0: 330 de 401 lidos. «Copiar tudo» gerou um CLARA7 válido (2 MB, 330 fichas, referências únicas). O painel recusou-o porque estava aberto desde antes da publicação e usava o HTML antigo; basta fechar e reabrir.
+
+Os 71 não lidos:
+- **48 notícias e 2 empreendimentos:** o sitemap inclui `detalhe-noticia` e `empreendimento`. A 0.5.1 só lê `/casasvenda/`.
+- **10 redirecionamentos:** imóveis retirados do site. Ficam listados.
+- **7 «referências não correspondem»:** a API devolve a referência com um sufixo de anúncio, ex. «MO1 (2)», e a página mostra só a base. Passa a comparar a base, e a referência gravada é a da API, com o sufixo. Em `construir-coletor-imovel.py`, a escolha do pedido da API passa a exigir o id do próprio imóvel, porque a página também pede dados de imóveis semelhantes.
+- **4 «não corresponde a uma ficha identificada»:** referências fora do padrão `XX123`, ex. `13830_A`. O padrão aceite foi alargado em `core.js` e `LoteImoveis.gs`; o servidor indica se não estão no Levantamento.
+
+Testes novos em `testar-extensao-imovel.mjs`; todas as suites passam.
+
+Por fazer: publicar no Apps Script o padrão de referência de `LoteImoveis.gs` e o `MARCADOR_JS`. O patch está em `scratchpad/deploy-0.5.1.js`, com hash final `c262560cda81`. O Claude in Chrome perdeu outra vez a permissão para script.google.com. Até lá, as referências com sufixo dão erro na gravação em massa e o resto grava normalmente.
+
 ## Último ponto de situação — 01/11/2026 — todos os imóveis numa só colagem (0.5.0) (Claude)
 
 Primeira leitura completa com a 0.4.2: 324 de 401 imóveis lidos, 77 não lidos, 13 lotes. A Andreia pediu para agilizar a colagem por lotes.

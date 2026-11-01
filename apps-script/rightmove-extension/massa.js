@@ -1,6 +1,6 @@
 /* Leitura em massa das fichas públicas: usa o mesmo coletor da leitura individual, separador a separador.
    Os resultados ficam em chrome.storage.local (só neste computador) até serem copiados por lotes para o Sheets. */
-const MASSA={versao:'0.5.0',paralelo:3,porLote:25,limiteFichaMs:60000,sitemap:'https://www.janela-imobiliaria.com/sitemap-pt-pt.xml'};
+const MASSA={versao:'0.5.1',paralelo:3,porLote:25,limiteFichaMs:60000,sitemap:'https://www.janela-imobiliaria.com/sitemap-pt-pt.xml'};
 let massaAtiva=null,massaParar=false;
 const esperar=ms=>new Promise(r=>setTimeout(r,ms));
 const caminhoFicha=u=>{try{const x=new URL(u);return decodeURI(x.pathname).replace(/\/+$/,'').toLowerCase();}catch(e){return '';}};
@@ -10,7 +10,7 @@ async function massaGuardar(m){m.quando=Date.now();await chrome.storage.local.se
 async function urlsDoSitemap(){
  const r=await fetch(MASSA.sitemap,{cache:'no-store'});if(!r.ok)throw Error('Não consegui abrir a lista de imóveis do site ('+r.status+').');
  const xml=await r.text(),vistos=new Set(),urls=[];
- for(const m of xml.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)){const u=m[1].replace(/&amp;/g,'&');if(!fichaUrlPermitido(u))continue;const id=(u.match(/\/(\d+)\/?$/)||[])[1];if(!id||vistos.has(id))continue;vistos.add(id);urls.push(u);}
+ for(const m of xml.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)){const u=m[1].replace(/&amp;/g,'&');if(!fichaUrlPermitido(u)||!/^https:\/\/(?:www\.)?janela-imobiliaria\.com\/casasvenda\//.test(u))continue;/* Só fichas de imóveis: notícias e empreendimentos ficam de fora. */const id=(u.match(/\/(\d+)\/?$/)||[])[1];if(!id||vistos.has(id))continue;vistos.add(id);urls.push(u);}
  if(!urls.length)throw Error('A lista do site não tem fichas de imóveis.');if(urls.length>2000)throw Error('A lista do site tem um número inesperado de páginas ('+urls.length+').');
  return urls;
 }

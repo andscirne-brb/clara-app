@@ -25,7 +25,9 @@
   const out = { v: 1, marcadorVersao: '20261028.2', origem: 'site', lido: new Date().toISOString(), url: location.href.split('?')[0], ref: null, idiomaCaracteristicas: (document.documentElement.lang || '').slice(0,2).toUpperCase(), textos: {} };
   let p = null;
   /* A API pública é reutilizada da cache da página (pedido novo é recusado pelo servidor); espera até 10 s pelo pedido da página. */
-  const apiUrl=()=>performance.getEntriesByType('resource').map(e => e.name).find(n => /websiteapi\.egorealestate\.com\/v1\/Properties\/\d+\?.*propertyid=/.test(n));
+  const idPagina=(location.href.split(/[?#]/)[0].match(/\/(\d+)\/?$/)||[])[1];
+  /* Só o pedido deste imóvel: a página também pede dados de imóveis semelhantes. */
+  const apiUrl=()=>performance.getEntriesByType('resource').map(e => e.name).find(n => /websiteapi\.egorealestate\.com\/v1\/Properties\/\d+\?.*propertyid=/.test(n)&&(!idPagina||new RegExp('/Properties/'+idPagina+'\\?').test(n)));
   let u=apiUrl();for(let i=0;!u&&i<34;i++){await new Promise(r=>setTimeout(r,300));u=apiUrl();}
   if (u) { try { p = await fetchClara(u,true); } catch (e) {} }
   if (p && p.Reference) {
