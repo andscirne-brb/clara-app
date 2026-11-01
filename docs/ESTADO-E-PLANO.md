@@ -1,3 +1,22 @@
+## Último ponto de situação — 01/11/2026 — todos os imóveis numa só colagem (0.5.0) (Claude)
+
+Primeira leitura completa com a 0.4.2: 324 de 401 imóveis lidos, 77 não lidos, 13 lotes. A Andreia pediu para agilizar a colagem por lotes.
+
+0.5.0:
+- **Extensão:** no fim da leitura há o botão «Copiar tudo para o Sheets» (um só CLARA7 com `modo:'todos'`) e «Copiar lista de não lidos». Os lotes de 25 ficam numa alternativa recolhida.
+- **Painel:**
+  - aceita até 3000 fichas em `modo:'todos'`;
+  - depois de Analisar mostra o resumo, e um único «Confirmar e guardar» grava ficha a ficha com `gravarFichaLote`, que já inclui a análise, sem rever imóvel a imóvel;
+  - o progresso por referência fica no localStorage (`clara.todos.v1.<pedido>`); se o painel fechar, volta-se a colar e continua só com o que falta ou falhou;
+  - os imóveis fora do Levantamento são listados e não são repetidos;
+  - mostra uma estimativa do tempo restante;
+  - um texto acima de 400 mil caracteres não vai para o rascunho.
+- **Testes:** novo `testar-painel-todos.mjs`; caso novo em `testar-extensao-massa.mjs`; todas as suites passam.
+
+Decisão: na gravação de todos os imóveis não há revisão imóvel a imóvel. Cada alteração fica no Registo de alterações.
+
+Por fazer: publicar o `Clara-completo.gs` (só muda `PAINEL_HTML`) no Apps Script nativo. O Claude in Chrome ficou sem permissão para script.google.com, e o patch está pronto e verificado por hash (`6f154bddcdeb`). Depois analisar a lista dos 77 não lidos.
+
 ## Último ponto de situação — 31/10/2026 — segundo teste de 10 com a 0.4.1; leitura parcial bloqueada em massa (0.4.2) (Claude)
 
 Segundo teste com a 0.4.1, conferido no Registo de alterações. Quatro imóveis passaram de «Alt-text: Preenchido» para «Em falta», cada um com a pendência «Fotos sem texto alternativo» (de P0218 a P0237). Nesses quatro, o eGO não tem nenhum texto alternativo; os valores conferem com a API pública. Um outro imóvel sem fotos não tem alt a avaliar, como deve.

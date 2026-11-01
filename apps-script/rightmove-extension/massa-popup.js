@@ -11,6 +11,8 @@ $('massaLimpar').onclick=async()=>{const r=await enviar({massa:'limpar'});if(r?.
 async function copiar(n){const r=await enviar({massa:'lote',n});if(!r?.texto){$('massaEstado').textContent='Este lote já não está disponível. Volta a ler.';return;}
  try{await navigator.clipboard.writeText(r.texto);$('massaEstado').textContent='Lote '+n+' copiado. Cola em Clara > eGO: estado, analisa e guarda. Depois volta aqui para o lote seguinte.';$('massaTexto').hidden=true;}
  catch(e){$('massaTexto').value=r.texto;$('massaTexto').hidden=false;$('massaTexto').select();$('massaEstado').textContent='Copia o texto selecionado com Ctrl+C.';}mostrar();}
+async function copiarTexto(t,ok){try{await navigator.clipboard.writeText(t);$('massaEstado').textContent=ok;$('massaTexto').hidden=true;}catch(e){$('massaTexto').value=t;$('massaTexto').hidden=false;$('massaTexto').select();$('massaEstado').textContent='Copia o texto selecionado com Ctrl+C.';}}
+async function copiarTudo(){const r=await enviar({massa:'todos'});if(!r?.texto){$('massaEstado').textContent='A leitura já não está disponível. Volta a ler.';return;}await copiarTexto(r.texto,'Tudo copiado. Cola em Clara > eGO: estado e clica em Analisar. A gravação corre sozinha; se o painel fechar, volta a colar e continua onde parou.');await enviar({massa:'marcar',n:'todos'});mostrar();}
 async function mostrar(){
  const {massa:m}=await chrome.storage.local.get('massa');const st=await enviar({massa:'estado'}).catch(()=>({}));const ativa=!!st?.ativa;
  $('massaBox').hidden=!m&&!ativa;$('massa').disabled=teste.disabled=ativa;$('massaParar').hidden=!ativa;$('massaLotes').replaceChildren();$('massaFalhas').replaceChildren();
@@ -21,8 +23,12 @@ async function mostrar(){
  else if(m.estado==='a-ler'&&ativa)$('massaEstado').textContent=(m.teste?'Teste · ':'')+'A ler imóveis: '+m.feitos+' de '+total+(falhas?' · '+falhas+' não lidos':'')+'. Podes fechar este painel; a leitura continua numa janela minimizada.';
  else if(['a-ler','parado'].includes(m.estado))$('massaEstado').textContent='Leitura interrompida em '+m.feitos+' de '+total+'. Clica em Continuar para ler só os que faltam.';
  else if(m.estado==='concluido'){
-  if(!$('massaEstado').textContent.startsWith('Lote '))$('massaEstado').textContent=(m.teste?'Teste concluído: ':'Concluído: ')+m.lidos+' de '+total+' imóveis lidos'+(falhas?', '+falhas+' não lidos':'')+'. Copia um lote de cada vez para o Sheets.';
-  for(let n=1;n<=m.lotes;n++){const b=document.createElement('button');const feito=m.copiados?.includes(n);b.className='lote'+(feito?' ok':'');b.textContent=(feito?'✓ ':'')+'Copiar lote '+n+' de '+m.lotes;b.onclick=()=>copiar(n);$('massaLotes').append(b);}
+  if(!/^(Lote|Tudo|Lista)/.test($('massaEstado').textContent))$('massaEstado').textContent=(m.teste?'Teste concluído: ':'Concluído: ')+m.lidos+' de '+total+' imóveis lidos'+(falhas?', '+falhas+' não lidos':'')+'. Copia tudo e cola uma vez no Sheets.';
+  const tudo=document.createElement('button');tudo.textContent=(m.copiados?.includes('todos')?'✓ ':'')+'Copiar tudo para o Sheets ('+m.lidos+' imóveis)';tudo.onclick=copiarTudo;$('massaLotes').append(tudo);
+  if(falhas){const nl=document.createElement('button');nl.className='lote';nl.textContent='Copiar lista de não lidos';nl.onclick=()=>copiarTexto((m.falhas||[]).map(f=>decodeURI(f.url)+' · '+f.erro).join('\n'),'Lista de não lidos copiada.');$('massaLotes').append(nl);}
+  const alt=document.createElement('details');const s=document.createElement('summary');s.textContent='Alternativa: lotes de 25';alt.append(s);
+  for(let n=1;n<=m.lotes;n++){const b=document.createElement('button');const feito=m.copiados?.includes(n);b.className='lote'+(feito?' ok':'');b.textContent=(feito?'✓ ':'')+'Copiar lote '+n+' de '+m.lotes;b.onclick=()=>copiar(n);alt.append(b);}
+  $('massaLotes').append(alt);
  }
  $('massaFalhasBox').hidden=!falhas;(m.falhas||[]).forEach(f=>{const p=document.createElement('p');const a=document.createElement('small');a.textContent=decodeURI(f.url.replace(/^https:\/\/(www\.)?janela-imobiliaria\.com/,''))+' · '+f.erro;p.append(a);$('massaFalhas').append(p);});
 }

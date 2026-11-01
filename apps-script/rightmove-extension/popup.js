@@ -1,4 +1,4 @@
-const el=id=>document.getElementById(id);const VERSAO='0.4.2';let leitura='',autoCopiarPedido='',aguardarPedido='',render=0,destinoLeitura='Rightmove: estatísticas';
+const el=id=>document.getElementById(id);const VERSAO='0.5.0';let leitura='',autoCopiarPedido='',aguardarPedido='',render=0,destinoLeitura='Rightmove: estatísticas';
 function bloquear(v){el('iniciar').disabled=v;el('imovel').disabled=v;el('idealista').disabled=v;el('green').disabled=v;}
 async function mostrar(){const atual=++render,{clara:s}=await chrome.storage.session.get('clara');if(atual!==render)return;el('resumo').replaceChildren();leitura='';el('copiar').hidden=true;el('limpar').hidden=!s;bloquear(false);
 if(aguardarPedido&&s?.pedido!==aguardarPedido){bloquear(true);el('estado').textContent='A iniciar uma nova recolha. A leitura anterior não será copiada.';return;}

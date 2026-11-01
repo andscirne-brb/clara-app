@@ -1,6 +1,6 @@
 /* Leitura em massa das fichas públicas: usa o mesmo coletor da leitura individual, separador a separador.
    Os resultados ficam em chrome.storage.local (só neste computador) até serem copiados por lotes para o Sheets. */
-const MASSA={versao:'0.4.2',paralelo:3,porLote:25,limiteFichaMs:60000,sitemap:'https://www.janela-imobiliaria.com/sitemap-pt-pt.xml'};
+const MASSA={versao:'0.5.0',paralelo:3,porLote:25,limiteFichaMs:60000,sitemap:'https://www.janela-imobiliaria.com/sitemap-pt-pt.xml'};
 let massaAtiva=null,massaParar=false;
 const esperar=ms=>new Promise(r=>setTimeout(r,ms));
 const caminhoFicha=u=>{try{const x=new URL(u);return decodeURI(x.pathname).replace(/\/+$/,'').toLowerCase();}catch(e){return '';}};
@@ -57,6 +57,8 @@ async function executarMassa(continuar,limite){
   m.falhas=m.falhas.filter((f,i,a)=>a.findIndex(x=>x.url===f.url&&x.erro===f.erro)===i);
   const n=Math.ceil(fichas.length/MASSA.porLote);
   for(let k=0;k<n;k++){const parte=fichas.slice(k*MASSA.porLote,(k+1)*MASSA.porLote);await chrome.storage.local.set({['lote:'+(k+1)]:'CLARA7:'+JSON.stringify({v:7,origem:'site',tipo:'lote-imoveis',pedido:m.pedido,lote:k+1,lotes:n,totalLidos:fichas.length,totalSite:m.urls.length,lido:m.inicio,recolha:{ferramenta:'extensao',versao:MASSA.versao,modo:'massa'},fichas:parte})});}
+  /* Texto único com todas as fichas: uma só colagem no Sheets, gravação contínua e retomável no painel. */
+  if(fichas.length)await chrome.storage.local.set({todos:'CLARA7:'+JSON.stringify({v:7,origem:'site',tipo:'lote-imoveis',modo:'todos',pedido:m.pedido,lote:1,lotes:1,totalLidos:fichas.length,totalSite:m.urls.length,lido:m.inicio,recolha:{ferramenta:'extensao',versao:MASSA.versao,modo:'massa'},fichas})});
   m.lotes=n;m.lidos=fichas.length;m.estado='concluido';m.fim=new Date().toISOString();await massaGuardar(m);
  }catch(e){const m=await massaEstado()||{v:1};m.estado='erro';m.erro=String(e.message||e).slice(0,400);await massaGuardar(m);}
  finally{clearInterval(manter);if(janela)await chrome.windows.remove(janela.id).catch(()=>{});massaAtiva=null;}
@@ -72,5 +74,7 @@ chrome.runtime.onMessage.addListener((msg,sender,reply)=>{
  }
  if(msg.massa==='parar'){massaParar=true;reply({ok:true});return;}
  if(msg.massa==='lote'){chrome.storage.local.get('lote:'+msg.n).then(async x=>{const t=x['lote:'+msg.n];if(t){const m=await massaEstado();if(m&&!m.copiados.includes(msg.n)){m.copiados.push(msg.n);await massaGuardar(m);}}reply({texto:t||''});});return true;}
+ if(msg.massa==='marcar'){massaEstado().then(async m=>{if(m&&!m.copiados.includes(msg.n)){m.copiados.push(msg.n);await massaGuardar(m);}reply({ok:true});});return true;}
+ if(msg.massa==='todos'){chrome.storage.local.get('todos').then(x=>reply({texto:x.todos||''}));return true;}
  if(msg.massa==='limpar'){if(massaAtiva){reply({erro:'A leitura ainda está em curso.'});return;}chrome.storage.local.clear().then(()=>reply({ok:true}));return true;}
 });
