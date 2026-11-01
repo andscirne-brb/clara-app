@@ -1,3 +1,23 @@
+## Último ponto de situação — 01/11/2026 — gravação de todos os imóveis conferida (Claude)
+
+A Andreia guardou a leitura de todos os imóveis numa só colagem. Conferência independente pelo Registo de alterações:
+- **Gravação:** 330 imóveis da leitura gravados a 01/11; houve também mais 4 imóveis que na 0.5.0 tinham dado redirecionamento e que agora leram bem.
+- **N.º de imagens:** 325 iguais ao valor lido, 0 diferenças; nos outros 5 o valor não mudou e por isso não houve registo.
+- **Leitura completa:** nenhuma leitura parcial e nenhuma foto com alt text na API.
+- **Alt-text:** 320 imóveis passaram a «Em falta», incluindo 9 que estavam em «Preenchido» por causa do erro de 0.4.0. Os 14 afetados ficam corrigidos.
+
+Pendências novas: 1074 (P0238 a P1311).
+- 320 «Fotos sem texto alternativo»
+- 267 «Existe vídeo do imóvel?», que aguardam análise da Sara
+- 225 «Imóvel sem planta»
+- 255 de textos em falta (títulos e descrições FR, DE, ES, EN)
+- 5 «Planta só em PDF»
+- 2 «Imóvel sem fotos»
+
+Para decidir com a Andreia: estas pendências seguem as regras atuais, uma por imóvel. As 267 perguntas de vídeo à Sara e as 320 de alt text, que são uma situação geral do eGO, podem ser demasiado para a equipa. Opções: agrupar numa pendência geral por tema, ou priorizar pelos 22 imóveis com a etiqueta «melhora». Não alterar sem decisão.
+
+Os redirecionamentos não são prova de que o imóvel foi retirado: 4 dos 10 leram bem numa nova tentativa.
+
 ## Último ponto de situação — 01/11/2026 — análise dos 71 não lidos; 0.5.1 (Claude)
 
 Leitura com a 0.5.0: 330 de 401 lidos. «Copiar tudo» gerou um CLARA7 válido (2 MB, 330 fichas, referências únicas). O painel recusou-o porque estava aberto desde antes da publicação e usava o HTML antigo; basta fechar e reabrir.
