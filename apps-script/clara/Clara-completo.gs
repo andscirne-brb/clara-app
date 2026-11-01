@@ -2061,7 +2061,7 @@ const PG_GRUPOS = [
   falta:function(g){return g('Vídeo')==='Em falta';},
   acao:'Sara: indicar na Resposta quais destes imóveis têm vídeo para carregar e quais não têm. Filtrar o Levantamento por Vídeo = Em falta.'},
  {chave:'planta',tema:'Plantas',assunto:'Plantas em falta ou só em PDF (vários imóveis)',sara:false,
-  individuais:['Imóvel sem planta','Planta só em PDF'],
+  individuais:['Imóvel sem planta','Planta só em PDF','Planta'],
   falta:function(g){return g('Planta')==='Em falta'||g('Planta')==='Formato errado';},
   acao:'Verif. dossiê > planta em JPG > upload eGO. Filtrar o Levantamento por Planta = Em falta ou Formato errado.'},
  {chave:'textos',tema:'Textos',assunto:'Títulos e descrições noutros idiomas (vários imóveis)',sara:false,
@@ -2150,7 +2150,8 @@ function pgArquivarIndividuais_(simular){
   vs.forEach(function(r,i){
    const ref=String(r[1]||''),chave=grupoPendenciaClara_(r[3]);
    if(!chave||!ref||ref===PG_REF||prior[ref.toUpperCase()])return;
-   if(['Por tratar','A aguardar esclarecimento'].indexOf(r[8])<0)return;
+   /* Plantas usam o fluxo curto: «Em falta» e «Formato errado» são os estados iniciais automáticos; Digitalizado e afins são trabalho em curso. */
+   if(['Por tratar','A aguardar esclarecimento'].concat(chave==='planta'?['Em falta','Formato errado']:[]).indexOf(r[8])<0)return;
    if(String(r[11]||'').trim()||(iResp>=0&&String(r[iResp]||'').trim()))return;
    const g=grupos[chave];if(!g||!g.id)return;
    alvo.push({linha:PEND.titulos+1+i,id:r[0],ref:ref,assunto:r[3],estado:r[8],grupo:g.id});

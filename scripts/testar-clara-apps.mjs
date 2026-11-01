@@ -336,12 +336,13 @@ console.log('PASS bloqueio documental: documento e próximos passos explícitos,
  linha(7,['P0002','TESTE-001','Vídeo','Existe vídeo do imóvel?','ev','ac','Sara','Normal','A aguardar esclarecimento']);P.cells.set('7,18','Tem vídeo no Drive');
  linha(8,['P0003','TESTE-003','Imagens','Fotos sem texto alternativo','ev','ac','Andreia','Normal','Por tratar']);
  linha(9,['P0004','TESTE-002','Documentos','Caderneta Predial','ev','ac','Andreia','Normal','Por tratar']);
- const sim=t.context.pgArquivarIndividuais_(true);assert.equal(sim.arquivar,1,'simulação: só a individual sem resposta, não prioritária');
- const g=t.context.atualizarPendenciasAgrupadas();assert.equal(g.alt.imoveis,2);assert.equal(g.video.imoveis,1);assert.equal(g.planta.imoveis,0);
- const gr=[...Array(20)].map((_,i)=>6+i).filter(r=>P.cells.get(`${r},2`)==='Vários imóveis');assert.equal(gr.length,2,'só temas com imóveis em falta');
+ linha(10,['P0005','TESTE-001','Plantas','Planta','ev','ac','Andreia','Normal','Em falta']);linha(11,['P0006','TESTE-002','Plantas','Planta','ev','ac','Andreia','Normal','Digitalizado']);[10,11].forEach(r=>L.cells.set(`${r},${col('Planta')}`,'Em falta'));
+ const sim=t.context.pgArquivarIndividuais_(true);assert.equal(sim.arquivar,2,'simulação: só a individual sem resposta, não prioritária');
+ const g=t.context.atualizarPendenciasAgrupadas();assert.equal(g.alt.imoveis,2);assert.equal(g.video.imoveis,1);
+ const gr=[...Array(20)].map((_,i)=>6+i).filter(r=>P.cells.get(`${r},2`)==='Vários imóveis');assert.equal(gr.length,3,'só temas com imóveis em falta (alt, vídeo, planta)');
  assert.ok(gr.every(r=>P.forms.get(`${r},16`)||P.forms.get('2000,16')),'fórmula de conferência presente');
  const altRow=gr.find(r=>P.cells.get(`${r},4`).startsWith('Fotos'));assert.match(P.cells.get(`${altRow},5`),/^2 imóveis não prioritários .*TESTE-001, TESTE-002\.$/);
- const r=t.context.pgArquivarIndividuais_(false);assert.equal(r.arquivadas,1);
+ const r=t.context.pgArquivarIndividuais_(false);assert.equal(r.arquivadas,2);assert.equal(P.cells.get('10,9'),'Arquivado','planta em falta automática arquivada');assert.equal(P.cells.get('11,9'),'Digitalizado','planta em curso mantida');
  assert.equal(P.cells.get('6,9'),'Arquivado');assert.match(P.cells.get('6,12'),/^Agrupada em P\d{4}/);
  assert.equal(P.cells.get('7,9'),'A aguardar esclarecimento','com resposta da Sara não é arquivada');assert.equal(P.cells.get('8,9'),'Por tratar','prioritário mantém individual');assert.equal(P.cells.get('9,9'),'Por tratar','documentos não são agrupados');
  const again=t.context.atualizarPendenciasAgrupadas();assert.equal(again.alt.id,g.alt.id,'grupo reutilizado, sem duplicar');
