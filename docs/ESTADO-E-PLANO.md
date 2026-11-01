@@ -1,3 +1,20 @@
+## Último ponto de situação — 01/11/2026 — pendências por tema aplicadas (Claude)
+
+Decisão da Andreia: individuais só para os imóveis com Prioridade «Prioritária» (etiqueta «melhora»). Os restantes imóveis passam a ter uma pendência por tema, com a lista de referências. Os 2 imóveis sem fotos e os documentos continuam individuais.
+
+Código, em `PendenciasAgrupadas.gs` e no analisador do `Codigo.gs`:
+- o analisador deixa de criar pendências individuais novas dos temas agrupados para imóveis não prioritários;
+- `atualizarPendenciasAgrupadas()` recalcula os temas a partir do Levantamento (Alt-text, Vídeo, Planta, Descrição EN/FR/DE/ES) e cria, atualiza ou conclui as linhas «Vários imóveis»;
+- é chamada no fim de cada gravação, individual, por lotes ou de todos os imóveis.
+
+Migração aplicada no Sheet:
+- **Grupos criados:** P1312 (alt text, 308 imóveis), P1313 (vídeo, Sara, 278), P1314 (plantas, 241) e P1315 (textos, 49).
+- **1121 individuais arquivadas:** só as abertas sem resposta da Sara nem resolução. As de planta em «Em falta» ou «Formato errado» também foram arquivadas. O motivo «Agrupada em Pxxxx» ficou na coluna L e o histórico no Registo.
+- **Ficaram por arquivar:** Digitalizado, «Falta no eGO > ver dossiê», documentos e prioritários.
+- **Estado no fim:** 1149 arquivadas; abertas: 28 «Por tratar», 62 «A aguardar esclarecimento», 20 Digitalizado, 11 «ver dossiê», 1 «Formato errado».
+
+Por decidir: a Conferência (coluna P) das 4 linhas de tema mostra «Rever referência», porque «Vários imóveis» não está no Levantamento. A correção (`pgGarantirConferencia_`) acrescenta à fórmula de toda a coluna calculada a exceção `AND(ref<>"Vários imóveis";…)`. Já está no código publicado (hash `e92ca9877a36`), mas não foi executada: a revisão automática bloqueou a reescrita da coluna. Vai correr sozinha na próxima gravação da Clara. Confirmar com a Andreia antes; se ela não quiser, retirar a chamada.
+
 ## Último ponto de situação — 01/11/2026 — gravação de todos os imóveis conferida (Claude)
 
 A Andreia guardou a leitura de todos os imóveis numa só colagem. Conferência independente pelo Registo de alterações:
