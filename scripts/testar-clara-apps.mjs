@@ -313,3 +313,37 @@ const docBloqueado=['P9004','TESTE001','Documentos','Caderneta Predial','Caderne
 assert.equal(f.context.acaoFluxoPendencia_(docBloqueado,docBloqueado[8]),'Caderneta Predial: falta no eGO + dossiê. Sara: disponibilizar ou indicar onde obter o ficheiro.\nNota da equipa: Confirmar com o proprietário.');
 const semProva=[...docBloqueado];semProva[4]='Documento por verificar';semProva[5]='Pedir esclarecimento à Sara.';assert.equal(f.context.acaoFluxoPendencia_(semProva,semProva[8]),null);
 console.log('PASS bloqueio documental: documento e próximos passos explícitos, nota manual preservada, ausência no dossiê não inferida.');
+// Pendências por tema (01/11/2026): não prioritários não criam pendências individuais dos temas agrupados.
+{const agrupadas=fs.readFileSync(new URL('../apps-script/clara/PendenciasAgrupadas.gs',import.meta.url),'utf8');
+ const comPrioridade=(valor)=>{const t=fixture();vm.runInContext(agrupadas,t.context);t.lev.width++;t.lev.cells.set(`9,${t.lev.width}`,'Prioridade');t.lev.cells.set(`10,${t.lev.width}`,valor);return t;};
+ const leitura={...payload(),fotosComAlt:0,videos:0,plantas:[]};
+ let t=comPrioridade('Normal');let a=analyse(t,leitura);let assuntos=a.pendencias.map(p=>p.assunto);
+ assert.ok(!assuntos.includes('Fotos sem texto alternativo')&&!assuntos.includes('Existe vídeo do imóvel?')&&!assuntos.includes('Imóvel sem planta'),'não prioritário: sem pendências individuais agrupadas');
+ assert.ok(a.campos.some(c=>c.coluna==='Alt-text'&&c.novo==='Em falta'),'estado continua no Levantamento');
+ t=comPrioridade('Prioritária');a=analyse(t,leitura);assuntos=a.pendencias.map(p=>p.assunto);
+ assert.ok(assuntos.includes('Fotos sem texto alternativo')&&assuntos.includes('Existe vídeo do imóvel?'),'prioritário mantém pendências individuais');
+ t=comPrioridade('Normal');a=analyse(t,{...payload(),fotos:0,fotosComAlt:null});assert.ok(a.pendencias.some(p=>p.assunto==='Imóvel sem fotos'),'sem fotos continua individual');
+ assert.equal(t.context.grupoPendenciaClara_('Fotografias sem texto alternativo'),'alt','alias antigo reconhecido');assert.equal(t.context.grupoPendenciaClara_('Caderneta Predial'),'');
+ console.log('PASS pendências por tema: não prioritários sem individuais nos temas agrupados, prioritários e sem fotos mantêm individuais, estado no Levantamento.');}
+// Migração: pendências de tema criadas a partir do Levantamento; individuais sem trabalho humano arquivadas com motivo.
+{Range.prototype.getFormulaR1C1=function(){return this.getFormula();};Range.prototype.setFormulaR1C1=function(f){this.sh.forms.set(`${this.r},${this.c}`,f);return this;};
+ const agrupadas=fs.readFileSync(new URL('../apps-script/clara/PendenciasAgrupadas.gs',import.meta.url),'utf8');
+ const t=fixture();vm.runInContext(agrupadas,t.context);const L=t.lev,col=n=>headers.indexOf(n)+1;L.width++;const cp=L.width;L.cells.set(`9,${cp}`,'Prioridade');
+ [['TESTE-001','Normal'],['TESTE-002','Normal'],['TESTE-003','Prioritária']].forEach(([r,p],i)=>{L.cells.set(`${10+i},1`,r);L.cells.set(`${10+i},${cp}`,p);L.cells.set(`${10+i},${col('Alt-text')}`,'Em falta');L.cells.set(`${10+i},${col('Vídeo')}`,i===1?'Preenchido':'Em falta');});
+ const P=t.pend;P.width=18;P.cells.set('5,18','Resposta Sara');
+ const linha=(r,v)=>v.forEach((x,j)=>P.cells.set(`${r},${j+1}`,x));
+ linha(6,['P0001','TESTE-001','Imagens','Fotos sem texto alternativo','ev','ac','Andreia','Normal','Por tratar']);
+ linha(7,['P0002','TESTE-001','Vídeo','Existe vídeo do imóvel?','ev','ac','Sara','Normal','A aguardar esclarecimento']);P.cells.set('7,18','Tem vídeo no Drive');
+ linha(8,['P0003','TESTE-003','Imagens','Fotos sem texto alternativo','ev','ac','Andreia','Normal','Por tratar']);
+ linha(9,['P0004','TESTE-002','Documentos','Caderneta Predial','ev','ac','Andreia','Normal','Por tratar']);
+ const sim=t.context.pgArquivarIndividuais_(true);assert.equal(sim.arquivar,1,'simulação: só a individual sem resposta, não prioritária');
+ const g=t.context.atualizarPendenciasAgrupadas();assert.equal(g.alt.imoveis,2);assert.equal(g.video.imoveis,1);assert.equal(g.planta.imoveis,0);
+ const gr=[...Array(20)].map((_,i)=>6+i).filter(r=>P.cells.get(`${r},2`)==='Vários imóveis');assert.equal(gr.length,2,'só temas com imóveis em falta');
+ assert.ok(gr.every(r=>P.forms.get(`${r},16`)||P.forms.get('2000,16')),'fórmula de conferência presente');
+ const altRow=gr.find(r=>P.cells.get(`${r},4`).startsWith('Fotos'));assert.match(P.cells.get(`${altRow},5`),/^2 imóveis não prioritários .*TESTE-001, TESTE-002\.$/);
+ const r=t.context.pgArquivarIndividuais_(false);assert.equal(r.arquivadas,1);
+ assert.equal(P.cells.get('6,9'),'Arquivado');assert.match(P.cells.get('6,12'),/^Agrupada em P\d{4}/);
+ assert.equal(P.cells.get('7,9'),'A aguardar esclarecimento','com resposta da Sara não é arquivada');assert.equal(P.cells.get('8,9'),'Por tratar','prioritário mantém individual');assert.equal(P.cells.get('9,9'),'Por tratar','documentos não são agrupados');
+ const again=t.context.atualizarPendenciasAgrupadas();assert.equal(again.alt.id,g.alt.id,'grupo reutilizado, sem duplicar');
+ assert.ok([...t.hist.cells.values()].some(v=>String(v).startsWith('Arquivado (agrupada em')),'arquivo registado no histórico');
+ console.log('PASS migração por tema: grupos a partir do Levantamento, sem duplicar, arquivo só sem trabalho humano, prioritários e documentos intactos, histórico registado.');}

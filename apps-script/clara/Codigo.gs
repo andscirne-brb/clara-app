@@ -472,6 +472,10 @@ function analisar(texto, docs) {
       p.atualizar = ex.evidencia !== p.evidencia || ex.acao !== p.acao || ex.aguarda !== 'Sara' || ex.responsavel !== 'Sara';
     }
   });
+  // Imóveis não prioritários: os temas agrupados não criam pendências individuais novas (decisão de 01/11/2026).
+  // O estado fica no Levantamento e a contagem na pendência do tema (PendenciasAgrupadas.gs).
+  const prioritario=c.col('Prioridade')&&atual[c.col('Prioridade')-1]==='Prioritária';
+  if(!prioritario&&typeof grupoPendenciaClara_==='function'){for(let i=pend.length-1;i>=0;i--){if(!pend[i].jaExiste&&grupoPendenciaClara_(pend[i].assunto))pend.splice(i,1);}}
   const mudam = campos.filter(function (x) { return String(x.atual) !== String(x.novo); }).length;
   return { ref: ref, linha: linha, campos: campos, pendencias: pend, resolvidas: resolvidas, notas: notas, naoVerificados: naoVerificados, cruzamento: cruzamento, mudam: mudam, url: d.url || '', hoje: hoje, completa: completa, textos: Object.keys(IDIOMAS).filter(function (k) { return T[k] && !T[k].erro && typeof T[k].descricao === 'string' && typeof T[k].titulo === 'string'; }).map(function (k) { return { idioma: k, titulo: T[k].titulo, descricao: T[k].descricao }; }) };
 }
