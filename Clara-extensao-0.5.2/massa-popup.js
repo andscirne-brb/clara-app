@@ -25,7 +25,18 @@ async function mostrar(){
  else if(m.estado==='concluido'){
   if(!/^(Lote|Tudo|Lista)/.test($('massaEstado').textContent))$('massaEstado').textContent=(m.teste?'Teste concluído: ':'Concluído: ')+m.lidos+' de '+total+' imóveis lidos'+(falhas?', '+falhas+' não lidos':'')+'. Copia tudo e cola uma vez no Sheets.';
   const tudo=document.createElement('button');tudo.textContent=(m.copiados?.includes('todos')?'✓ ':'')+'Copiar tudo para o Sheets ('+m.lidos+' imóveis)';tudo.onclick=copiarTudo;$('massaLotes').append(tudo);
-  if(falhas){const repetir=document.createElement('button');repetir.textContent='Repetir apenas as falhas';repetir.onclick=async()=>{repetir.disabled=true;const r=await enviar({massa:'repetirFalhas'});if(r?.erro){repetir.disabled=false;massaEstado.textContent=r.erro;}else mostrar();};massaLotes.append(repetir);const nl=document.createElement('button');nl.className='lote';nl.textContent='Copiar lista de não lidos';nl.onclick=()=>copiarTexto((m.falhas||[]).map(f=>decodeURI(f.url)+' · '+f.erro).join('\n'),'Lista de não lidos copiada.');$('massaLotes').append(nl);}
+  if(falhas){const repetir=document.createElement('button');repetir.textContent='Repetir apenas as falhas';repetir.onclick=async()=>{
+    repetir.disabled=true;
+    $('massaEstado').textContent='A preparar a repetição das fichas em falta…';
+    try{
+      const r=await enviar({massa:'repetirFalhas'});
+      if(!r?.ok)throw Error(r?.erro||'O serviço da Clara não respondeu ao pedido de repetição.');
+      await mostrar();
+    }catch(e){
+      $('massaEstado').textContent='A repetição não arrancou. '+String(e.message||e);
+      repetir.disabled=false;
+    }
+  };$('massaLotes').append(repetir);const nl=document.createElement('button');nl.className='lote';nl.textContent='Copiar lista de não lidos';nl.onclick=()=>copiarTexto((m.falhas||[]).map(f=>decodeURI(f.url)+' · '+f.erro).join('\n'),'Lista de não lidos copiada.');$('massaLotes').append(nl);}
   const alt=document.createElement('details');const s=document.createElement('summary');s.textContent='Alternativa: lotes de 25';alt.append(s);
   for(let n=1;n<=m.lotes;n++){const b=document.createElement('button');const feito=m.copiados?.includes(n);b.className='lote'+(feito?' ok':'');b.textContent=(feito?'✓ ':'')+'Copiar lote '+n+' de '+m.lotes;b.onclick=()=>copiar(n);alt.append(b);}
   $('massaLotes').append(alt);
