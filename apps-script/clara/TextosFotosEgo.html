@@ -1,0 +1,47 @@
+<details class="box">
+  <summary>Textos das fotos no eGO</summary>
+  <label for="fotos-ego-leitura">Tabela copiada da Clara</label>
+  <textarea id="fotos-ego-leitura"></textarea>
+  <button type="button" id="fotos-ego-rever">Rever textos das fotos</button>
+  <p id="fotos-ego-resultado" role="status" style="white-space:pre-line"></p>
+  <div id="fotos-ego-confirmacao" hidden>
+    <label for="fotos-ego-ref">Referência exata da ficha no Levantamento</label>
+    <input id="fotos-ego-ref" type="text" maxlength="40">
+    <button type="button" id="fotos-ego-gravar">Confirmar referência e guardar</button>
+  </div>
+</details>
+<script>
+(() => {
+  const obter = id => document.getElementById('fotos-ego-' + id);
+  const campo = obter('leitura'), resultado = obter('resultado'), confirmacao = obter('confirmacao');
+  let revista = '';
+  campo.addEventListener('input', () => { revista = ''; confirmacao.hidden = true; });
+  obter('rever').onclick = () => {
+    const texto = campo.value;
+    revista = '';
+    confirmacao.hidden = true;
+    resultado.textContent = 'A validar…';
+    google.script.run.withFailureHandler(e => { resultado.textContent = e.message; })
+      .withSuccessHandler(r => {
+        if (campo.value !== texto) return;
+        revista = texto;
+        resultado.textContent = ['Ficha eGO ' + r.ficha + ' · ' + r.fotos + ' fotos',
+          ...r.idiomas.map(i => i.idioma + ' · ' + i.preenchidos + ' preenchidos · ' + i.emFalta.length +
+            ' em falta · ' + i.porVerificar.length + ' por verificar'),
+          'Confirma que o ID acima corresponde à referência que vais indicar.'].join('\n');
+        confirmacao.hidden = false;
+      }).analisarTextosFotosEgo(texto);
+  };
+  obter('gravar').onclick = () => {
+    if (!revista || revista !== campo.value) return;
+    const botao = obter('gravar');
+    botao.disabled = true;
+    google.script.run.withFailureHandler(e => { botao.disabled = false; resultado.textContent = e.message; })
+      .withSuccessHandler(r => {
+        botao.disabled = false;
+        confirmacao.hidden = true;
+        resultado.textContent = r.repetida ? 'Esta leitura já está guardada.' : 'Leitura guardada para ' + r.referencia + '.';
+      }).guardarTextosFotosEgo(revista, obter('ref').value);
+  };
+})();
+</script>
