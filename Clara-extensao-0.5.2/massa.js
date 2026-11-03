@@ -1,6 +1,6 @@
 /* Leitura em massa das fichas públicas: usa o mesmo coletor da leitura individual, separador a separador.
    Os resultados ficam em chrome.storage.local (só neste computador) até serem copiados por lotes para o Sheets. */
-const MASSA={versao:'0.5.1',paralelo:3,porLote:25,limiteFichaMs:60000,sitemap:'https://www.janela-imobiliaria.com/sitemap-pt-pt.xml'};
+const MASSA={versao:'0.5.3',paralelo:3,porLote:25,limiteFichaMs:60000,sitemap:'https://www.janela-imobiliaria.com/sitemap-pt-pt.xml'};
 let massaAtiva=null,massaParar=false;
 const esperar=ms=>new Promise(r=>setTimeout(r,ms));
 function idFichaPublica(url) {
@@ -87,7 +87,7 @@ async function executarMassa(continuar,limite,repetirFalhas=false){
 
 chrome.runtime.onMessage.addListener((msg,sender,reply)=>{
  if(sender.id!==chrome.runtime.id||!msg||typeof msg.massa!=='string')return;
- if(msg.massa==='estado'){reply({ativa:!!massaAtiva});return;}
+ if(msg.massa==='estado'){reply({ativa:!!massaAtiva,repetirFalhas:true});return;}
  if(msg.massa==='iniciar'||msg.massa==='continuar'||msg.massa==='repetirFalhas'){
   if(massaAtiva||ativo){reply({erro:'Já existe uma leitura em curso.'});return;}
   const limite=msg.massa==='iniciar'&&Number.isInteger(msg.limite)&&msg.limite>0&&msg.limite<=50?msg.limite:0;

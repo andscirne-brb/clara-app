@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Clara · imóveis e portais",
+  "version": "0.5.3",
+  "description": "Recolhe imóveis e estatísticas dos portais para rever no Sheets.",
+  "permissions": [
+    "scripting",
+    "storage",
+    "clipboardWrite",
+    "unlimitedStorage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://rmplusportal.rightmove.co.uk/*",
+    "https://admin.rightmove.co.uk/*",
+    "https://www.janela-imobiliaria.com/*",
+    "https://janela-imobiliaria.com/*",
+    "https://www.idealista.pt/*",
+    "https://idealista.pt/*",
+    "https://back.green-acres.com/*"
+  ],
+  "background": {
+    "service_worker": "worker.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Clara · imóveis e portais"
+  },
+  "minimum_chrome_version": "102"
+}

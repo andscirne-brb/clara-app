@@ -29,6 +29,8 @@ async function mostrar(){
     repetir.disabled=true;
     $('massaEstado').textContent='A preparar a repetição das fichas em falta…';
     try{
+      const estado=await enviar({massa:'estado'});
+      if(!estado?.repetirFalhas)throw Error('O serviço carregado ainda é de uma versão anterior. Recarrega esta extensão no Chrome.');
       const r=await enviar({massa:'repetirFalhas'});
       if(!r?.ok)throw Error(r?.erro||'O serviço da Clara não respondeu ao pedido de repetição.');
       await mostrar();
