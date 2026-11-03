@@ -42,7 +42,7 @@ async function lerFichaEmSeparador(tabId,url){
 
 async function comPrazo(p,ms,erro){let t;try{return await Promise.race([p,new Promise((_,rej)=>{t=setTimeout(()=>rej(Error(erro)),ms);})]);}finally{clearTimeout(t);}}
 
-async function executarMassa(continuar,limite){
+async function executarMassa(continuar,limite,repetirFalhas=false){
  const manter=setInterval(()=>{chrome.runtime.getPlatformInfo().catch(()=>{});},20000);let janela=null;massaParar=false;
  try{
   let m=continuar?await massaEstado():null;
@@ -50,8 +50,20 @@ async function executarMassa(continuar,limite){
    const todas=await urlsDoSitemap(),urls=limite?todas.slice(0,limite):todas;
    await chrome.storage.local.clear();
    m={v:1,pedido:crypto.randomUUID(),estado:'a-ler',versao:MASSA.versao,inicio:new Date().toISOString(),teste:!!limite,urls,feitos:0,falhas:[],lotes:0,copiados:[]};await massaGuardar(m);
-  }else{if(m.estado==='concluido')return;m.estado='a-ler';await massaGuardar(m);}
-  const pendentes=[];for(let i=0;i<m.urls.length;i++){if(!(await chrome.storage.local.get('ficha:'+i))['ficha:'+i])pendentes.push(i);}
+  }else{if(m.estado==='concluido'&&!repetirFalhas)return;m.estado='a-ler';await massaGuardar(m);}
+  const pendentes=[], anteriores=await chrome.storage.local.get(m.urls.map((_,i)=>'ficha:'+i));
+  m.feitos=0;m.falhas=[];
+  for(let i=0;i<m.urls.length;i++){
+   const anterior=anteriores['ficha:'+i];
+   if(!anterior||repetirFalhas&&!anterior.ok){pendentes.push(i);continue;}
+   m.feitos++;
+   if(!anterior.ok)m.falhas.push({url:anterior.url,erro:anterior.erro});
+  }
+  if(repetirFalhas){
+   await chrome.storage.local.remove(pendentes.map(i=>'ficha:'+i).concat('todos',Array.from({length:m.lotes||0},(_,i)=>'lote:'+(i+1))));
+   m.copiados=[];m.lotes=0;
+  }
+  await massaGuardar(m);
   janela=await chrome.windows.create({url:'about:blank',focused:false,state:'minimized'});
   const tabs=[(await chrome.tabs.query({windowId:janela.id}))[0].id];for(let k=1;k<MASSA.paralelo;k++)tabs.push((await chrome.tabs.create({windowId:janela.id,url:'about:blank',active:false})).id);
   let cursor=0;
@@ -76,10 +88,10 @@ async function executarMassa(continuar,limite){
 chrome.runtime.onMessage.addListener((msg,sender,reply)=>{
  if(sender.id!==chrome.runtime.id||!msg||typeof msg.massa!=='string')return;
  if(msg.massa==='estado'){reply({ativa:!!massaAtiva});return;}
- if(msg.massa==='iniciar'||msg.massa==='continuar'){
+ if(msg.massa==='iniciar'||msg.massa==='continuar'||msg.massa==='repetirFalhas'){
   if(massaAtiva||ativo){reply({erro:'Já existe uma leitura em curso.'});return;}
   const limite=msg.massa==='iniciar'&&Number.isInteger(msg.limite)&&msg.limite>0&&msg.limite<=50?msg.limite:0;
-  massaAtiva=executarMassa(msg.massa==='continuar',limite);reply({ok:true});return;
+  massaAtiva=executarMassa(msg.massa!=='iniciar',limite,msg.massa==='repetirFalhas');reply({ok:true});return;
  }
  if(msg.massa==='parar'){massaParar=true;reply({ok:true});return;}
  if(msg.massa==='lote'){chrome.storage.local.get('lote:'+msg.n).then(async x=>{const t=x['lote:'+msg.n];if(t){const m=await massaEstado();if(m&&!m.copiados.includes(msg.n)){m.copiados.push(msg.n);await massaGuardar(m);}}reply({texto:t||''});});return true;}
