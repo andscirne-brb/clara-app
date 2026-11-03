@@ -20,6 +20,29 @@ function textoClaraColado() {
   const valor = el('txt').value;
   return valor === etiquetaLeituraGrandeClara ? leituraGrandeClara : valor;
 }
+const ficheiroClara = document.createElement('input');
+ficheiroClara.type = 'file';
+ficheiroClara.accept = '.txt,.json';
+ficheiroClara.setAttribute('aria-label', 'Carregar ficheiro da recolha Clara');
+if ('__CLARA_MARCA__' === 'ego') el('txt').after(ficheiroClara);
+ficheiroClara.addEventListener('change', async () => {
+  const ficheiro = ficheiroClara.files[0];
+  ficheiroClara.value = '';
+  if (!ficheiro || ocupado) return;
+  const anterior = revisao;
+  try {
+    if (ficheiro.size > 12000000) throw Error('O ficheiro excede 12 MB.');
+    const texto = (await ficheiro.text()).trim();
+    if (ocupado || anterior !== revisao) return;
+    if (!texto.startsWith('CLARA7:')) throw Error('Seleciona o ficheiro da recolha de imóveis da Clara.');
+    leituraGrandeClara = texto;
+    el('txt').value = etiquetaLeituraGrandeClara;
+    entrada();
+  } catch (erro) {
+    el('erro').textContent = erro.message;
+    el('erro').hidden = false;
+  }
+});
 el('txt').addEventListener('paste', e => {
   const texto = e.clipboardData && e.clipboardData.getData('text/plain');
   if (!texto || !texto.startsWith('CLARA7:') || texto.length <= 400000) return;
@@ -37,3 +60,4 @@ panel = panel.replace(hook, handler)
 code = pattern.sub(lambda _: 'const PAINEL_HTML = ' + json.dumps(panel, ensure_ascii=False) + ';', code)
 with destination.open('x', encoding='utf-8') as output:
     output.write(code)
+
