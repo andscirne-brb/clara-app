@@ -43,3 +43,36 @@ function criarRecetorImportacaoClara(total) {
     }
   };
 }
+/* Envia a leitura guardada ao painel, sem iniciar a gravação. */
+async function enviarImportacaoClara(tabId, frameId, texto, id) {
+  const blocos = criarBlocosImportacaoClara(texto);
+  const enviar = async pedido => {
+    const [resposta] = await chrome.scripting.executeScript({
+      target: {tabId, frameIds: [frameId]},
+      world: 'MAIN',
+      args: [{...pedido, id}],
+      func: mensagem => {
+        try {
+          if (typeof receberImportacaoClara !== 'function')
+            throw Error('O painel aberto ainda não aceita importação direta.');
+          return {valor: receberImportacaoClara(mensagem)};
+        } catch (erro) {
+          return {erro: String(erro.message || erro)};
+        }
+      }
+    });
+    if (!resposta?.result || resposta.result.erro)
+      throw Error(resposta?.result?.erro || 'O painel não respondeu.');
+    return resposta.result.valor;
+  };
+  const inicio = await enviar({acao: 'iniciar', total: blocos.length});
+  if (!Number.isInteger(inicio) || inicio < 0 || inicio > blocos.length)
+    throw Error('O painel devolveu um ponto de retoma inválido.');
+  for (let indice = inicio; indice < blocos.length; indice++) {
+    const recebidos = await enviar({acao: 'bloco', indice, texto: blocos[indice]});
+    if (recebidos !== indice + 1) throw Error('O painel não confirmou o bloco enviado.');
+  }
+  const resultado = await enviar({acao: 'concluir'});
+  if (!resultado?.recebida) throw Error('O painel não confirmou a recolha completa.');
+  return resultado;
+}
