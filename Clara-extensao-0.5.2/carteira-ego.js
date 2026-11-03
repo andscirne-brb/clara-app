@@ -41,3 +41,14 @@ async function percorrerCarteiraEgo(lerPagina) {
     cursor = pagina.proxima;
   } while (true);
 }
+
+/* O resumo da pesquisa distingue o filtro ativo dos rótulos em cada ficha. */
+function lerTotalDisponiveisEgo(titulo, resumo) {
+  const total = /^([\d .\u00a0\u202f]+)\s+Imóveis?$/iu.exec(String(titulo).trim());
+  if (!/^Disponível(?:\s*,|\s*$)/iu.test(String(resumo).trim()) || !total)
+    throw Error('Não consegui confirmar o filtro Disponível e o total da lista.');
+  const quantidade = Number(total[1].replace(/[ .\s]/gu, ''));
+  if (!Number.isSafeInteger(quantidade) || quantidade < 0)
+    throw Error('O total de imóveis disponíveis é inválido.');
+  return quantidade;
+}
