@@ -56,8 +56,39 @@ el('txt').addEventListener('input', () => {
   leituraGrandeClara = '';
   entrada();
 });"""
+receiver = (Path(__file__).resolve().parent.parent / 'Clara-extensao-0.5.2' /
+            'importacao-blocos.js').read_text(encoding='utf-8-sig')
+handler += "\n" + receiver + """
+// O transporte da extensão chama esta função após validar o separador de destino.
+let rececaoClara;
+function receberImportacaoClara(pedido) {
+  if (ocupado) throw Error('Já existe uma operação em curso.');
+  if (!pedido || typeof pedido.id !== 'string' || !pedido.id || pedido.id.length > 80)
+    throw Error('Sessão de receção inválida.');
+  if (pedido.acao === 'iniciar') {
+    if (rececaoClara && rececaoClara.id === pedido.id)
+      return rececaoClara.recebidos;
+    rececaoClara = {id: pedido.id, revisao, recebidos: 0,
+      recetor: criarRecetorImportacaoClara(pedido.total)};
+    return 0;
+  }
+  if (!rececaoClara || rececaoClara.id !== pedido.id || rececaoClara.revisao !== revisao)
+    throw Error('A revisão mudou. Inicia novamente o envio.');
+  if (pedido.acao === 'bloco') {
+    rececaoClara.recebidos = rececaoClara.recetor.receber(pedido.indice, pedido.texto);
+    return rececaoClara.recebidos;
+  }
+  if (pedido.acao !== 'concluir') throw Error('Ação de receção desconhecida.');
+  leituraGrandeClara = rececaoClara.recetor.concluir();
+  rececaoClara = null;
+  el('txt').value = etiquetaLeituraGrandeClara;
+  entrada();
+  return {recebida: true};
+}
+"""
 panel = panel.replace(hook, handler)
 code = pattern.sub(lambda _: 'const PAINEL_HTML = ' + json.dumps(panel, ensure_ascii=False) + ';', code)
 with destination.open('x', encoding='utf-8') as output:
     output.write(code)
+
 
