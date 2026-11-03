@@ -13,6 +13,28 @@ async function copiar(n){const r=await enviar({massa:'lote',n});if(!r?.texto){$(
  catch(e){$('massaTexto').value=r.texto;$('massaTexto').hidden=false;$('massaTexto').select();$('massaEstado').textContent='Copia o texto selecionado com Ctrl+C.';}mostrar();}
 async function copiarTexto(t,ok){try{await navigator.clipboard.writeText(t);$('massaEstado').textContent=ok;$('massaTexto').hidden=true;}catch(e){$('massaTexto').value=t;$('massaTexto').hidden=false;$('massaTexto').select();$('massaEstado').textContent='Copia o texto selecionado com Ctrl+C.';}}
 async function copiarTudo(){const r=await enviar({massa:'todos'});if(!r?.texto){$('massaEstado').textContent='A leitura já não está disponível. Volta a ler.';return;}await copiarTexto(r.texto,'Tudo copiado. Cola em Clara > eGO: estado e clica em Analisar. A gravação corre sozinha; se o painel fechar, volta a colar e continua onde parou.');await enviar({massa:'marcar',n:'todos'});mostrar();}
+async function enviarTudoAoPainel() {
+ const estado=$('massaEstado');
+ try {
+  const [tab]=await chrome.tabs.query({active:true,currentWindow:true});
+  const url=new URL(tab?.url||'https://example.invalid');
+  const documento=/^\/spreadsheets\/d\/([\w-]+)\/edit\/?$/.exec(url.pathname)?.[1];
+  if(url.origin!=='https://docs.google.com'||!documento)throw Error('Abre o Sheets de destino e o painel Clara > eGO: estado. Depois volta a abrir a extensão.');
+  const permitido=await chrome.permissions.request({origins:['https://*.googleusercontent.com/*']});
+  if(!permitido)throw Error('É necessário permitir o acesso ao painel da Clara.');
+  const resultados=await chrome.scripting.executeScript({
+   target:{tabId:tab.id,allFrames:true},world:'MAIN',
+   func:()=>typeof documentoImportacaoClara==='function'?documentoImportacaoClara():''
+  });
+  const paineis=resultados.filter(r=>r.result===documento);
+  if(paineis.length!==1)throw Error('Abre um único painel eGO: estado com a importação direta ativa.');
+  const {texto}=await enviar({massa:'todos'});
+  const dados=JSON.parse(texto.slice(7));
+  if(!dados.pedido)throw Error('A recolha guardada não tem identificador.');
+  await enviarImportacaoClara(tab.id,paineis[0].frameId,texto,dados.pedido,documento);
+  estado.textContent='Recolha enviada. Revê no painel Clara e confirma a gravação.';
+ }catch(e){estado.textContent=String(e.message||e);}
+}
 async function mostrar(){
  const {massa:m}=await chrome.storage.local.get('massa');const st=await enviar({massa:'estado'}).catch(()=>({}));const ativa=!!st?.ativa;
  $('massaBox').hidden=!m&&!ativa;$('massa').disabled=teste.disabled=ativa;$('massaParar').hidden=!ativa;$('massaLotes').replaceChildren();$('massaFalhas').replaceChildren();
@@ -48,4 +70,5 @@ async function mostrar(){
 chrome.storage.onChanged.addListener((c,area)=>{if(area==='local'&&c.massa)mostrar();});
 mostrar();setInterval(()=>{if($('massaParar')&&!$('massaParar').hidden)mostrar();},2000);
 })();
+
 

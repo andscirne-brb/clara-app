@@ -61,6 +61,7 @@ receiver = (Path(__file__).resolve().parent.parent / 'Clara-extensao-0.5.2' /
 handler += "\n" + receiver + """
 // O transporte da extensão chama esta função após validar o separador de destino.
 let rececaoClara;
+function documentoImportacaoClara() { return '__CLARA_MARCA__' === 'ego' ? CHAVE_RASCUNHO.slice('clara.rascunho.v1.'.length) : ''; }
 function receberImportacaoClara(pedido) {
   if (ocupado) throw Error('Já existe uma operação em curso.');
   if (!pedido || typeof pedido.id !== 'string' || !pedido.id || pedido.id.length > 80)
@@ -90,5 +91,7 @@ panel = panel.replace(hook, handler)
 code = pattern.sub(lambda _: 'const PAINEL_HTML = ' + json.dumps(panel, ensure_ascii=False) + ';', code)
 with destination.open('x', encoding='utf-8') as output:
     output.write(code)
+
+
 
 

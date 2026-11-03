@@ -44,16 +44,16 @@ function criarRecetorImportacaoClara(total) {
   };
 }
 /* Envia a leitura guardada ao painel, sem iniciar a gravação. */
-async function enviarImportacaoClara(tabId, frameId, texto, id) {
+async function enviarImportacaoClara(tabId, frameId, texto, id, documento) {
   const blocos = criarBlocosImportacaoClara(texto);
   const enviar = async pedido => {
     const [resposta] = await chrome.scripting.executeScript({
       target: {tabId, frameIds: [frameId]},
       world: 'MAIN',
-      args: [{...pedido, id}],
-      func: mensagem => {
+      args: [{...pedido, id}, documento],
+      func: (mensagem, destino) => {
         try {
-          if (typeof receberImportacaoClara !== 'function')
+          if (typeof documentoImportacaoClara !== 'function' || documentoImportacaoClara() !== destino || typeof receberImportacaoClara !== 'function')
             throw Error('O painel aberto ainda não aceita importação direta.');
           return {valor: receberImportacaoClara(mensagem)};
         } catch (erro) {
@@ -76,3 +76,4 @@ async function enviarImportacaoClara(tabId, frameId, texto, id) {
   if (!resultado?.recebida) throw Error('O painel não confirmou a recolha completa.');
   return resultado;
 }
+

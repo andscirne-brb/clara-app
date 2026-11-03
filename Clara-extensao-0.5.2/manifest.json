@@ -26,5 +26,8 @@
     "default_popup": "popup.html",
     "default_title": "Clara · imóveis e portais"
   },
-  "minimum_chrome_version": "102"
+  "minimum_chrome_version": "102",
+  "optional_host_permissions": [
+    "https://*.googleusercontent.com/*"
+  ]
 }
